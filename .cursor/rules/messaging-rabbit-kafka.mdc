@@ -1,0 +1,16 @@
+---
+description: RabbitMQ and Kafka rules for commands, events, schemas, retries, idempotency, and DLQ.
+globs: "**/*.{cs,json,yaml,yml,avsc,proto}"
+alwaysApply: false
+---
+
+# Messaging Rabbit Kafka
+
+- У каждого message contract должен быть owner, name, version, schema и compatibility policy.
+- Добавляй `correlationId`, `causationId`, `messageId` и idempotency key.
+- RabbitMQ используй для commands/work queues/routing; Kafka для durable event log/replay/streams.
+- Retry policy должен ограничивать attempts и иметь DLQ/parking lot.
+- Consumers обязаны быть idempotent; порядок сообщений не гарантируй без partition/key design.
+- Не ломай event schema: добавляй поля совместимо, удаление/rename только через versioning.
+- Метрики: publish failures, consumer lag, retries, DLQ count, handler duration.
+

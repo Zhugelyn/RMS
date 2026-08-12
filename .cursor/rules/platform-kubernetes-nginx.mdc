@@ -1,0 +1,16 @@
+---
+description: Kubernetes, Docker, and Nginx rules for deployment readiness, ingress, configuration, and runtime safety.
+globs: "**/*.{yaml,yml,Dockerfile,dockerfile,conf}"
+alwaysApply: false
+---
+
+# Platform Kubernetes Nginx
+
+- Docker images должны быть reproducible, minimal и запускаться non-root.
+- Kubernetes workloads требуют readiness/liveness probes и resource requests/limits.
+- ConfigMap только для non-secret config; Secret/external secret provider для sensitive values.
+- Ingress/Nginx должен иметь TLS, sane timeouts, body size limits и forwarded headers strategy.
+- Используй graceful shutdown для .NET services и учитывай `terminationGracePeriodSeconds`.
+- Не хардкодь environment-specific endpoints в manifests.
+- Проверяй `docker compose config` и `kubectl diff` перед применением.
+

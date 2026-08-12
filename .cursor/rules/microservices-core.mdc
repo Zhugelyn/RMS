@@ -1,0 +1,15 @@
+---
+description: Core microservice architecture rules for service ownership, boundaries, contracts, and consistency.
+alwaysApply: true
+---
+
+# Microservices Core
+
+- Отвечай на русском, если пользователь не просит иначе.
+- Начинай микросервисное решение с service boundary, data ownership и integration contracts.
+- Предпочитай modular monolith, если нет независимого ownership, deploy cadence или scaling pressure.
+- По умолчанию: один сервис владеет своей базой; другой сервис не читает ее таблицы напрямую.
+- Межсервисная consistency по умолчанию eventual; strong consistency держи внутри одного сервиса.
+- Любой cross-service workflow должен иметь timeout/retry/cancellation и понятный failure mode.
+- Устойчивые решения фиксируй в `memory/architecture-decisions.md`.
+

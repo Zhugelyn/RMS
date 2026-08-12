@@ -1,0 +1,16 @@
+---
+description: Security baseline for microservice code, APIs, messaging, files, containers, and Kubernetes.
+alwaysApply: true
+---
+
+# Security Baseline
+
+- Проверяй authn/authz для каждого public endpoint, consumer command и file operation.
+- Secrets не должны попадать в код, git, логи, ошибки, metrics labels или screenshots.
+- Валидируй input на HTTP, messages, file metadata, object keys, headers and query params.
+- Для file/url flows проверяй SSRF, path traversal, content-type spoofing, size limits и TTL.
+- Используй TLS на ingress; для internal traffic фиксируй выбранную trust model.
+- Containers должны быть non-root, minimal, с ограниченными capabilities.
+- Kubernetes manifests должны иметь probes, resources и securityContext.
+- При изменении security-sensitive кода обновляй `memory/security-baseline.md`.
+

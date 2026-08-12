@@ -1,0 +1,16 @@
+---
+description: MinIO and object storage rules for uploads, downloads, metadata, presigned URLs, and file security.
+globs: "**/*.{cs,json,yaml,yml}"
+alwaysApply: false
+---
+
+# Files MinIO
+
+- Для больших файлов предпочитай presigned upload/download URLs с коротким TTL.
+- Не доверяй filename, content-type и object key от клиента.
+- Object key должен быть непредсказуемым и не содержать PII.
+- Metadata и access control храни в сервисной БД, а не только в MinIO.
+- Ограничивай размер файла, разрешенные MIME/extension и upload rate.
+- Для untrusted uploads закладывай malware/content scanning hook.
+- Buckets для приватных файлов не должны быть public.
+

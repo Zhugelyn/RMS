@@ -1,0 +1,16 @@
+---
+description: PostgreSQL and EF Core rules for ownership, migrations, transactions, outbox/inbox, and indexes.
+globs: "**/*.{cs,sql,json}"
+alwaysApply: false
+---
+
+# Data Postgres
+
+- Database schema принадлежит одному сервису; shared tables между сервисами запрещены без ADR.
+- Миграции должны быть deterministic и применимы в CI/CD.
+- Publish после DB commit делай через outbox, а не прямой broker call внутри transaction.
+- Consumers должны быть idempotent; используй inbox/idempotency table для at-least-once delivery.
+- Проектируй indexes от конкретных queries и cardinality.
+- Для PII фиксируй retention, masking/logging rules и backup access.
+- Не добавляй каскадные удаления через boundaries без явного анализа последствий.
+

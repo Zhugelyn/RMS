@@ -1,0 +1,16 @@
+---
+description: Testing and observability rules for microservices, integrations, logs, metrics, traces, and health checks.
+globs: "**/*.{cs,csproj,json,yaml,yml}"
+alwaysApply: false
+---
+
+# Testing Observability
+
+- Для DB/broker/MinIO integration добавляй integration tests или явный test gap.
+- Contract changes требуют REST/gRPC/event compatibility check.
+- Correlation id должен проходить через HTTP, messages, logs и traces.
+- Structured logs не должны содержать secrets, tokens или raw PII.
+- Добавляй metrics для latency, error rate, retries, queue lag, DLQ count и storage failures.
+- Health checks разделяй на readiness и liveness.
+- Для production bugs фиксируй missing signal: log, metric, trace или alert.
+

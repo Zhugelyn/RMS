@@ -1,0 +1,16 @@
+---
+description: ASP.NET Core service conventions for APIs, handlers, validation, errors, and configuration.
+globs: "**/*.{cs,csproj,sln,json}"
+alwaysApply: false
+---
+
+# Dotnet API
+
+- Используй async APIs с `CancellationToken` на HTTP, DB, broker и object storage boundaries.
+- Ошибки наружу отдавай через ProblemDetails или установленный в проекте error contract.
+- Не прокидывай EF entities наружу как public DTO.
+- Конфигурацию читай через typed options и валидируй на старте.
+- Логи должны быть structured и содержать correlation id, но не secrets/PII.
+- Для endpoints фиксируй auth policy, input validation, response codes и OpenAPI contract.
+- Если добавлена внешняя зависимость, добавь health check и integration test plan.
+
