@@ -3,7 +3,7 @@
 ## Обязательный минимум
 
 - Authn/authz для public API, privileged operations, consumers команд и file operations.
-- Secrets только через конфигурационные providers, Kubernetes Secrets или external secret provider.
+- Secrets только через env, Docker secrets, user-secrets, Kubernetes Secrets или external secret provider. Не в git, не в Mini App, не в OpenAPI examples.
 - TLS на ingress. Internal trust model фиксировать явно.
 - Input validation для HTTP payloads, query params, headers, message payloads, file metadata и object keys.
 - Structured logs без secrets, tokens, passwords, raw PII и содержимого файлов.
@@ -37,5 +37,5 @@
 ## Open Risks
 
 - Нет реализации сервисов, значит secret wiring ещё не проверен кодом.
-- Cursor SDK runtime и tenant key storage отложены на Phase 2.
+- Cursor SDK runtime, RAG/ES, медиа и Яндекс Директ отложены. Не тащить их секреты в Phase 1.
 

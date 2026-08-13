@@ -57,5 +57,7 @@
 
 ## Tooling
 
+Текущий продукт: `telegram-ai`. North star и non-goals — `memory/current-project.md`. Один run = один slice `memory/phase-plan.md`.
+
 Смотри `docs/tooling/catalog.md`. Не запускай destructive-команды без явного запроса. Для будущих проектов проверяй команды локально: `dotnet test`, `docker compose config`, `kubectl diff --server-side`, линтеры, security scanners и contract tests.
 

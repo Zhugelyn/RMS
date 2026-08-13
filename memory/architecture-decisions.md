@@ -41,3 +41,25 @@ ADR-журнал для решений, которые должны пережи
 - Security impact: Убирает утечку ключей в Telegram history/logs.
 - Links: `memory/security-baseline.md`
 
+## ADR-003: Telegram Mini App is the UI
+
+- Status: accepted
+- Date: 2026-08-13
+- Context: Клиентская часть — Telegram. Нужен красивый интерфейс, не только текстовый echo.
+- Decision: UI = Telegram bot + Mini App. Экраны Phase 1: салон, маркетинг, задачи. Кнопки вызывают `POST /v1/chat` с `intent`. Бизнес-логика доменов не реализуется в Phase 1.
+- Consequences: Gateway отдаёт WebApp. Дизайн на стороне агента реализации.
+- Alternatives considered: Только reply-клавиатура; отдельный web frontend вне Telegram.
+- Security impact: Mini App не содержит bot token / service key. Init data проверять, когда появится auth пользователя.
+- Links: `memory/current-project.md`
+
+## ADR-004: Docker Compose is the Phase 1 runtime
+
+- Status: accepted
+- Date: 2026-08-13
+- Context: Клиент должен поднимать сервисы просто.
+- Decision: Phase 1 поднимается только через `docker compose up`. Секреты — env / Docker secrets, не файлы в git. K8s/Nginx — не в этой фазе.
+- Consequences: Один compose на gateway + assistant-api.
+- Alternatives considered: Локальный `dotnet run` без Docker; сразу Kubernetes.
+- Security impact: `.env` в `.gitignore`. Пример только `.env.example` без реальных значений.
+- Links: `memory/phase-plan.md`
+

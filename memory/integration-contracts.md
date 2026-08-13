@@ -46,6 +46,7 @@
   - `userId`
   - `text`
   - `traceId`
+  - `intent` optional: `salon` | `marketing` | `tasks` | `general`
   - reserved optional later: `attachments[]`, `tools[]`, `retrieval`, `provider`
 - Response:
   - `schemaVersion: 1`
