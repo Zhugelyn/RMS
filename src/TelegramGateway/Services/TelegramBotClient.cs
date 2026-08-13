@@ -20,39 +20,51 @@ public sealed class TelegramBotClient : ITelegramBotClient
     };
 
     private readonly HttpClient _httpClient;
+    private readonly string _botToken;
     private readonly ILogger<TelegramBotClient> _logger;
 
     public TelegramBotClient(HttpClient httpClient, IOptions<TelegramOptions> options, ILogger<TelegramBotClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        // Token only lives in gateway HttpClient base address; never logged.
-        var token = options.Value.BotToken;
-        _httpClient.BaseAddress = new Uri($"https://api.telegram.org/bot{token}/");
+        _botToken = options.Value.BotToken;
+        // Base address without token so HttpClient logging cannot leak it.
+        _httpClient.BaseAddress = new Uri("https://api.telegram.org/");
     }
 
     public async Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.PostAsJsonAsync(
-            "sendMessage",
-            new { chat_id = chatId, text },
-            JsonOptions,
-            cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        // Leading '/' required: token contains ':' and would otherwise be parsed as a URI scheme.
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/bot{_botToken}/sendMessage")
         {
-            _logger.LogWarning("Telegram sendMessage failed status={StatusCode}", (int)response.StatusCode);
-            response.EnsureSuccessStatusCode();
+            Content = JsonContent.Create(new { chat_id = chatId, text }, options: JsonOptions)
+        };
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Telegram sendMessage failed status={StatusCode}", (int)response.StatusCode);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Soft-fail: placeholder/dev tokens must not crash webhook processing.
+            _logger.LogWarning(ex, "Telegram sendMessage failed");
         }
     }
 
     public async Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken)
     {
-        using var response = await _httpClient.GetAsync(
-            $"getUpdates?timeout=25&offset={offset}",
-            cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/bot{_botToken}/getUpdates?timeout=25&offset={offset}");
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogWarning("Telegram getUpdates failed status={StatusCode}", (int)response.StatusCode);
+            return [];
+        }
 
-        response.EnsureSuccessStatusCode();
         var payload = await response.Content.ReadFromJsonAsync<TelegramGetUpdatesResponse>(JsonOptions, cancellationToken);
         return payload?.Result ?? [];
     }

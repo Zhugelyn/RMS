@@ -7,6 +7,9 @@ using TelegramGateway.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Never log Telegram Bot HTTP URIs — token is in the path.
+builder.Logging.AddFilter("System.Net.Http.HttpClient.ITelegramBotClient", LogLevel.None);
+
 builder.Services
     .AddOptions<TelegramOptions>()
     .Bind(builder.Configuration.GetSection(TelegramOptions.SectionName))

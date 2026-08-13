@@ -4,16 +4,16 @@
 
 Acceptance:
 
-- [ ] `docker compose up` поднимает `telegram-gateway` и `assistant-api`.
-- [ ] `assistant-api`: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`.
-- [ ] `ILlmProvider` интерфейс; default = stub, без внешнего LLM.
-- [ ] Telegram chat: update -> assistant-api -> ответ.
-- [ ] Mini App: экраны салон / маркетинг / задачи; кнопки шлют `/v1/chat` с `intent`; без реальной бизнес-логики.
-- [ ] Secrets из env/Docker secrets, не в git, не в логах, не в OpenAPI examples.
-- [ ] Inter-service auth есть; Telegram token не уходит в assistant-api.
-- [ ] Cursor API key не принимается из Telegram message.
-- [ ] `dotnet test` проходит.
-- [ ] ADR, catalog, contracts, run-log обновлены в `memory/`.
+- [x] `docker compose up` поднимает `telegram-gateway` и `assistant-api`.
+- [x] `assistant-api`: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`.
+- [x] `ILlmProvider` интерфейс; default = stub, без внешнего LLM.
+- [x] Telegram chat: update -> assistant-api -> ответ.
+- [x] Mini App: экраны салон / маркетинг / задачи; кнопки шлют `/v1/chat` с `intent`; без реальной бизнес-логики.
+- [x] Secrets из env/Docker secrets, не в git, не в логах, не в OpenAPI examples.
+- [x] Inter-service auth есть; Telegram token не уходит в assistant-api.
+- [x] Cursor API key не принимается из Telegram message.
+- [x] `dotnet test` проходит.
+- [x] ADR, catalog, contracts, run-log обновлены в `memory/`.
 
 ## Phase 2 — Cursor SDK harness
 

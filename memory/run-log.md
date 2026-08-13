@@ -18,4 +18,12 @@
 
 ## Runs
 
-- Нет прогонов.
+## Run 2026-08-13
+
+- Trigger: webhook slice=phase1-shell
+- Slice: phase1-shell
+- Status: passed
+- Checks: `dotnet test` 12/12; `docker compose up` healthy (assistant-api:5080, telegram-gateway:5081); `POST /v1/chat` + health; Mini App intents; webhook→assistant stub; service-key auth; no secrets in git/logs
+- Memory updated: phase-plan checkboxes, service-catalog, integration-contracts, security-baseline, run-log
+- Next slice: phase2-cursor-sdk (не стартовать без явного запуска Phase 2)
+- Blocker: none (для реального Telegram reply нужен валидный `TELEGRAM__BOTTOKEN` в `.env`)

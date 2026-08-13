@@ -75,10 +75,17 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Failed to process update traceId={TraceId}", traceId);
-            await _telegramBotClient.SendMessageAsync(
-                chatId,
-                "Временная ошибка ассистента. Попробуй ещё раз.",
-                cancellationToken);
+            try
+            {
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    "Временная ошибка ассистента. Попробуй ещё раз.",
+                    cancellationToken);
+            }
+            catch (Exception sendEx) when (sendEx is not OperationCanceledException)
+            {
+                _logger.LogWarning(sendEx, "Failed to send error reply traceId={TraceId}", traceId);
+            }
         }
     }
 

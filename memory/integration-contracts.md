@@ -55,9 +55,20 @@
   - `text`
   - `provider`: `stub` | later `cursor-sdk`
 - Errors: ProblemDetails
-- Auth: service key / HMAC, TLS
-- Rate/size limits: text size cap; later file size in files phase
+- Auth: `X-Service-Key` header = `Assistant__ServiceKey`
+- Rate/size limits: text max 4000; later file size in files phase
 - Backward compatibility: additive optional fields only
+- Implemented: `src/AssistantApi` + gateway proxy `POST /api/miniapp/chat`
+
+## API: telegram-gateway.webhook
+
+- Owner: telegram-gateway
+- Consumers: Telegram Bot API
+- Method/path: `POST /telegram/webhook`
+- Request: Telegram Update JSON (message.text)
+- Response: 200 OK after process attempt
+- Auth: optional `X-Telegram-Bot-Api-Secret-Token` = `Telegram__WebhookSecretToken`
+- Notes: maps to assistant-api chat; never forwards bot token
 
 ## File Contract Template
 
