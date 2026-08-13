@@ -23,7 +23,19 @@
 - Events/commands имеют schema version и owner.
 - Replay и poison message impact должны быть описаны.
 
+## Telegram / Cursor tokens
+
+- `Telegram:BotToken` принадлежит только `telegram-gateway`.
+- `Cursor:ApiKey` принадлежит только `assistant-api` (Phase 2+). Phase 1 ключ не обязателен.
+- Не принимать токены из chat message, query, filename, webhook body пользователя.
+- Webhook: проверять Telegram secret token header.
+- Inter-service: отдельный service credential, не bot token.
+- Encrypt-at-rest для клиентских ключей: ASP.NET Data Protection или AES-GCM. Master key = env/K8s Secret/user-secrets.
+- Логи: никогда bot token, Cursor key, Authorization, raw Telegram update с токенами.
+- Rotate: смена secret не требует смены API contract.
+
 ## Open Risks
 
-- Конкретные риски появятся после первого проекта.
+- Нет реализации сервисов, значит secret wiring ещё не проверен кодом.
+- Cursor SDK runtime и tenant key storage отложены на Phase 2.
 

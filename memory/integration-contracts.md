@@ -35,6 +35,29 @@
 - Compatibility policy:
 ```
 
+## API: assistant-api.chat
+
+- Owner: assistant-api
+- Consumers: telegram-gateway; later other clients
+- Method/path: `POST /v1/chat`
+- Request:
+  - `schemaVersion: 1`
+  - `conversationId`
+  - `userId`
+  - `text`
+  - `traceId`
+  - reserved optional later: `attachments[]`, `tools[]`, `retrieval`, `provider`
+- Response:
+  - `schemaVersion: 1`
+  - `conversationId`
+  - `messageId`
+  - `text`
+  - `provider`: `stub` | later `cursor-sdk`
+- Errors: ProblemDetails
+- Auth: service key / HMAC, TLS
+- Rate/size limits: text size cap; later file size in files phase
+- Backward compatibility: additive optional fields only
+
 ## File Contract Template
 
 ```markdown

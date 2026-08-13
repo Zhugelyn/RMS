@@ -1,0 +1,14 @@
+---
+description: Phase rules for telegram-ai bot and assistant-api shell, secrets, and memory/token budget.
+alwaysApply: true
+---
+
+# Telegram AI
+
+- Текущий продукт: `telegram-ai`. Сначала читай `memory/current-project.md` и `memory/phase-plan.md`.
+- Phase 1: только `telegram-gateway` + `assistant-api` + stub `ILlmProvider`.
+- Не реализуй RAG, embeddings, Elasticsearch, MinIO files/video, Cursor SDK, пока phase-plan не открыл эту фазу.
+- Telegram bot token не покидает gateway. Cursor API key не принимается из чата.
+- `/v1/chat` расширяй аддитивно, не ломай `schemaVersion`.
+- Automation Memories = короткие указатели. Source of truth = `memory/`.
+- Один run = один slice. Обновляй `memory/run-log.md`.

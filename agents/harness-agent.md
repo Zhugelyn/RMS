@@ -24,7 +24,10 @@
    - files
    - testing-observability
    - debug-review
-2. Прочитай память, которая влияет на решение.
+   - telegram-bot
+   - ai-assistant
+   - acceptance-loop
+2. Прочитай `memory/current-project.md`, `memory/phase-plan.md`, `memory/run-log.md` и только затем узкую память.
 3. Выбери primary agent и optional reviewers.
 4. Подними skill, если задача совпадает с его trigger-сценарием.
 5. Выполни работу с учетом `.cursor/rules/`.

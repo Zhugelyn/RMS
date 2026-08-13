@@ -21,4 +21,12 @@
 - Messaging: RabbitMQ и Kafka.
 - Platform: Docker, Kubernetes, Nginx.
 - Files: MinIO.
+- Current product: Telegram bot + assistant-api shell (`telegram-ai`).
+- LLM runtime later: Cursor SDK as `ILlmProvider`, not a hard dependency in Phase 1.
+
+## Memory
+
+- Repo `memory/` — source of truth.
+- Automation Memories — pointers only. See `memory/automation-memory-protocol.md`.
+- One automation run = one phase-plan slice.
 

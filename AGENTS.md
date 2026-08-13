@@ -25,6 +25,10 @@
 | MinIO, uploads, downloads, presigned URLs, metadata | `agents/files-agent.md` | `implement-minio-files` |
 | Unit/integration/contract/e2e tests, logs, metrics, traces | `agents/testing-observability-agent.md` | `test-observe-microservice` |
 | Обучение микросервисам и практика | `agents/learning-mentor-agent.md` | `learn-microservices` |
+| Telegram bot / gateway | `agents/telegram-bot-agent.md` | `build-telegram-ai-phase1` |
+| AI assistant API, LLM provider, Cursor SDK later | `agents/ai-assistant-agent.md` | `build-telegram-ai-phase1` |
+| Довести slice до критериев приемки | `agents/harness-agent.md` | `run-acceptance-loop` |
+| Память automation / контроль токенов | `agents/harness-agent.md` | `manage-agent-memory` |
 
 ## Orchestration Rules
 
@@ -40,6 +44,8 @@
 
 Перед работой:
 
+- `memory/current-project.md`, `memory/phase-plan.md`, `memory/run-log.md` — текущий проект и slice.
+- `memory/automation-memory-protocol.md` — repo memory vs Automation Memories, token budget.
 - `memory/project-principles.md` — общие принципы и предпочтения.
 - `memory/service-catalog.md` — существующие сервисы, ownership, зависимости.
 - `memory/architecture-decisions.md` — ADR и причины прошлых решений.
@@ -47,7 +53,7 @@
 - `memory/integration-contracts.md` — REST/gRPC/event/file contracts.
 - `memory/learning-progress.md` — текущий учебный прогресс.
 
-После работы предложи обновить память, если появилось новое устойчивое решение, контракт, риск, ограничение или учебный результат.
+После работы обнови repo memory. В Cursor Automation Memories пиши только короткие указатели, не простыни.
 
 ## Tooling
 

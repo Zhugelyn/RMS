@@ -37,6 +37,11 @@
 - Presigned URL flow checks.
 - Metadata consistency checks.
 
+## Memory / Automation
+
+- Протокол: `memory/automation-memory-protocol.md`.
+- Skills: `run-acceptance-loop`, `manage-agent-memory`, `build-telegram-ai-phase1`.
+
 ## Security
 
 См. `docs/tooling/security.md`.
