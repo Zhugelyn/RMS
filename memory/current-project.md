@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `1-shell`
+- Phase: `1-shell` (shell acceptance closed 2026-08-13; next = Phase 2 Cursor SDK)
 - Language: русский
 - Runtime Phase 1: Docker Compose only
 

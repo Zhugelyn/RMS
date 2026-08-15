@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.*
+!.env.example
+**/appsettings.*.local.json
+**/secrets.json
+
+# Build
+**/bin/
+**/obj/
+**/out/
+*.user
+*.suo
+.vs/
+.idea/
+*.swp
+
+# OS / tooling
+.DS_Store
+Thumbs.db
+*.log
+TestResults/
+coverage/

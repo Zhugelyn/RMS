@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Telegram AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="brand">
+      <p class="brand-mark">Telegram AI</p>
+      <h1 id="headline">Выбери домен</h1>
+      <p class="lede">Оболочка Phase 1: салон, маркетинг и задачи без реальной бизнес-логики.</p>
+    </header>
+
+    <nav class="domain-nav" aria-label="Домены">
+      <button type="button" class="domain" data-intent="salon">Салон</button>
+      <button type="button" class="domain" data-intent="marketing">Маркетинг</button>
+      <button type="button" class="domain" data-intent="tasks">Задачи</button>
+    </nav>
+
+    <section id="panel" class="panel" hidden>
+      <h2 id="panel-title"></h2>
+      <p id="panel-copy"></p>
+      <form id="chat-form" class="chat-form">
+        <label for="message">Сообщение</label>
+        <textarea id="message" rows="3" maxlength="1000" placeholder="Короткий запрос…" required></textarea>
+        <button type="submit" class="cta">Спросить ассистента</button>
+      </form>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <pre id="reply" class="reply" hidden></pre>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
