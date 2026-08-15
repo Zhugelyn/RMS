@@ -82,7 +82,7 @@ Harness memory (не Cursor `agentId` и не RAG):
 
 Acceptance (slice=`phase3-domain-agent-packs`):
 
-- [ ] Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` с `AGENTS.md`, `skills/`, `prompts/`, `mcp.json`, `pack.json`.
+- [x] Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` с `AGENTS.md`, `skills/`, `prompts/`, `mcp.json`, `pack.json`. (slice `phase3-pack-layout`)
 - [ ] Router-pack классифицирует в домен (не keyword-only `Contains`); пользовательский ответ даёт только specialist pack.
 - [ ] `Agent.create` / resume **per domain**; mapping `conversationId+domain → agentId` в assistant-api.
 - [ ] Bridge принимает pack runtime (cwd/skills/MCP allowlist/model), не один голый `prompt`.
@@ -97,11 +97,11 @@ Acceptance (slice=`phase3-domain-agent-packs`):
 
 Slices (один run = один):
 
-1. `phase3-pack-layout` — каталог packs + `pack.json` schema, без смены runtime.
-2. `phase3-bridge-pack-runtime` — bridge: cwd/skills/MCP allowlist/model per pack.
-3. `phase3-router-and-affinity` — router pack + agentId affinity per domain.
-4. `phase3-verify-isolation` — жёсткий verify + isolation tests; выкинуть Phase 2 soft-skip.
-5. `phase3-harness-memory` — profile + episode store, inject, write-after-verify, domain isolation.
+1. [x] `phase3-pack-layout` — каталог packs + `pack.json` schema + `PackCatalog` loader/validator, без смены runtime chat/bridge/DomainHarness.
+2. [ ] `phase3-bridge-pack-runtime` — bridge: cwd/skills/MCP allowlist/model per pack.
+3. [ ] `phase3-router-and-affinity` — router pack + agentId affinity per domain.
+4. [ ] `phase3-verify-isolation` — жёсткий verify + isolation tests; выкинуть Phase 2 soft-skip.
+5. [ ] `phase3-harness-memory` — profile + episode store, inject, write-after-verify, domain isolation.
 
 Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный публичный harness-сервис, Kubernetes, полный chat log как память.
 

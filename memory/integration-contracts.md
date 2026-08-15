@@ -63,7 +63,7 @@
 - Backward compatibility: additive optional fields only
 - Implemented: `src/AssistantApi` + gateway proxy `POST /api/miniapp/chat`
 - Harness Phase 2: classify → specialist prompt (`@cursor/sdk`) → soft verify; stub fallback without key
-- Harness Phase 3 (planned): router pack → inject profile+domain episodes → domain pack runtime → hard verify → persist episode; `agentId` affinity per domain; optional response `domainPack`
+- Harness Phase 3: pack layout on disk + `PackCatalog` (slice `phase3-pack-layout` done). Runtime still Phase 2 until bridge/router slices. Planned: router pack → inject profile+domain episodes → domain pack runtime → hard verify → persist episode; `agentId` affinity per domain; optional response `domainPack`
 
 ## API: cursor-sdk-bridge.run
 
@@ -74,7 +74,16 @@
 - Response: `{ agentId, text }`
 - Auth: internal network trust; apiKey per-call, not stored
 - Notes Phase 2: wraps `@cursor/sdk` Agent.create / Agent.resume + send/wait; cloud no-repo; body = prompt only
-- Phase 3 (planned): pack runtime — `packId`, cwd/skills, MCP allowlist, model; still internal-only; apiKey per-call
+- Phase 3 (planned slice `phase3-bridge-pack-runtime`): pack runtime — `packId`, cwd/skills, MCP allowlist, model; still internal-only; apiKey per-call
+
+## Data: agent-packs (Phase 3 layout)
+
+- Owner: assistant-api
+- Path: `src/AgentPacks/<id>/`
+- Manifest: `pack.json` (`schemaVersion=1`, `answersUser`, `resumePolicy`, `model`, `effort`, `runtime`)
+- MCP: `mcp.json` allowlist-only, no secrets; layout slice requires empty allowlist
+- `_router`: `answersUser=false`, `resumePolicy=none`
+- Loader: `PackCatalog` / `IPackCatalog`
 
 ## API: telegram-gateway.webhook
 

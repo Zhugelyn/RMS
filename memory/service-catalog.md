@@ -37,11 +37,13 @@
 - Auth: receives decrypted API key per-request from assistant-api over internal network; does not persist key
 - Security notes: non-root; health only; no public ports
 
-## Domain packs (Phase 3, not a service)
+## Domain packs (Phase 3)
 
-- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — конфиг/промпты/skills/MCP allowlist.
-- Owner: assistant-api. Исполнение: cursor-sdk-bridge. Не отдельные деплои.
-- Memory: profile (shared) + episodes (per domain) в БД assistant-api; bridge память не хранит.
+- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — `AGENTS.md`, `skills/`, `prompts/`, `mcp.json` (empty allowlist), `pack.json`.
+- Schema: `src/AgentPacks/pack.schema.json`.
+- Loader: `AssistantApi.Packs.PackCatalog` (+ `IPackCatalog`); validate on assistant-api startup; **not** wired into chat/bridge/DomainHarness yet.
+- Owner: assistant-api. Исполнение (later): cursor-sdk-bridge. Не отдельные деплои.
+- Memory: profile + episodes — slice `phase3-harness-memory` (ещё не impl).
 
 ## Reserved (do not implement now)
 

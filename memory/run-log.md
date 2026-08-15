@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-15d
+
+- Trigger: webhook slice=phase3-pack-layout
+- Slice: phase3-pack-layout
+- Status: passed
+- Checks: packs salon/marketing/tasks/_router + pack.schema.json; PackCatalog load/validate; `_router` answersUser=false resumePolicy=none; mcp allowlist empty; `dotnet test` 26/26; `/v1/chat` Phase 2 path unchanged (no DomainHarness/bridge chat wiring)
+- Memory updated: phase-plan slice1 + catalog checkbox; current-project Phase 3; catalog/contracts/security; run-log
+- Next slice: `phase3-bridge-pack-runtime`
+- Blocker: none (docker CLI absent in this env; compose build context updated for packs)
+
 ## Run 2026-08-15c
 
 - Trigger: user — harness agents must remember user facts + task→result

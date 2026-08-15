@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `2-cursor-sdk` (acceptance closed 2026-08-15; next = Phase 3 Domain agent packs; Knowledge сдвинут на Phase 4)
+- Phase: `3-domain-agent-packs` (in progress; slice `phase3-pack-layout` done 2026-08-15; Phase 2 closed)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge`)
 
@@ -19,20 +19,19 @@
 
 Позже: Яндекс Директ и другие внешние сервисы; генерация картинок; работа с фото и видео; RAG + Elasticsearch (можно готовые фреймворки).
 
-## Goal Phase 2
+## Goal Phase 3 (current)
 
-Cursor SDK harness поверх Phase 1 shell.
+Domain agent packs поверх Phase 2 harness.
 
-1. `CursorSdkLlmProvider` + internal Node bridge `@cursor/sdk`.
-2. Encrypt-at-rest Cursor API key (AES-GCM, master key из env).
-3. Harness: classify → specialist → verify для `salon|marketing|tasks`.
-4. Resume по `agentId`.
-5. Stub = fallback без ключа / при ошибке SDK.
-6. Без RAG/ES/MinIO/Директ.
+1. Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` + `pack.json` schema + `PackCatalog` (slice `phase3-pack-layout` ✅).
+2. Bridge pack runtime (cwd/skills/MCP/model).
+3. Router pack + agentId affinity per domain.
+4. Hard verify + isolation.
+5. Harness memory (profile + episodes).
 
-Phase 2 specialist = persona-switch. Настоящие domain packs (AGENTS.md / skills / MCP / отдельный Agent на домен) + harness memory (profile + episodes) — **Phase 3**, не Knowledge.
+Chat/bridge/DomainHarness runtime path ещё Phase 2 до следующих slices.
 
-## Phase 2 non-goals
+## Phase 3 non-goals
 
 - Elasticsearch, embeddings, RAG frameworks
 - MinIO, генерация картинок, фото/видео пайплайн
