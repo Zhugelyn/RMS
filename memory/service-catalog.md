@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 1 shell реализован.
+Проект `telegram-ai`. Phase 2 Cursor SDK harness реализован.
 
 ## Service: telegram-gateway
 
@@ -18,22 +18,37 @@
 ## Service: assistant-api
 
 - Owner: ai-assistant-agent
-- Business capability: chat completion shell для бота, Mini App и будущих клиентов
+- Business capability: chat completion + Phase 2 Cursor SDK harness
 - Code: `src/AssistantApi`
 - Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
-- Events produced: нет в Phase 1
+- Events produced: нет
 - Events consumed: нет
-- Database: conversation store later; Phase 1 in-memory/stub
-- Object storage: нет в Phase 1
-- External dependencies: `ILlmProvider` = `StubLlmProvider`
-- Security notes: inter-service auth `X-Service-Key` / `Assistant__ServiceKey`; rejects secret-like chat text; будущий `Cursor:ApiKey` только здесь
+- Database: Phase 2 — in-memory agentId passthrough. Phase 3 — PostgreSQL: user_profiles + harness_episodes (owner assistant-api)
+- Object storage: нет
+- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`
+- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text; Cursor API key encrypt-at-rest (AES-GCM), never in logs/response/Telegram
+
+## Service: cursor-sdk-bridge (internal)
+
+- Owner: ai-assistant-agent
+- Business capability: thin Node HTTP wrapper around `@cursor/sdk` (create/resume/send/wait)
+- Code: `src/CursorSdkBridge`
+- Public API: нет (compose-internal `:8090`)
+- Auth: receives decrypted API key per-request from assistant-api over internal network; does not persist key
+- Security notes: non-root; health only; no public ports
+
+## Domain packs (Phase 3, not a service)
+
+- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — конфиг/промпты/skills/MCP allowlist.
+- Owner: assistant-api. Исполнение: cursor-sdk-bridge. Не отдельные деплои.
+- Memory: profile (shared) + episodes (per domain) в БД assistant-api; bridge память не хранит.
 
 ## Reserved (do not implement now)
 
-- assistant-harness (Cursor SDK orchestrator, домены маркетинг/салон/быт)
 - rag-service
 - embedding-service
 - search-elasticsearch
 - files-minio
 - yandex-direct-adapter
 - media-generation-adapter
+- per-domain public microservices (`salon-api`, …) — только после независимого ownership

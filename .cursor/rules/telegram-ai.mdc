@@ -7,7 +7,10 @@ alwaysApply: true
 
 - Текущий продукт: `telegram-ai`. Сначала читай `memory/current-project.md` и `memory/phase-plan.md`.
 - Phase 1: `telegram-gateway` (bot + Mini App) + `assistant-api` + stub `ILlmProvider`. Подъём только через Docker Compose.
-- Не реализуй RAG, embeddings, Elasticsearch, MinIO, генерацию картинок, Cursor SDK, Яндекс Директ, пока phase-plan не открыл фазу.
+- Phase 2 closed: Cursor SDK + persona-switch harness. Next impl = Phase 3 domain agent packs, не RAG.
+- Не реализуй RAG, embeddings, Elasticsearch, MinIO, генерацию картинок, Яндекс Директ, пока phase-plan не открыл фазу.
+- Не подменяй Phase 3 packs новым промпт-префиксом. Specialist = AGENTS.md + skills + MCP allowlist + отдельный Agent на домен.
+- Harness memory ≠ Cursor resume и ≠ RAG: profile + короткие «задача→результат» per domain, store в assistant-api.
 - Telegram bot token не покидает gateway. Cursor API key не принимается из чата.
 - `/v1/chat` расширяй аддитивно, не ломай `schemaVersion`.
 - Automation Memories = короткие указатели. Source of truth = `memory/`.

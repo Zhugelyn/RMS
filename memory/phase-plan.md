@@ -19,28 +19,109 @@ Acceptance:
 
 ## Phase 2 — Cursor SDK harness
 
-Gate: стартовать только явным run/Template Phase 2 (не из Phase 1 harness).
+Acceptance (slice=`phase2-cursor-sdk`):
 
-- `@cursor/sdk` / `cursor-sdk` как `ILlmProvider`.
-- Encrypted storage клиентского Cursor API key.
-- Harness под домены: маркетинг, салон, повседневные задачи.
-- Classify -> specialist agent -> verify. Resume по `agentId`.
-- Оптимизация токенов: короткий контекст, repo memory, не тащить весь RAG.
+- [x] `CursorSdkLlmProvider` реализует `ILlmProvider` через internal `cursor-sdk-bridge` (`@cursor/sdk`).
+- [x] Cursor API key в secret store, AES-GCM encrypt-at-rest; не в logs/git/response.
+- [x] intent `salon|marketing|tasks` → harness classify → specialist agent → verify.
+- [x] Resume по optional `agentId` (request/response).
+- [x] Stub остаётся fallback, если ключа нет или SDK падает.
+- [x] `dotnet test` проходит.
+- [x] `docker compose up` поднимает stack без Cursor key (stub path).
+- [x] `memory/phase-plan` + `run-log` обновлены.
 
+Notes:
 
-## Phase 3 — Knowledge
+- `@cursor/sdk` / `cursor-sdk` как runtime LLM.
+- Encrypted storage клиентского Cursor API key (`Cursor:MasterKey` + seal at startup).
+- Phase 2 «specialist» = persona-switch (один Agent.create, разные промпт-префиксы). Это **не** domain agent packs.
+- Оптимизация токенов: короткий specialist prompt, repo memory, не тащить RAG.
+
+## Phase 3 — Domain agent packs (specialist harness)
+
+Суть: под каждый домен — **свой** runtime-агент и pack, не общий Cursor agent с подменой 3 строк промпта.
+
+Pack (source of truth на диске, owner = assistant-api):
+
+```
+src/AgentPacks/<domain>/
+  AGENTS.md              # роль, границы, non-goals, failure mode
+  skills/                # Cursor skills этого домена
+  prompts/               # system / classify-hints / verify
+  mcp.json               # allowlist MCP servers (без secrets)
+  pack.json              # model, effort, runtime, resume policy
+```
+
+Домены на старте фазы: `salon` | `marketing` | `tasks` | `_router`.
+`_router` — отдельный pack: только classify/route, **не** отвечает пользователю.
+
+Service boundary:
+
+- Не плодить `salon-api` / `marketing-api` как отдельные деплои, пока нет независимого ownership данных и cadence. Packs живут в modular monolith (`assistant-api` + `cursor-sdk-bridge`).
+- `assistant-api` владеет: routing, `conversationId+domain → agentId`, **harness memory** (профиль + эпизоды), verify orchestration, secret injection в MCP.
+- `cursor-sdk-bridge` исполняет pack: cwd/skills/MCP/model, `Agent.create` / `resume` **per domain**. Не владеет user memory.
+- Telegram/Mini App по-прежнему шлют `intent`; не знают pack layout и не хранят память.
+- RAG/MinIO/Директ **не** реализуются здесь. В pack можно зарезервировать MCP-слоты (stub/deny), реализации — Phase 4–6.
+
+Harness memory (не Cursor `agentId` и не RAG):
+
+- **Profile** (`userId`, shared): короткие факты о человеке (имя/как обращаться, TZ, язык, устойчивые предпочтения). Виден всем packs.
+- **Episode** (`userId` + `domain`): «задача → результат» в одну-две строки. Salon-эпизоды не инжектятся в marketing pack (и наоборот).
+- Это **не** полный транскрипт и не resume SDK. Новый `Agent.create` всё равно получает сжатый контекст из store.
+- Инжект в specialist: profile ≤ N символов + last K эпизодов домена. Router видит profile + last-domain hint, не чужие эпизоды.
+- Store: PostgreSQL **assistant-api** (свои таблицы). Не Elasticsearch, не отдельный memory-сервис.
+- После успешного verify — записать эпизод. Падение записи не должно ронять ответ пользователю (log + retry later).
+- PII: не логировать сырой memory dump; секреты в эпизоды не класть (тот же scanner).
+
+Правила runtime:
+
+- Смена домена ≠ resume чужого `agentId`. Salon-агент не продолжает marketing-тред.
+- MCP/skills домена A недоступны агенту домена B.
+- Verify жёсткий: drift по домену / secret-leak / пустой ответ → repair тем же pack или fail (не тихий skip как в Phase 2).
+- Secrets MCP только из env/secret store, не из `mcp.json` и не из чата.
+
+Acceptance (slice=`phase3-domain-agent-packs`):
+
+- [ ] Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` с `AGENTS.md`, `skills/`, `prompts/`, `mcp.json`, `pack.json`.
+- [ ] Router-pack классифицирует в домен (не keyword-only `Contains`); пользовательский ответ даёт только specialist pack.
+- [ ] `Agent.create` / resume **per domain**; mapping `conversationId+domain → agentId` в assistant-api.
+- [ ] Bridge принимает pack runtime (cwd/skills/MCP allowlist/model), не один голый `prompt`.
+- [ ] Cross-domain: marketing MCP/skills не грузятся в salon agent (тест изоляции).
+- [ ] Verify per-pack реально режет drift/secrets; Phase 2 soft-skip убран на Cursor path.
+- [ ] Harness memory: profile (shared) + episodes (per domain); инжект в pack; эпизод пишется после verify.
+- [ ] Isolation memory: marketing pack не видит salon episodes (тест).
+- [ ] `/v1/chat` аддитивно: optional `domainPack` / resolved domain в response; `schemaVersion` не ломаем.
+- [ ] Без Cursor key — stub fallback как в Phase 2.
+- [ ] `dotnet test` (+ pack isolation + memory isolation tests) проходит; compose поднимает stack.
+- [ ] ADR/catalog/contracts/run-log обновлены.
+
+Slices (один run = один):
+
+1. `phase3-pack-layout` — каталог packs + `pack.json` schema, без смены runtime.
+2. `phase3-bridge-pack-runtime` — bridge: cwd/skills/MCP allowlist/model per pack.
+3. `phase3-router-and-affinity` — router pack + agentId affinity per domain.
+4. `phase3-verify-isolation` — жёсткий verify + isolation tests; выкинуть Phase 2 soft-skip.
+5. `phase3-harness-memory` — profile + episode store, inject, write-after-verify, domain isolation.
+
+Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный публичный harness-сервис, Kubernetes, полный chat log как память.
+
+## Phase 4 — Knowledge
 
 - RAG service + embeddings + Elasticsearch. Можно готовые фреймворки.
+- Это **документы/база знаний**, не harness memory из Phase 3 (профиль + «задача→результат»).
 - Отдельный ownership данных и retriever contract.
 - Не смешивать индекс салона и маркетинга без явного решения.
+- Retriever подключается **в pack** домена (MCP/skill), не в общий промпт.
 
-## Phase 4 — Files / Video / Images
+## Phase 5 — Files / Video / Images
 
 - MinIO, metadata DB, scanning hook, presigned URLs.
 - Генерация картинок и работа с фото/видео через отдельные adapters.
 - Большие файлы не проксировать через assistant-api без причины.
+- File tools — MCP/skill конкретного pack, не shared agent.
 
-## Phase 5 — External tools
+## Phase 6 — External tools
 
 - Яндекс Директ и другие ads/CRM integrations.
 - Отдельные tool adapters, секреты per-integration, least privilege.
+- Marketing Direct = MCP только `AgentPacks/marketing`. Salon CRM — только `salon`. Не общий toolbox.

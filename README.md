@@ -1,19 +1,21 @@
-# Telegram AI — Phase 1 Shell
+# Telegram AI — Phase 2 Cursor SDK
 
-Два сервиса:
+Три контейнера (Compose):
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
-| `assistant-api` | `5080` | `POST /v1/chat`, health, stub LLM |
+| `assistant-api` | `5080` | `POST /v1/chat`, harness, encrypt-at-rest key |
 | `telegram-gateway` | `5081` | Telegram bot + Mini App |
+| `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume |
 
-Phase 1 = оболочка. Нет RAG, Cursor SDK, MinIO, Elasticsearch.
+Без `CURSOR__APIKEY` chat идёт в **stub fallback**. RAG/ES/MinIO/Директ — следующие фазы.
 
 ## Требования
 
 - Docker + Docker Compose v2
 - .NET 8 SDK — только для локальных тестов/`dotnet run`
 - Telegram Bot Token от [@BotFather](https://t.me/BotFather) — для живых ответов в чат
+- Опционально: Cursor API key + master key (≥16) для живого SDK path
 
 ## Быстрый старт (Docker)
 
@@ -28,6 +30,9 @@ TELEGRAM__BOTTOKEN=<токен от BotFather>
 TELEGRAM__WEBHOOKSECRETTOKEN=          # опционально, для webhook
 TELEGRAM__USEPOLLING=true              # local/dev: long polling
 ASSISTANT__SERVICEKEY=<случайная строка >= 16 символов>
+CURSOR__APIKEY=                        # опционально
+CURSOR__MASTERKEY=                     # обязателен, если ApiKey задан
+CURSOR__MODEL=composer-2.5
 ```
 
 Подъём:
@@ -93,7 +98,7 @@ curl -i -X POST http://127.0.0.1:5080/v1/chat \
   }'
 ```
 
-### Chat со service key → stub-ответ
+### Chat со service key → stub (без CURSOR__APIKEY)
 
 Подставь тот же ключ, что в `.env` (`ASSISTANT__SERVICEKEY`):
 
@@ -113,7 +118,7 @@ curl -sS -X POST http://127.0.0.1:5080/v1/chat \
   }'
 ```
 
-Ожидаемо: `provider: "stub"`, текст вида `[stub/salon] Принял: ...`.
+Ожидаемо без Cursor key: `provider: "stub"`. С валидным `CURSOR__APIKEY`+`CURSOR__MASTERKEY`: `provider: "cursor-sdk"` и `agentId` для resume.
 
 ### Mini App proxy
 
@@ -198,7 +203,8 @@ Mini App: в BotFather привяжи Web App URL на `https://<твой-хос
 ## Структура
 
 ```
-src/AssistantApi/          # POST /v1/chat, stub ILlmProvider
+src/AssistantApi/          # POST /v1/chat, harness, CursorSdkLlmProvider
+src/CursorSdkBridge/       # @cursor/sdk HTTP bridge (internal)
 src/TelegramGateway/       # bot + wwwroot Mini App
 tests/                     # xUnit + WebApplicationFactory
 docker-compose.yml

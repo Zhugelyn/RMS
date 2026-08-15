@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AssistantApi.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +10,12 @@ namespace AssistantApi.Tests;
 
 public sealed class ChatEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+    };
+
     private const string ServiceKey = "test-service-key-32chars-min!";
     private readonly WebApplicationFactory<Program> _factory;
 
@@ -43,18 +50,34 @@ public sealed class ChatEndpointTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task Chat_returns_stub_response()
+    public async Task Chat_returns_stub_response_without_cursor_key()
     {
         var client = CreateAuthedClient();
         var response = await client.PostAsJsonAsync("/v1/chat", ValidRequest(intent: ChatIntent.Salon));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>(JsonOptions);
         Assert.NotNull(body);
         Assert.Equal(1, body!.SchemaVersion);
         Assert.Equal("stub", body.Provider);
         Assert.Contains("salon", body.Text, StringComparison.OrdinalIgnoreCase);
         Assert.False(string.IsNullOrWhiteSpace(body.MessageId));
+        Assert.DoesNotContain("sk-", body.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Chat_accepts_optional_agentId_for_resume_contract()
+    {
+        var client = CreateAuthedClient();
+        var request = ValidRequest(intent: ChatIntent.Tasks);
+        request.AgentId = "agent-resume-test";
+        var response = await client.PostAsJsonAsync("/v1/chat", request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>(JsonOptions);
+        Assert.NotNull(body);
+        Assert.Equal("stub", body!.Provider);
+        Assert.Equal("agent-resume-test", body.AgentId);
     }
 
     [Fact]

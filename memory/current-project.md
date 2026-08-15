@@ -3,15 +3,15 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `1-shell` (shell acceptance closed 2026-08-13; next = Phase 2 Cursor SDK)
+- Phase: `2-cursor-sdk` (acceptance closed 2026-08-15; next = Phase 3 Domain agent packs; Knowledge сдвинут на Phase 4)
 - Language: русский
-- Runtime Phase 1: Docker Compose only
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge`)
 
 ## Product North Star
 
-ИИ-ассистент в Telegram для трёх доменов. Сам ИИ — отдельный сервис с harness-обвязкой. Клиентский UI — Telegram bot + Mini App. LLM runtime позже — Cursor SDK (у клиента уже есть подписка).
+ИИ-ассистент в Telegram для трёх доменов. Сам ИИ — отдельный сервис с harness-обвязкой. Клиентский UI — Telegram bot + Mini App. LLM runtime — Cursor SDK (у клиента уже есть подписка).
 
-Домены (бизнес-логика не в Phase 1, только UI-оболочка и контракт `intent`):
+Домены:
 
 - салон красоты: записи, расписание, клиенты;
 - маркетинг: реклама, мониторинг, монетизация;
@@ -19,21 +19,22 @@
 
 Позже: Яндекс Директ и другие внешние сервисы; генерация картинок; работа с фото и видео; RAG + Elasticsearch (можно готовые фреймворки).
 
-## Goal Phase 1
+## Goal Phase 2
 
-Рабочая оболочка. Не RAG, не Cursor SDK, не Директ, не медиа-пайплайн.
+Cursor SDK harness поверх Phase 1 shell.
 
-1. `telegram-gateway` — Telegram bot + Mini App (салон / маркетинг / задачи).
-2. `assistant-api` — расширяемый AI server.
-3. `POST /v1/chat` с `schemaVersion` и optional `intent`.
-4. `ILlmProvider` = stub. Интерфейсы `IRagRetriever`, `IFileStore`, `IToolProvider` можно объявить, реализации не писать.
-5. Secrets только из env / Docker secrets. Encrypt-at-rest заложить для будущих ключей.
-6. `docker compose up` поднимает оба сервиса.
+1. `CursorSdkLlmProvider` + internal Node bridge `@cursor/sdk`.
+2. Encrypt-at-rest Cursor API key (AES-GCM, master key из env).
+3. Harness: classify → specialist → verify для `salon|marketing|tasks`.
+4. Resume по `agentId`.
+5. Stub = fallback без ключа / при ошибке SDK.
+6. Без RAG/ES/MinIO/Директ.
 
-## Phase 1 non-goals
+Phase 2 specialist = persona-switch. Настоящие domain packs (AGENTS.md / skills / MCP / отдельный Agent на домен) + harness memory (profile + episodes) — **Phase 3**, не Knowledge.
+
+## Phase 2 non-goals
 
 - Elasticsearch, embeddings, RAG frameworks
-- Cursor SDK / живой LLM
 - MinIO, генерация картинок, фото/видео пайплайн
 - Яндекс Директ и прочие ads API
 - Kubernetes / Nginx prod

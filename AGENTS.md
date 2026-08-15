@@ -26,7 +26,7 @@
 | Unit/integration/contract/e2e tests, logs, metrics, traces | `agents/testing-observability-agent.md` | `test-observe-microservice` |
 | Обучение микросервисам и практика | `agents/learning-mentor-agent.md` | `learn-microservices` |
 | Telegram bot / gateway | `agents/telegram-bot-agent.md` | `build-telegram-ai-phase1` |
-| AI assistant API, LLM provider, Cursor SDK later | `agents/ai-assistant-agent.md` | `build-telegram-ai-phase1` |
+| AI assistant API, LLM provider, Cursor SDK, domain packs | `agents/ai-assistant-agent.md` | `build-telegram-ai-phase1` |
 | Довести slice до критериев приемки | `agents/harness-agent.md` | `run-acceptance-loop` |
 | Память automation / контроль токенов | `agents/harness-agent.md` | `manage-agent-memory` |
 

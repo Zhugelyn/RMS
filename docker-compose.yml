@@ -1,4 +1,22 @@
 services:
+  cursor-sdk-bridge:
+    build:
+      context: ./src/CursorSdkBridge
+      dockerfile: Dockerfile
+    environment:
+      PORT: "8090"
+      CURSOR_BRIDGE_MODEL: ${CURSOR__MODEL:-composer-2.5}
+    # Internal only — assistant-api calls this over compose network.
+    expose:
+      - "8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8090/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
   assistant-api:
     build:
       context: ./src/AssistantApi
@@ -6,8 +24,16 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Assistant__ServiceKey: ${ASSISTANT__SERVICEKEY}
+      Cursor__BridgeBaseUrl: http://cursor-sdk-bridge:8090
+      Cursor__ApiKey: ${CURSOR__APIKEY:-}
+      Cursor__EncryptedApiKey: ${CURSOR__ENCRYPTEDAPIKEY:-}
+      Cursor__MasterKey: ${CURSOR__MASTERKEY:-}
+      Cursor__Model: ${CURSOR__MODEL:-composer-2.5}
     ports:
       - "5080:8080"
+    depends_on:
+      cursor-sdk-bridge:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]
       interval: 10s

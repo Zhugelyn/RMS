@@ -12,6 +12,9 @@ public sealed class AssistantChatRequest
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Intent { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentId { get; set; }
 }
 
 public sealed class AssistantChatResponse
@@ -21,4 +24,7 @@ public sealed class AssistantChatResponse
     public string MessageId { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Provider { get; set; } = string.Empty;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentId { get; set; }
 }

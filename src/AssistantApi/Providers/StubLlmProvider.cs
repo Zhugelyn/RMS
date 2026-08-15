@@ -13,7 +13,7 @@ public sealed class StubLlmProvider : ILlmProvider
         var intentLabel = request.Intent?.ToString().ToLowerInvariant() ?? "general";
         var text =
             $"[{Name}/{intentLabel}] Принял: {request.Text.Trim()}. " +
-            "Это stub-ответ Phase 1 без внешнего LLM.";
+            "Это stub-ответ (fallback без Cursor API key / при ошибке SDK).";
 
         var response = new ChatResponse
         {
@@ -21,7 +21,9 @@ public sealed class StubLlmProvider : ILlmProvider
             ConversationId = request.ConversationId,
             MessageId = Guid.NewGuid().ToString("N"),
             Text = text,
-            Provider = Name
+            Provider = Name,
+            AgentId = request.AgentId,
+            Intent = request.Intent
         };
 
         return Task.FromResult(response);

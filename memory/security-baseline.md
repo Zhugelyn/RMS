@@ -26,13 +26,21 @@
 ## Telegram / Cursor tokens
 
 - `Telegram:BotToken` принадлежит только `telegram-gateway`.
-- `Cursor:ApiKey` принадлежит только `assistant-api` (Phase 2+). Phase 1 ключ не обязателен.
+- `Cursor:ApiKey` принадлежит только `assistant-api` (+ per-call to internal bridge).
 - Не принимать токены из chat message, query, filename, webhook body пользователя.
 - Webhook: проверять Telegram secret token header.
 - Inter-service: отдельный service credential, не bot token.
-- Encrypt-at-rest для клиентских ключей: ASP.NET Data Protection или AES-GCM. Master key = env/K8s Secret/user-secrets.
+- Encrypt-at-rest: AES-GCM (`ISecretProtector` / `EncryptedCursorApiKeyStore`). Master key = `Cursor:MasterKey` env. Plaintext bootstrap scrubbed after seal.
 - Логи: никогда bot token, Cursor key, Authorization, raw Telegram update с токенами.
 - Rotate: смена secret не требует смены API contract.
+
+## Phase 2 controls (implemented)
+
+- Optional `CURSOR__APIKEY` + required `CURSOR__MASTERKEY` when key present.
+- Key sealed at startup; bridge receives decrypted key only over internal compose network for `/v1/run`.
+- Fallback to stub when key absent or SDK/bridge fails.
+- Harness verify rejects secret-like specialist output.
+- Bridge container non-root uid 10001; no public published port.
 
 ## Phase 1 controls (implemented)
 
@@ -43,10 +51,19 @@
 - Containers: non-root uid 10001, healthchecks, no secrets in images.
 - Nested Docker: `scripts/compose-up.sh` включает `ip_forward`/`br_netfilter` для bridge DNS.
 
+## Phase 3 controls (planned)
+
+- MCP allowlist per `src/AgentPacks/<domain>/mcp.json`; secrets MCP только env/secret store.
+- Skills/MCP домена A недоступны агенту домена B.
+- Verify режет domain drift и secret-leak (Phase 2 soft-skip на Cursor path снимается).
+- Cross-domain resume запрещён.
+- Harness memory: эпизоды изолированы по domain; profile shared и короткий; task/result проходят SecretScanner; сырой dump не логировать.
+
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
-- Cursor SDK runtime, RAG/ES, медиа и Яндекс Директ отложены. Не тащить их секреты в Phase 1.
-- Mini App initData auth ещё не enforced (Phase 1 anonymous mini user ok).
+- Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
+- Mini App initData auth ещё не enforced.
+- Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
 
 
