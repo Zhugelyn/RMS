@@ -1,6 +1,7 @@
 using AssistantApi.Contracts;
 using AssistantApi.Harness;
 using AssistantApi.Options;
+using AssistantApi.Packs;
 using AssistantApi.Providers;
 using AssistantApi.Security;
 using AssistantApi.Services;
@@ -47,6 +48,17 @@ else
     builder.Services.AddSingleton<ICursorApiKeyStore, EmptyCursorApiKeyStore>();
 }
 
+builder.Services
+    .AddOptions<AgentPacksOptions>()
+    .Bind(builder.Configuration.GetSection(AgentPacksOptions.SectionName));
+
+builder.Services.AddSingleton<IPackCatalog>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<AgentPacksOptions>>();
+    var env = sp.GetRequiredService<IHostEnvironment>();
+    return PackCatalog.LoadFromOptions(options, env.ContentRootPath);
+});
+
 builder.Services.AddSingleton<IDomainHarness, DomainHarness>();
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
@@ -63,6 +75,9 @@ builder.Services.AddHttpClient<ICursorSdkClient, HttpCursorSdkClient>((sp, clien
 });
 
 var app = builder.Build();
+
+// Phase 3 layout: validate packs at startup; chat/harness still Phase 2 path.
+_ = app.Services.GetRequiredService<IPackCatalog>();
 
 app.UseMiddleware<ServiceKeyAuthMiddleware>();
 

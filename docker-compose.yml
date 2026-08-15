@@ -19,8 +19,8 @@ services:
 
   assistant-api:
     build:
-      context: ./src/AssistantApi
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: AssistantApi/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Assistant__ServiceKey: ${ASSISTANT__SERVICEKEY}
