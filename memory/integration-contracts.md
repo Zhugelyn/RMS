@@ -47,18 +47,32 @@
   - `text`
   - `traceId`
   - `intent` optional: `salon` | `marketing` | `tasks` | `general`
+  - `agentId` optional: resume Cursor agent
   - reserved optional later: `attachments[]`, `tools[]`, `retrieval`, `provider`
 - Response:
   - `schemaVersion: 1`
   - `conversationId`
   - `messageId`
   - `text`
-  - `provider`: `stub` | later `cursor-sdk`
+  - `provider`: `stub` | `cursor-sdk`
+  - `agentId` optional (when Cursor path used or echoed on stub resume)
+  - `intent` optional (resolved/classified)
 - Errors: ProblemDetails
 - Auth: `X-Service-Key` header = `Assistant__ServiceKey`
 - Rate/size limits: text max 4000; later file size in files phase
 - Backward compatibility: additive optional fields only
 - Implemented: `src/AssistantApi` + gateway proxy `POST /api/miniapp/chat`
+- Harness: classify → specialist (`@cursor/sdk`) → verify; stub fallback without key
+
+## API: cursor-sdk-bridge.run
+
+- Owner: assistant-api / cursor-sdk-bridge
+- Consumers: assistant-api only (compose-internal)
+- Method/path: `POST /v1/run`
+- Request: `{ apiKey, prompt, agentId?, model? }`
+- Response: `{ agentId, text }`
+- Auth: internal network trust; apiKey per-call, not stored
+- Notes: wraps `@cursor/sdk` Agent.create / Agent.resume + send/wait; cloud no-repo
 
 ## API: telegram-gateway.webhook
 

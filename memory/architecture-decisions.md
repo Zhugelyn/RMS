@@ -74,3 +74,14 @@ ADR-журнал для решений, которые должны пережи
 - Security impact: bot token и service key разделены; health остаётся без auth для probes.
 - Links: `memory/integration-contracts.md`
 
+## ADR-006: Phase 2 Cursor SDK via internal bridge + stub fallback
+
+- Status: accepted
+- Date: 2026-08-15
+- Context: Нужен живой LLM через клиентский Cursor API key. `@cursor/sdk` — Node/TS. assistant-api — .NET. Без ключа compose должен оставаться зелёным.
+- Decision: `CursorSdkLlmProvider` + `DomainHarness` (classify→agent→verify) в assistant-api. Runtime SDK — internal `cursor-sdk-bridge` (`@cursor/sdk`, cloud no-repo). API key encrypt-at-rest AES-GCM. `FallbackLlmProvider` → stub без ключа / при ошибке. Resume через optional `agentId`.
+- Consequences: Один compose stack из трёх контейнеров; публичный контракт `/v1/chat` аддитивно расширен `agentId`. RAG/ES/MinIO не трогаем.
+- Alternatives considered: Cloud Agents REST напрямую из C#; полный Connect protobuf adapter; отдельный публичный harness-сервис.
+- Security impact: ключ не из Telegram; plaintext scrub после seal; bridge без public ports; verify режет secret-like output.
+- Links: `memory/phase-plan.md`, `memory/security-baseline.md`
+

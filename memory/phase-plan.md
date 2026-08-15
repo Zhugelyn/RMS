@@ -17,11 +17,23 @@ Acceptance:
 
 ## Phase 2 — Cursor SDK harness
 
-- `@cursor/sdk` / `cursor-sdk` как `ILlmProvider`.
-- Encrypted storage клиентского Cursor API key.
+Acceptance (slice=`phase2-cursor-sdk`):
+
+- [x] `CursorSdkLlmProvider` реализует `ILlmProvider` через internal `cursor-sdk-bridge` (`@cursor/sdk`).
+- [x] Cursor API key в secret store, AES-GCM encrypt-at-rest; не в logs/git/response.
+- [x] intent `salon|marketing|tasks` → harness classify → specialist agent → verify.
+- [x] Resume по optional `agentId` (request/response).
+- [x] Stub остаётся fallback, если ключа нет или SDK падает.
+- [x] `dotnet test` проходит.
+- [x] `docker compose up` поднимает stack без Cursor key (stub path).
+- [x] `memory/phase-plan` + `run-log` обновлены.
+
+Notes:
+
+- `@cursor/sdk` / `cursor-sdk` как runtime LLM.
+- Encrypted storage клиентского Cursor API key (`Cursor:MasterKey` + seal at startup).
 - Harness под домены: маркетинг, салон, повседневные задачи.
-- Classify -> specialist agent -> verify. Resume по `agentId`.
-- Оптимизация токенов: короткий контекст, repo memory, не тащить весь RAG.
+- Оптимизация токенов: короткий specialist prompt, repo memory, не тащить RAG.
 
 ## Phase 3 — Knowledge
 
