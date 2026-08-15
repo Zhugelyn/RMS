@@ -1,9 +1,11 @@
 using AssistantApi.Contracts;
+using AssistantApi.Harness;
 using AssistantApi.Options;
 using AssistantApi.Providers;
 using AssistantApi.Security;
 using AssistantApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 using System.Text.Json.Serialization;
 
@@ -20,10 +22,45 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddSingleton<ILlmProvider, StubLlmProvider>();
+builder.Services
+    .AddOptions<CursorOptions>()
+    .Bind(builder.Configuration.GetSection(CursorOptions.SectionName))
+    .Validate(o => string.IsNullOrWhiteSpace(o.ApiKey) && string.IsNullOrWhiteSpace(o.EncryptedApiKey)
+                   || !string.IsNullOrWhiteSpace(o.MasterKey),
+        "Cursor:MasterKey is required when Cursor:ApiKey or Cursor:EncryptedApiKey is set.")
+    .Validate(o => string.IsNullOrWhiteSpace(o.MasterKey) || o.MasterKey.Length >= 16,
+        "Cursor:MasterKey must be at least 16 characters when set.")
+    .ValidateOnStart();
+
+var cursorSection = builder.Configuration.GetSection(CursorOptions.SectionName);
+var hasCursorKeyMaterial =
+    !string.IsNullOrWhiteSpace(cursorSection["ApiKey"]) ||
+    !string.IsNullOrWhiteSpace(cursorSection["EncryptedApiKey"]);
+
+if (hasCursorKeyMaterial)
+{
+    builder.Services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
+    builder.Services.AddSingleton<ICursorApiKeyStore, EncryptedCursorApiKeyStore>();
+}
+else
+{
+    builder.Services.AddSingleton<ICursorApiKeyStore, EmptyCursorApiKeyStore>();
+}
+
+builder.Services.AddSingleton<IDomainHarness, DomainHarness>();
+builder.Services.AddSingleton<StubLlmProvider>();
+builder.Services.AddSingleton<CursorSdkLlmProvider>();
+builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();
 builder.Services.AddSingleton<ChatService>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
+
+builder.Services.AddHttpClient<ICursorSdkClient, HttpCursorSdkClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<CursorOptions>>().Value;
+    client.BaseAddress = new Uri(options.BridgeBaseUrl.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(options.RequestTimeoutSeconds);
+});
 
 var app = builder.Build();
 

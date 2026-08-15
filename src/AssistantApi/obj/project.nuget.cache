@@ -1,13 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "iB8HEWNdifM=",
+  "dgSpecHash": "a6Zwz9D7nTs=",
   "success": true,
-  "projectFilePath": "C:\\Projects\\src\\AssistantApi\\AssistantApi.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\asus\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.28\\microsoft.netcore.app.ref.8.0.28.nupkg.sha512",
-    "C:\\Users\\asus\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.28\\microsoft.windowsdesktop.app.ref.8.0.28.nupkg.sha512",
-    "C:\\Users\\asus\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.28\\microsoft.aspnetcore.app.ref.8.0.28.nupkg.sha512",
-    "C:\\Users\\asus\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.28\\microsoft.netcore.app.host.win-x64.8.0.28.nupkg.sha512"
-  ],
+  "projectFilePath": "/workspace/src/AssistantApi/AssistantApi.csproj",
+  "expectedPackageFiles": [],
   "logs": []
 }

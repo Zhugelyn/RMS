@@ -9,6 +9,7 @@
 **/bin/
 **/obj/
 **/out/
+**/node_modules/
 *.user
 *.suo
 .vs/

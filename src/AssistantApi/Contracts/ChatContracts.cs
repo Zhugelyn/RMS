@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace AssistantApi.Contracts;
 
@@ -25,6 +26,11 @@ public sealed class ChatRequest
     public string TraceId { get; set; } = string.Empty;
 
     public ChatIntent? Intent { get; set; }
+
+    /// <summary>Optional Cursor agent id for resume (Phase 2).</summary>
+    [MaxLength(128)]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentId { get; set; }
 }
 
 public enum ChatIntent
@@ -42,4 +48,10 @@ public sealed class ChatResponse
     public string MessageId { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Provider { get; set; } = "stub";
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? AgentId { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ChatIntent? Intent { get; set; }
 }
