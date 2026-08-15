@@ -3,9 +3,9 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `3-domain-agent-packs` (in progress; slice `phase3-pack-layout` done 2026-08-15; Phase 2 closed)
+- Phase: `3-domain-agent-packs` (acceptance closed functionally 2026-08-15; leftover = Postgres durable memory)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge`)
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks)
 
 ## Product North Star
 
@@ -13,30 +13,29 @@
 
 Домены:
 
-- салон красоты: записи, расписание, клиенты;
-- маркетинг: реклама, мониторинг, монетизация;
-- повседневные задачи: планирование, встречи.
+- **salon / Babor (Брянск)**: развивать салон — идеи, удержание, локальный маркетинг ради салона; harness memory фактов о салоне;
+- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории;
+- **tasks**: расписание работ и напоминания.
 
 Позже: Яндекс Директ и другие внешние сервисы; генерация картинок; работа с фото и видео; RAG + Elasticsearch (можно готовые фреймворки).
 
-## Goal Phase 3 (current)
+## Goal Phase 3 (done functionally)
 
-Domain agent packs поверх Phase 2 harness.
+Domain agent packs + live harness:
 
-1. Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` + `pack.json` schema + `PackCatalog` (slice `phase3-pack-layout` ✅).
-2. Bridge pack runtime (cwd/skills/MCP/model).
-3. Router pack + agentId affinity per domain.
-4. Hard verify + isolation.
-5. Harness memory (profile + episodes).
+1. Packs on disk + PackCatalog ✅
+2. Bridge local pack runtime ✅
+3. Router + per-domain affinity ✅
+4. Hard verify + isolation ✅
+5. Harness memory inject/write (in-memory) ✅
 
-Chat/bridge/DomainHarness runtime path ещё Phase 2 до следующих slices.
-
-## Phase 3 non-goals
+## Phase 3 non-goals / leftover
 
 - Elasticsearch, embeddings, RAG frameworks
 - MinIO, генерация картинок, фото/видео пайплайн
 - Яндекс Директ и прочие ads API
 - Kubernetes / Nginx prod
+- Postgres durable harness memory (interface ready; in-process store now)
 
 ## Token Budget Rules
 

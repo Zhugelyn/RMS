@@ -1,5 +1,6 @@
 using AssistantApi.Contracts;
 using AssistantApi.Harness;
+using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
@@ -59,7 +60,10 @@ builder.Services.AddSingleton<IPackCatalog>(sp =>
     return PackCatalog.LoadFromOptions(options, env.ContentRootPath);
 });
 
-builder.Services.AddSingleton<IDomainHarness, DomainHarness>();
+builder.Services.AddSingleton<IDomainHarness>(sp => new DomainHarness(sp.GetRequiredService<IPackCatalog>()));
+builder.Services.AddSingleton<IPackPromptBuilder, PackPromptBuilder>();
+builder.Services.AddSingleton<IAgentAffinityStore, InMemoryAgentAffinityStore>();
+builder.Services.AddSingleton<IHarnessMemoryStore, InMemoryHarnessMemoryStore>();
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
 builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();
@@ -76,7 +80,7 @@ builder.Services.AddHttpClient<ICursorSdkClient, HttpCursorSdkClient>((sp, clien
 
 var app = builder.Build();
 
-// Phase 3 layout: validate packs at startup; chat/harness still Phase 2 path.
+// Phase 3: validate packs at startup.
 _ = app.Services.GetRequiredService<IPackCatalog>();
 
 app.UseMiddleware<ServiceKeyAuthMiddleware>();
@@ -125,7 +129,6 @@ app.Run();
 
 static bool LooksLikeSecret(string text)
 {
-    // Reject obvious Cursor/API key patterns from chat payloads.
     if (text.Contains("CURSOR_API_KEY", StringComparison.OrdinalIgnoreCase) ||
         (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20))
     {

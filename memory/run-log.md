@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-15e
+
+- Trigger: user follow-up — continue Phase 3 live harness + Babor/domain specs
+- Slice: phase3-bridge-pack-runtime + router-affinity + verify-isolation + harness-memory (batched by user request)
+- Status: passed (functional); leftover Postgres durable memory
+- Checks: `dotnet test` 29/29; pack local bridge runtime; affinity per domain; hard verify drift/secrets; memory isolation; `/v1/chat` + `domainPack`; stub fallback
+- Memory updated: phase-plan Phase 3 checkboxes; current-project; contracts/catalog/security; run-log; packs AGENTS for Babor/market/tasks
+- Next slice: `phase3-postgres-memory` (optional harden) or Phase 4 Knowledge when explicitly started
+- Blocker: none
+
 ## Run 2026-08-15d
 
 - Trigger: webhook slice=phase3-pack-layout

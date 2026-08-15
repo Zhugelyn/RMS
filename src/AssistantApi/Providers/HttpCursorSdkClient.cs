@@ -28,14 +28,15 @@ public sealed class HttpCursorSdkClient : ICursorSdkClient
                 ApiKey = request.ApiKey,
                 Prompt = request.Prompt,
                 AgentId = request.AgentId,
-                Model = request.Model
+                Model = request.Model,
+                PackId = request.PackId
             })
         };
 
-        // Never log Authorization / apiKey. Only agentId and lengths.
         _logger.LogInformation(
-            "Cursor SDK bridge run model={Model} resume={Resume} promptLength={PromptLength}",
+            "Cursor SDK bridge run model={Model} packId={PackId} resume={Resume} promptLength={PromptLength}",
             request.Model,
+            request.PackId,
             !string.IsNullOrWhiteSpace(request.AgentId),
             request.Prompt.Length);
 
@@ -43,7 +44,6 @@ public sealed class HttpCursorSdkClient : ICursorSdkClient
         if (!response.IsSuccessStatusCode)
         {
             var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            // Scrub accidental key echoes from bridge errors.
             detail = Scrub(detail, request.ApiKey);
             throw new InvalidOperationException($"Cursor SDK bridge failed: {(int)response.StatusCode} {detail}");
         }
@@ -56,7 +56,7 @@ public sealed class HttpCursorSdkClient : ICursorSdkClient
             throw new InvalidOperationException("Cursor SDK bridge response missing agentId/text.");
         }
 
-        return new CursorSdkRunResult(body.AgentId, body.Text);
+        return new CursorSdkRunResult(body.AgentId, body.Text, body.PackId ?? request.PackId);
     }
 
     private static string Scrub(string detail, string apiKey)
@@ -82,6 +82,9 @@ public sealed class HttpCursorSdkClient : ICursorSdkClient
 
         [JsonPropertyName("model")]
         public string? Model { get; set; }
+
+        [JsonPropertyName("packId")]
+        public string? PackId { get; set; }
     }
 
     private sealed class BridgeRunResponse
@@ -91,5 +94,8 @@ public sealed class HttpCursorSdkClient : ICursorSdkClient
 
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
+
+        [JsonPropertyName("packId")]
+        public string? PackId { get; set; }
     }
 }

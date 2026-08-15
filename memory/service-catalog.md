@@ -39,11 +39,11 @@
 
 ## Domain packs (Phase 3)
 
-- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — `AGENTS.md`, `skills/`, `prompts/`, `mcp.json` (empty allowlist), `pack.json`.
+- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — `AGENTS.md`, `skills/` + `.cursor/skills`, `prompts/`, `mcp.json` (empty allowlist), `pack.json`.
+- Product: salon=Babor (Брянск) growth; marketing=beauty market; tasks=schedule/reminders; `_router` classify-only.
 - Schema: `src/AgentPacks/pack.schema.json`.
-- Loader: `AssistantApi.Packs.PackCatalog` (+ `IPackCatalog`); validate on assistant-api startup; **not** wired into chat/bridge/DomainHarness yet.
-- Owner: assistant-api. Исполнение (later): cursor-sdk-bridge. Не отдельные деплои.
-- Memory: profile + episodes — slice `phase3-harness-memory` (ещё не impl).
+- Loader: `PackCatalog`; runtime: bridge local cwd per packId; affinity + harness memory in assistant-api.
+- Memory: `IHarnessMemoryStore` in-process (Postgres follow-up).
 
 ## Reserved (do not implement now)
 

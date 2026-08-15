@@ -57,32 +57,32 @@
   - `provider`: `stub` | `cursor-sdk`
   - `agentId` optional (when Cursor path used or echoed on stub resume)
   - `intent` optional (resolved/classified)
+  - `domainPack` optional (Phase 3 resolved pack id)
 - Errors: ProblemDetails
 - Auth: `X-Service-Key` header = `Assistant__ServiceKey`
 - Rate/size limits: text max 4000; later file size in files phase
 - Backward compatibility: additive optional fields only
 - Implemented: `src/AssistantApi` + gateway proxy `POST /api/miniapp/chat`
 - Harness Phase 2: classify → specialist prompt (`@cursor/sdk`) → soft verify; stub fallback without key
-- Harness Phase 3: pack layout on disk + `PackCatalog` (slice `phase3-pack-layout` done). Runtime still Phase 2 until bridge/router slices. Planned: router pack → inject profile+domain episodes → domain pack runtime → hard verify → persist episode; `agentId` affinity per domain; optional response `domainPack`
+- Harness Phase 3: router pack (SDK) / pack-hint fallback → inject profile+domain episodes → domain pack local runtime → hard verify → persist episode; affinity per domain; response `domainPack`
 
 ## API: cursor-sdk-bridge.run
 
 - Owner: assistant-api / cursor-sdk-bridge
 - Consumers: assistant-api only (compose-internal)
 - Method/path: `POST /v1/run`
-- Request: `{ apiKey, prompt, agentId?, model? }`
-- Response: `{ agentId, text }`
+- Request: `{ apiKey, prompt, agentId?, model?, packId? }`
+- Response: `{ agentId, text, packId? }`
 - Auth: internal network trust; apiKey per-call, not stored
-- Notes Phase 2: wraps `@cursor/sdk` Agent.create / Agent.resume + send/wait; cloud no-repo; body = prompt only
-- Phase 3 (planned slice `phase3-bridge-pack-runtime`): pack runtime — `packId`, cwd/skills, MCP allowlist, model; still internal-only; apiKey per-call
+- Notes Phase 2: cloud no-repo when packId absent
+- Phase 3: `packId` → local cwd=`AgentPacks/<id>`, `.cursor/skills`, empty MCP (`mcpServers: {}`)
 
-## Data: agent-packs (Phase 3 layout)
+## Data: agent-packs (Phase 3)
 
 - Owner: assistant-api
-- Path: `src/AgentPacks/<id>/`
-- Manifest: `pack.json` (`schemaVersion=1`, `answersUser`, `resumePolicy`, `model`, `effort`, `runtime`)
-- MCP: `mcp.json` allowlist-only, no secrets; layout slice requires empty allowlist
-- `_router`: `answersUser=false`, `resumePolicy=none`
+- Path: `src/AgentPacks/<id>/` (+ `.cursor/skills` for local SDK)
+- Product: salon=Babor Брянск growth; marketing=beauty market; tasks=schedule/reminders; `_router` classify-only
+- Manifest: `pack.json`; MCP allowlist empty until wiring; `_router` answersUser=false resumePolicy=none
 - Loader: `PackCatalog` / `IPackCatalog`
 
 ## API: telegram-gateway.webhook
@@ -95,15 +95,15 @@
 - Auth: optional `X-Telegram-Bot-Api-Secret-Token` = `Telegram__WebhookSecretToken`
 - Notes: maps to assistant-api chat; never forwards bot token
 
-## Data: assistant-api.harness-memory (Phase 3 planned)
+## Data: assistant-api.harness-memory (Phase 3)
 
 - Owner: assistant-api
-- Consumers: assistant-api only (inject into pack prompt); not gateway, not bridge store
+- Impl: `IHarnessMemoryStore` / in-process store (Postgres durable = follow-up)
 - Profile: `{ userId, displayName?, locale?, timezone?, notes? }` — shared, short
 - Episode: `{ userId, domain, task, result, at, conversationId?, traceId? }` — per-domain, brief
-- Consistency: strong внутри assistant-api
+- Consistency: strong внутри assistant-api process
 - Isolation: read episodes WHERE domain = current pack; never cross-inject
-- Retention: cap last K per (userId, domain); TTL — отдельным решением
+- Retention: cap last K per (userId, domain)
 - Not: embeddings, full messages[], Cursor agent transcript
 
 ## File Contract Template
