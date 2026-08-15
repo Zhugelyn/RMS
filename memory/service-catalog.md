@@ -1,30 +1,32 @@
 # Service Catalog
 
-Проект `telegram-ai`. Код сервисов ещё не создан; границы зафиксированы.
+Проект `telegram-ai`. Phase 1 shell реализован.
 
 ## Service: telegram-gateway
 
 - Owner: telegram-bot-agent
 - Business capability: Telegram chat + Mini App UI; доставка запросов в assistant-api
-- Public API: Telegram webhook; static Mini App
+- Code: `src/TelegramGateway`
+- Public API: `POST /telegram/webhook`; `POST /api/miniapp/chat`; static Mini App (`/`); health
 - Events produced: нет в Phase 1
 - Events consumed: нет
-- Database: optional mapping telegramUserId -> userId
+- Database: optional mapping telegramUserId -> userId (пока inline `tg-{id}`)
 - Object storage: нет
 - External dependencies: Telegram Bot API, assistant-api
-- Security notes: владеет `Telegram:BotToken`; не хранит Cursor API key; не принимает секреты из сообщений; Mini App не содержит секретов
+- Security notes: владеет `Telegram:BotToken`; не хранит Cursor API key; SecretScanner отклоняет секреты из сообщений; Mini App без секретов; HttpClient logging для Telegram отключён
 
 ## Service: assistant-api
 
 - Owner: ai-assistant-agent
 - Business capability: chat completion shell для бота, Mini App и будущих клиентов
-- Public API: `POST /v1/chat`, health
+- Code: `src/AssistantApi`
+- Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
 - Events produced: нет в Phase 1
 - Events consumed: нет
 - Database: conversation store later; Phase 1 in-memory/stub
 - Object storage: нет в Phase 1
-- External dependencies: `ILlmProvider` (stub now; Cursor SDK later)
-- Security notes: inter-service auth (`Assistant__ServiceKey`); будущий `Cursor:ApiKey` только здесь; encrypt-at-rest если ключ клиентский
+- External dependencies: `ILlmProvider` = `StubLlmProvider`
+- Security notes: inter-service auth `X-Service-Key` / `Assistant__ServiceKey`; rejects secret-like chat text; будущий `Cursor:ApiKey` только здесь
 
 ## Reserved (do not implement now)
 

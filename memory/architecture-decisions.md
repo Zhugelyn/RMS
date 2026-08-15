@@ -57,9 +57,20 @@ ADR-журнал для решений, которые должны пережи
 - Status: accepted
 - Date: 2026-08-13
 - Context: Клиент должен поднимать сервисы просто.
-- Decision: Phase 1 поднимается только через `docker compose up`. Секреты — env / Docker secrets, не файлы в git. K8s/Nginx — не в этой фазе.
+- Decision: Phase 1 поднимается только через `docker compose up`. Секреты — env / Docker secrets, не файлы в git. K8s/Nginx — не в этой фазе. Helper `scripts/compose-up.sh` для nested Docker (ip_forward).
 - Consequences: Один compose на gateway + assistant-api.
 - Alternatives considered: Локальный `dotnet run` без Docker; сразу Kubernetes.
 - Security impact: `.env` в `.gitignore`. Пример только `.env.example` без реальных значений.
 - Links: `memory/phase-plan.md`
+
+## ADR-005: Inter-service auth via shared service key header
+
+- Status: accepted
+- Date: 2026-08-13
+- Context: gateway вызывает assistant-api; bot token не должен покидать gateway.
+- Decision: `X-Service-Key` / `Assistant__ServiceKey` на всех non-health routes assistant-api. Mini App ходит в gateway proxy, не напрямую с ключом.
+- Consequences: Один shared secret Phase 1; позже можно mTLS/JWT между сервисами.
+- Alternatives considered: mTLS сразу; публичный chat без auth.
+- Security impact: bot token и service key разделены; health остаётся без auth для probes.
+- Links: `memory/integration-contracts.md`
 

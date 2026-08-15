@@ -34,8 +34,19 @@
 - Логи: никогда bot token, Cursor key, Authorization, raw Telegram update с токенами.
 - Rotate: смена secret не требует смены API contract.
 
+## Phase 1 controls (implemented)
+
+- `.env` gitignored; `.env.example` без реальных значений.
+- `X-Service-Key` на `assistant-api` (health публичный).
+- Gateway `SecretScanner` + assistant reject secret-like chat text.
+- Telegram HttpClient logging disabled (`ITelegramBotClient` filter) — token в path не логируется.
+- Containers: non-root uid 10001, healthchecks, no secrets in images.
+- Nested Docker: `scripts/compose-up.sh` включает `ip_forward`/`br_netfilter` для bridge DNS.
+
 ## Open Risks
 
-- Нет реализации сервисов, значит secret wiring ещё не проверен кодом.
+- Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Cursor SDK runtime, RAG/ES, медиа и Яндекс Директ отложены. Не тащить их секреты в Phase 1.
+- Mini App initData auth ещё не enforced (Phase 1 anonymous mini user ok).
+
 
