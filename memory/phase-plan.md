@@ -2,6 +2,8 @@
 
 ## Phase 1 — Shell
 
+Status: **closed** (2026-08-13). Re-verified 2026-08-15: `dotnet test` 12/12. Нет незакрытых checkbox.
+
 Acceptance:
 
 - [x] `docker compose up` поднимает `telegram-gateway` и `assistant-api`.
@@ -17,11 +19,14 @@ Acceptance:
 
 ## Phase 2 — Cursor SDK harness
 
+Gate: стартовать только явным run/Template Phase 2 (не из Phase 1 harness).
+
 - `@cursor/sdk` / `cursor-sdk` как `ILlmProvider`.
 - Encrypted storage клиентского Cursor API key.
 - Harness под домены: маркетинг, салон, повседневные задачи.
 - Classify -> specialist agent -> verify. Resume по `agentId`.
 - Оптимизация токенов: короткий контекст, repo memory, не тащить весь RAG.
+
 
 ## Phase 3 — Knowledge
 
