@@ -2,6 +2,8 @@
 
 ## Phase 1 — Shell
 
+Status: **closed** (2026-08-13). Re-verified 2026-08-15: `dotnet test` 12/12. Нет незакрытых checkbox.
+
 Acceptance:
 
 - [x] `docker compose up` поднимает `telegram-gateway` и `assistant-api`.
