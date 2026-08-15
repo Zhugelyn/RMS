@@ -98,7 +98,7 @@ curl -i -X POST http://127.0.0.1:5080/v1/chat \
   }'
 ```
 
-### Chat со service key → stub-ответ
+### Chat со service key → stub (без CURSOR__APIKEY)
 
 Подставь тот же ключ, что в `.env` (`ASSISTANT__SERVICEKEY`):
 
@@ -118,7 +118,7 @@ curl -sS -X POST http://127.0.0.1:5080/v1/chat \
   }'
 ```
 
-Ожидаемо: `provider: "stub"`, текст вида `[stub/salon] Принял: ...`.
+Ожидаемо без Cursor key: `provider: "stub"`. С валидным `CURSOR__APIKEY`+`CURSOR__MASTERKEY`: `provider: "cursor-sdk"` и `agentId` для resume.
 
 ### Mini App proxy
 
@@ -203,7 +203,8 @@ Mini App: в BotFather привяжи Web App URL на `https://<твой-хос
 ## Структура
 
 ```
-src/AssistantApi/          # POST /v1/chat, stub ILlmProvider
+src/AssistantApi/          # POST /v1/chat, harness, CursorSdkLlmProvider
+src/CursorSdkBridge/       # @cursor/sdk HTTP bridge (internal)
 src/TelegramGateway/       # bot + wwwroot Mini App
 tests/                     # xUnit + WebApplicationFactory
 docker-compose.yml
