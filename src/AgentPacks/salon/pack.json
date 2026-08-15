@@ -1,0 +1,10 @@
+{
+  "$schema": "../pack.schema.json",
+  "packId": "salon",
+  "version": 1,
+  "model": "grok-4.5",
+  "effort": "high",
+  "runtime": "cloud",
+  "resumePolicy": "per-domain",
+  "answersUser": true
+}

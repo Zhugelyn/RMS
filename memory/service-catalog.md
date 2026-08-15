@@ -23,7 +23,7 @@
 - Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
 - Events produced: нет
 - Events consumed: нет
-- Database: conversation store later; Phase 2 in-memory agentId passthrough
+- Database: Phase 2 — in-memory agentId passthrough. Phase 3 — PostgreSQL: user_profiles + harness_episodes (owner assistant-api)
 - Object storage: нет
 - External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`
 - Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text; Cursor API key encrypt-at-rest (AES-GCM), never in logs/response/Telegram
@@ -37,6 +37,12 @@
 - Auth: receives decrypted API key per-request from assistant-api over internal network; does not persist key
 - Security notes: non-root; health only; no public ports
 
+## Domain packs (Phase 3, not a service)
+
+- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — конфиг/промпты/skills/MCP allowlist.
+- Owner: assistant-api. Исполнение: cursor-sdk-bridge. Не отдельные деплои.
+- Memory: profile (shared) + episodes (per domain) в БД assistant-api; bridge память не хранит.
+
 ## Reserved (do not implement now)
 
 - rag-service
@@ -45,3 +51,4 @@
 - files-minio
 - yandex-direct-adapter
 - media-generation-adapter
+- per-domain public microservices (`salon-api`, …) — только после независимого ownership

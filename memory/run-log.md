@@ -18,6 +18,26 @@
 
 ## Runs
 
+## Run 2026-08-15c
+
+- Trigger: user — harness agents must remember user facts + task→result
+- Slice: phase3-harness-memory (plan only, не impl)
+- Status: passed (planning)
+- Checks: ADR-008; memory ≠ SDK resume ≠ RAG; isolation per domain
+- Memory updated: phase-plan Phase 3 memory + slice 5; ADR-008; contracts; catalog; security-baseline; current-project; run-log
+- Next slice: `phase3-pack-layout` (не стартовать без явного запуска)
+- Blocker: none
+
+## Run 2026-08-15b
+
+- Trigger: user — Phase 2 prompt-switch недостаточно; нужны specialist packs (AGENTS.md/skills/MCP)
+- Slice: phase3-domain-agent-packs (plan only, не impl)
+- Status: passed (planning)
+- Checks: в старом плане packs не было (Phase 2 notes врали «harness под домены»; Phase 3 был RAG)
+- Memory updated: phase-plan Phase 3 Domain agent packs + сдвиг Knowledge/Files/Tools на 4/5/6; ADR-007; current-project; catalog; contracts; run-log
+- Next slice: `phase3-pack-layout` (не стартовать без явного запуска)
+- Blocker: none
+
 ## Run 2026-08-15
 
 - Trigger: webhook slice=phase2-cursor-sdk

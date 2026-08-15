@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `2-cursor-sdk` (acceptance closed 2026-08-15; next = Phase 3 Knowledge)
+- Phase: `2-cursor-sdk` (acceptance closed 2026-08-15; next = Phase 3 Domain agent packs; Knowledge сдвинут на Phase 4)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge`)
 
@@ -29,6 +29,8 @@ Cursor SDK harness поверх Phase 1 shell.
 4. Resume по `agentId`.
 5. Stub = fallback без ключа / при ошибке SDK.
 6. Без RAG/ES/MinIO/Директ.
+
+Phase 2 specialist = persona-switch. Настоящие domain packs (AGENTS.md / skills / MCP / отдельный Agent на домен) + harness memory (profile + episodes) — **Phase 3**, не Knowledge.
 
 ## Phase 2 non-goals
 

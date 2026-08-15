@@ -51,6 +51,14 @@
 - Containers: non-root uid 10001, healthchecks, no secrets in images.
 - Nested Docker: `scripts/compose-up.sh` включает `ip_forward`/`br_netfilter` для bridge DNS.
 
+## Phase 3 controls (planned)
+
+- MCP allowlist per `src/AgentPacks/<domain>/mcp.json`; secrets MCP только env/secret store.
+- Skills/MCP домена A недоступны агенту домена B.
+- Verify режет domain drift и secret-leak (Phase 2 soft-skip на Cursor path снимается).
+- Cross-domain resume запрещён.
+- Harness memory: эпизоды изолированы по domain; profile shared и короткий; task/result проходят SecretScanner; сырой dump не логировать.
+
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
