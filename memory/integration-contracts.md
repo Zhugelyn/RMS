@@ -95,16 +95,39 @@
 - Auth: optional `X-Telegram-Bot-Api-Secret-Token` = `Telegram__WebhookSecretToken`
 - Notes: maps to assistant-api chat; never forwards bot token
 
-## Data: assistant-api.harness-memory (Phase 3)
+## Data: assistant-api.harness-memory (Phase 3 → Phase 4 Postgres)
 
 - Owner: assistant-api
-- Impl: `IHarnessMemoryStore` / in-process store (Postgres durable = follow-up)
+- Impl: `IHarnessMemoryStore` / in-process now; Postgres durable = `phase4-postgres-settings`
 - Profile: `{ userId, displayName?, locale?, timezone?, notes? }` — shared, short
 - Episode: `{ userId, domain, task, result, at, conversationId?, traceId? }` — per-domain, brief
-- Consistency: strong внутри assistant-api process
+- Consistency: strong внутри assistant-api process (→ DB transactions after Postgres)
 - Isolation: read episodes WHERE domain = current pack; never cross-inject
 - Retention: cap last K per (userId, domain)
 - Not: embeddings, full messages[], Cursor agent transcript
+
+## Data: assistant-api.instagram-research (Phase 4)
+
+- Owner: assistant-api
+- Consumers: marketing pack (inject); telegram-gateway (`/research`, Mini App settings) via assistant APIs
+- Source: Instagram Graph API own account only (ADR-009). No Apify.
+- Artifacts (Postgres, ADR-010 — **not RAG**):
+  - `snapshot`: media/insights slice at run time (structured, size-capped)
+  - `plan`: 14-day research/content plan
+  - `episodes`: brief task→result for research runs
+- Settings: schedule window days (default 14), enabled flags, account binding metadata (no raw token in settings row if sealed separately)
+- Bot: `/research` start|status (gateway → assistant)
+- Mini App: research settings screen (no IG token in browser)
+- Images: GenerateImage via local marketing-pack + volume (ADR-011); paths in artifacts, not base64 dumps in chat
+- Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
+
+## External: instagram-graph (Phase 4)
+
+- Owner: assistant-api adapter
+- Auth: `INSTAGRAM__ACCESSTOKEN` (+ business account id) from env/secret store
+- Scope: own account media/insights only
+- Failure: rate-limit / token expiry → user-visible soft error; no secret leak
+- Non-goals: foreign profiles, Apify, unofficial mobile API
 
 ## File Contract Template
 

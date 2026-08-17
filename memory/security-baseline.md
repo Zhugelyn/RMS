@@ -59,6 +59,16 @@
 - Hard verify: empty / secret-leak / domain-drift → repair or fail.
 - Harness memory: эпизоды изолированы по domain; profile shared; episode write best-effort after verify.
 
+## Phase 4 controls (planned; docs now)
+
+- `INSTAGRAM__ACCESSTOKEN` только env/secret store / encrypt-at-rest; не из chat, Mini App, query, webhook body.
+- Graph API = own account only; Apify и foreign scrapers запрещены (ADR-009).
+- Research artifacts in Postgres (snapshot/plan/episodes) — не логировать raw dumps/tokens (ADR-010).
+- GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011).
+- Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте.
+- Volume path: no path traversal; size limits on generated images before Telegram send.
+- Postgres credentials только env; migrations без secrets in git.
+
 
 ## Open Risks
 
@@ -66,5 +76,6 @@
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Mini App initData auth ещё не enforced.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
+- Phase 4: Graph token expiry / rate limits; GenerateImage availability; Postgres not yet wired (in-process memory until `phase4-postgres-settings`).
 
 

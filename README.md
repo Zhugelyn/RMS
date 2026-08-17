@@ -1,14 +1,47 @@
-# Telegram AI — Phase 2 Cursor SDK
+# Telegram AI — Phase 3 packs + Phase 4 Instagram Research (docs)
 
-Три контейнера (Compose):
+Три контейнера (Compose) + domain packs на диске:
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
-| `assistant-api` | `5080` | `POST /v1/chat`, harness, encrypt-at-rest key |
+| `assistant-api` | `5080` | `POST /v1/chat`, harness, encrypt-at-rest key, packs, harness memory |
 | `telegram-gateway` | `5081` | Telegram bot + Mini App |
-| `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume |
+| `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume + local pack cwd |
 
-Без `CURSOR__APIKEY` chat идёт в **stub fallback**. RAG/ES/MinIO/Директ — следующие фазы.
+Без `CURSOR__APIKEY` chat идёт в **stub fallback**.
+
+## Фазы (кратко)
+
+| Phase | Статус | Суть |
+| --- | --- | --- |
+| 1 Shell | closed | gateway + assistant stub + Mini App |
+| 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
+| 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres durable memory — leftover |
+| **4 Marketing Instagram Research** | **docs (этот slice)** | Graph API своего аккаунта, 14-дневный research, GenerateImage local pack |
+| 5 Knowledge | later | RAG + embeddings + Elasticsearch |
+| 6 Files / media | later | MinIO, фото/видео adapters |
+| 7 External tools | later | Яндекс Директ и др. |
+
+## Phase 4 — Marketing Instagram Research (план)
+
+Цель: маркетинговый research по Instagram-ленте **своего** аккаунта (бесплатный Instagram Graph API), план на 14 дней, настройки в Mini App и команда бота `/research`. Артефакты (snapshot + plan + episodes) живут в **Postgres assistant-api** — это harness research memory, **не RAG**.
+
+| Что | Как |
+| --- | --- |
+| Источник ленты | Только **Instagram Graph API** своего аккаунта (`INSTAGRAM__*`). **Apify нет.** |
+| Картинки | **Cursor GenerateImage** через local `marketing` pack + volume. **Отдельный OpenAI Images — нет.** |
+| Память research | `snapshot` + `plan` + `episodes` в Postgres (owner = assistant-api). Не embeddings, не Elasticsearch |
+| Счедулер | Окно **14 дней**; настройки в Mini App + `/research` в боте |
+| Postgres | Durable store для harness memory + research settings/artifacts |
+
+### Non-goals Phase 4
+
+- RAG / embeddings / Elasticsearch (→ Phase 5)
+- Apify / scrapers чужих аккаунтов / платные crawl-сервисы
+- Отдельный OpenAI Images / DALL·E API
+- MinIO, Яндекс Директ, Kubernetes prod
+
+См. `memory/phase-plan.md` (slices `phase4-docs` … `phase4-hardening`), ADR-009/010/011.
 
 ## Требования
 
@@ -16,6 +49,7 @@
 - .NET 8 SDK — только для локальных тестов/`dotnet run`
 - Telegram Bot Token от [@BotFather](https://t.me/BotFather) — для живых ответов в чат
 - Опционально: Cursor API key + master key (≥16) для живого SDK path
+- Phase 4 (после impl slices): Postgres + Instagram Graph API token своего аккаунта
 
 ## Быстрый старт (Docker)
 
@@ -33,6 +67,12 @@ ASSISTANT__SERVICEKEY=<случайная строка >= 16 символов>
 CURSOR__APIKEY=                        # опционально
 CURSOR__MASTERKEY=                     # обязателен, если ApiKey задан
 CURSOR__MODEL=composer-2.5
+
+# Phase 4 (placeholders; wiring в следующих slices)
+# POSTGRES__CONNECTIONSTRING=
+# INSTAGRAM__ACCESSTOKEN=
+# INSTAGRAM__BUSINESSACCOUNTID=
+# RESEARCH__SCHEDULEDAYS=14
 ```
 
 Подъём:
@@ -70,6 +110,7 @@ Mini App UI     ──► gateway /api/miniapp/chat ─────────�
 - Bot token живёт **только** в gateway.
 - Service key — inter-service auth (`X-Service-Key`).
 - Cursor API key из чата/Mini App **не принимается**.
+- Instagram Graph token (Phase 4) — только в assistant-api / secret store, не в Telegram.
 - Mini App не содержит секретов; ключ на сервере gateway.
 
 ## Ручные проверки API
@@ -128,7 +169,8 @@ curl -sS -X POST http://127.0.0.1:5081/api/miniapp/chat \
   -d '{"text":"прайс","intent":"marketing","conversationId":"mini-1","userId":"tg-1"}'
 ```
 
-UI: открой http://127.0.0.1:5081/ — экраны Салон / Маркетинг / Задачи.
+UI: открой http://127.0.0.1:5081/ — экраны Салон / Маркетинг / Задачи.  
+Phase 4 (следующие slices): настройки research + `/research` в боте.
 
 ### Webhook (симуляция update)
 
@@ -167,7 +209,7 @@ dotnet test
 
 Покрытие:
 
-- assistant-api: health public, chat auth, stub response, reject secrets
+- assistant-api: health public, chat auth, stub response, reject secrets, packs/harness
 - gateway: SecretScanner, update→assistant mapping, Mini App HTML/proxy
 
 ## Локальный `dotnet run` (без Docker)
@@ -196,7 +238,8 @@ dotnet run --urls http://127.0.0.1:5081
 1. Создай бота у BotFather → токен в `.env`.
 2. `TELEGRAM__USEPOLLING=true` — для local/dev (default).
 3. Напиши боту `/start`, `/salon`, `/marketing`, `/tasks` или обычный текст.
-4. Для webhook (позже/prod): выставь публичный URL на `POST /telegram/webhook`, `TELEGRAM__USEPOLLING=false`, опционально `TELEGRAM__WEBHOOKSECRETTOKEN`.
+4. Phase 4 (после impl): `/research` — запуск/статус 14-дневного Instagram research.
+5. Для webhook (позже/prod): выставь публичный URL на `POST /telegram/webhook`, `TELEGRAM__USEPOLLING=false`, опционально `TELEGRAM__WEBHOOKSECRETTOKEN`.
 
 Mini App: в BotFather привяжи Web App URL на `https://<твой-хост>/` (локально нужен tunnel, например Cloudflare/ngrok).
 
@@ -206,6 +249,7 @@ Mini App: в BotFather привяжи Web App URL на `https://<твой-хос
 src/AssistantApi/          # POST /v1/chat, harness, CursorSdkLlmProvider
 src/CursorSdkBridge/       # @cursor/sdk HTTP bridge (internal)
 src/TelegramGateway/       # bot + wwwroot Mini App
+src/AgentPacks/            # salon | marketing | tasks | _router
 tests/                     # xUnit + WebApplicationFactory
 docker-compose.yml
 .env.example
@@ -227,7 +271,8 @@ memory/                    # phase-plan, contracts, ADR
 
 - Не коммить `.env`
 - Не слать API keys в чат / Mini App
-- Bot token ≠ service key
+- Bot token ≠ service key ≠ Instagram token
 - Health без auth; `/v1/chat` только с service key
+- Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens
 
 Подробности: `memory/security-baseline.md`, `memory/phase-plan.md`.

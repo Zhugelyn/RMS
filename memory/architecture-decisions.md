@@ -101,9 +101,42 @@ ADR-журнал для решений, которые должны пережи
 - Status: accepted
 - Date: 2026-08-15
 - Context: Cursor `agentId` помнит только текущий SDK-агент; новый create / смена домена / рестарт контейнера — контекст пользователя пропадает. Нужна короткая память «кто это» и «что уже сделали». Полный транскрипт и Elasticsearch — слишком жирно и смешивает домены.
-- Decision: `assistant-api` владеет store. Два слоя: (1) **UserProfile** — короткие shared факты; (2) **HarnessEpisode** `{userId, domain, task, result, at}` — бриф, cap last K. Specialist pack получает profile + свои episodes. Router — profile + last-domain, без чужих эпизодов. Запись эпизода после успешного verify; fail записи не валит HTTP-ответ. Это не RAG (Phase 4) и не `Agent.resume`.
-- Consequences: specialist не слепой после нового `Agent.create`. Токен-бюджет: жёсткий лимит символов на инжект. **Impl 2026-08-15:** `IHarnessMemoryStore` + in-process store (isolation OK). Durable **PostgreSQL** остаётся follow-up harden, не блокирует pack runtime.
+- Decision: `assistant-api` владеет store. Два слоя: (1) **UserProfile** — короткие shared факты; (2) **HarnessEpisode** `{userId, domain, task, result, at}` — бриф, cap last K. Specialist pack получает profile + свои episodes. Router — profile + last-domain, без чужих эпизодов. Запись эпизода после успешного verify; fail записи не валит HTTP-ответ. Это не RAG (Phase 5) и не `Agent.resume`.
+- Consequences: specialist не слепой после нового `Agent.create`. Токен-бюджет: жёсткий лимит символов на инжект. **Impl 2026-08-15:** `IHarnessMemoryStore` + in-process store (isolation OK). Durable **PostgreSQL** — Phase 4 `phase4-postgres-settings` (не блокирует pack runtime).
 - Alternatives considered: тащить всю историю в Cursor agent; один shared log на все домены; отдельный memory-microservice; сразу Elasticsearch.
 - Security impact: domain isolation эпизодов; scanner на task/result; PII не в логах; retention/TTL позже явно.
 - Links: `memory/phase-plan.md` Phase 3 slice `phase3-harness-memory`
+
+## ADR-009: Instagram feed source = Graph API of own account only (no Apify)
+
+- Status: accepted
+- Date: 2026-08-17
+- Context: Phase 4 Marketing Instagram Research нужен источник ленты. Apify и сторонние scrapers дают чужие аккаунты, ToS/риск блокировок и платный crawl. У клиента есть свой бизнес-аккаунт Instagram.
+- Decision: Единственный источник ленты/insights — **бесплатный Instagram Graph API** своего аккаунта (`INSTAGRAM__ACCESSTOKEN` + business account id). Apify, произвольные scrapers и «скачать чужую ленту» — non-goals Phase 4.
+- Consequences: Ограничение = доступный Graph scope своего аккаунта. Research не про конкурентный crawl. Token — secret store / env, не из Telegram.
+- Alternatives considered: Apify Instagram scrapers; неофициальные mobile API; ручной CSV upload only.
+- Security impact: IG token encrypt-at-rest / env; не в git/logs/Mini App/chat; least privilege Graph permissions; rate-limit handling.
+- Links: `memory/phase-plan.md` Phase 4, `memory/security-baseline.md`
+
+## ADR-010: Research artifacts (snapshot+plan+episodes) ≠ RAG
+
+- Status: accepted
+- Date: 2026-08-17
+- Context: Нужна память research-цикла: снимок ленты, 14-дневный план, короткие «задача→результат». Легко спутать с RAG/embeddings/ES.
+- Decision: Research memory = структурированные артефакты в **Postgres assistant-api**: `snapshot` (срез ленты/метрик), `plan` (14 дней), `episodes` (бриф). Это расширение harness memory, **не** документный индекс, не embeddings, не Elasticsearch. RAG остаётся Phase 5.
+- Consequences: Marketing pack инжектит snapshot/plan/episodes по лимиту символов. Retriever/vector search не появляется в Phase 4. Phase 3 packs не «закрываются целиком» — Postgres leftover закрывается здесь.
+- Alternatives considered: сразу RAG над постами; хранить полный media blob в ES; отдельный research-microservice.
+- Security impact: PII/tokens не в snapshot dump логов; domain isolation (research → marketing); retention/TTL явно в hardening slice.
+- Links: `memory/phase-plan.md` Phase 4, ADR-008
+
+## ADR-011: Image generation = Cursor GenerateImage via local marketing pack + volume
+
+- Status: accepted
+- Date: 2026-08-17
+- Context: Для research/контент-плана нужны картинки. Отдельный OpenAI Images API = ещё один секрет, биллинг и обход Cursor subscription. Cloud harness уже на Cursor SDK.
+- Decision: Генерация картинок — **Cursor GenerateImage** через local `AgentPacks/marketing` (skill/tool) + Docker **volume** для артефактов. Отдельный OpenAI Images / DALL·E API в Phase 4 запрещён. MinIO как object store — Phase 6.
+- Consequences: Картинки живут в volume, доступном marketing pack / bridge. Нет второго image-provider. Failures GenerateImage = soft fail research path с логом, без утечки ключей.
+- Alternatives considered: OpenAI Images API; внешний Stable Diffusion SaaS; отложить картинки до Phase 6 MinIO.
+- Security impact: Cursor key уже в assistant-api; не проксировать image bytes через Telegram без size limits; volume path traversal guard в hardening.
+- Links: `memory/phase-plan.md` Phase 4 slice `phase4-generate-image`
 
