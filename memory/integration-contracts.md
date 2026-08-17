@@ -71,11 +71,12 @@
 - Owner: assistant-api / cursor-sdk-bridge
 - Consumers: assistant-api only (compose-internal)
 - Method/path: `POST /v1/run`
-- Request: `{ apiKey, prompt, agentId?, model?, packId? }`
-- Response: `{ agentId, text, packId? }`
+- Request: `{ apiKey, prompt, agentId?, model?, packId?, localCwd?, collectImages?, imageCap? }`
+- Response: `{ agentId, text, packId?, images?, error? }`
 - Auth: internal network trust; apiKey per-call, not stored
 - Notes Phase 2: cloud no-repo when packId absent
 - Phase 3: `packId` → local cwd=`AgentPacks/<id>`, `.cursor/skills`, empty MCP (`mcpServers: {}`)
+- Phase 4 research images (ADR-011): `collectImages=true` + `localCwd` under `RESEARCH_IMAGE_VOLUME` → local Agent.create; after wait() scan png|jpg|webp (prefer `out/`), cap ≤14 → `images[]`; soft `error=image-tool-missing` on tool/429. Ordinary `/v1/chat` may stay cloud/no-repo when packId absent.
 
 ## Data: agent-packs (Phase 3)
 
@@ -123,7 +124,7 @@
 - Inject: `IResearchPackInjector` — latest snapshot summary + last plan **only** into marketing pack (salon isolation)
 - Bot: `/research` on|off|account|now|plan|status ✅
 - Mini App: research settings (no IG token) ✅
-- Images: GenerateImage via local marketing-pack + volume (ADR-011) — next slice
+- Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011) ✅ (`phase4-generate-image`); cap 14; soft-fail `image-tool-missing`; mediaPath on plan items; notify may include `photoPaths`
 - Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
 
 ## API: assistant-api.research
@@ -144,7 +145,7 @@
 - Owner: telegram-gateway
 - Methods: `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`
 - Auth: browser → gateway (service key server-side); mutations require `tg-*` (no anonymous)
-- `POST /internal/notify` `{ chatId, text }` — `X-Service-Key`; used by assistant-api notify hook
+- `POST /internal/notify` `{ chatId, text, photoPaths?, imageVolumePath? }` — `X-Service-Key`; sendMessage always; sendPhoto from shared volume (path guard); fail photos ≠ fail text
 
 ## External: instagram-graph (Phase 4)
 

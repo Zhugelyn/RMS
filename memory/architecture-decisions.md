@@ -137,8 +137,9 @@ ADR-журнал для решений, которые должны пережи
 - Date: 2026-08-17
 - Context: Для research/контент-плана нужны картинки. Отдельный OpenAI Images API = ещё один секрет, биллинг и обход Cursor subscription. Cloud harness уже на Cursor SDK.
 - Decision: Генерация картинок — **Cursor GenerateImage** через local `AgentPacks/marketing` (skill/tool) + Docker **volume** для артефактов. Отдельный OpenAI Images / DALL·E API в Phase 4 запрещён. MinIO как object store — Phase 6.
-- Consequences: Картинки живут в volume, доступном marketing pack / bridge. Нет второго image-provider. Failures GenerateImage = soft fail research path с логом, без утечки ключей.
+- Consequences: Картинки живут в volume, доступном marketing pack / bridge / gateway. Нет второго image-provider. Failures GenerateImage = soft fail research path с `lastError=image-tool-missing`, план без картинок, job не падает.
 - Alternatives considered: OpenAI Images API; внешний Stable Diffusion SaaS; отложить картинки до Phase 6 MinIO.
-- Security impact: Cursor key уже в assistant-api; не проксировать image bytes через Telegram без size limits; volume path traversal guard в hardening.
+- Security impact: Cursor key уже в assistant-api; не проксировать image bytes через Telegram without size limits; volume path traversal guard; без Cursor key — skip images.
+- Impl 2026-08-17 (`phase4-generate-image`): bridge `collectImages`+`localCwd`; `ResearchImageGenerator` + marketing skill; compose volume; gateway sendPhoto.
 - Links: `memory/phase-plan.md` Phase 4 slice `phase4-generate-image`
 

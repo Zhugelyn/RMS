@@ -30,7 +30,7 @@
 | Что | Как |
 | --- | --- |
 | Источник ленты | Только **Instagram Graph API** своего аккаунта (`INSTAGRAM__*`). **Apify нет.** |
-| Картинки | **Cursor GenerateImage** через local `marketing` pack + volume. **Отдельный OpenAI Images — нет.** |
+| Картинки | **Cursor GenerateImage** через local `marketing` pack + volume `research-images` (`RESEARCH__IMAGEVOLUMEPATH`). Cap 14; soft-fail `image-tool-missing`. **Отдельный OpenAI Images — нет.** ✅ |
 | Память research | `snapshot` + `plan` + `episodes` в Postgres (owner = assistant-api). Не embeddings, не Elasticsearch |
 | Счедулер | Окно **14 дней**; настройки в Mini App + `/research` в боте |
 | Postgres | Durable store для harness memory + research settings/artifacts |
