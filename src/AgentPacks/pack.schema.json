@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://telegram-ai.local/schemas/agent-pack.schema.json",
+  "title": "AgentPackManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schemaVersion",
+    "displayName",
+    "answersUser",
+    "resumePolicy",
+    "runtime"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z_][a-z0-9_-]*$",
+      "description": "Must match directory name under AgentPacks/."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "answersUser": {
+      "type": "boolean",
+      "description": "false for _router; true for specialist packs."
+    },
+    "resumePolicy": {
+      "type": "string",
+      "enum": ["none", "per-domain-conversation"]
+    },
+    "model": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "effort": {
+      "type": ["string", "null"],
+      "enum": ["low", "medium", "high", null]
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cwd", "skillsDir", "promptsDir", "mcpConfig"],
+      "properties": {
+        "cwd": { "type": "string", "minLength": 1 },
+        "skillsDir": { "type": "string", "minLength": 1 },
+        "promptsDir": { "type": "string", "minLength": 1 },
+        "mcpConfig": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

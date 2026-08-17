@@ -51,13 +51,14 @@
 - Containers: non-root uid 10001, healthchecks, no secrets in images.
 - Nested Docker: `scripts/compose-up.sh` включает `ip_forward`/`br_netfilter` для bridge DNS.
 
-## Phase 3 controls (planned)
+## Phase 3 controls
 
-- MCP allowlist per `src/AgentPacks/<domain>/mcp.json`; secrets MCP только env/secret store.
-- Skills/MCP домена A недоступны агенту домена B.
-- Verify режет domain drift и secret-leak (Phase 2 soft-skip на Cursor path снимается).
-- Cross-domain resume запрещён.
-- Harness memory: эпизоды изолированы по domain; profile shared и короткий; task/result проходят SecretScanner; сырой dump не логировать.
+- Pack layout + `PackCatalog` validator: empty MCP allowlist; reject secret-like keys in `mcp.json`; `_router` answersUser=false / resumePolicy=none.
+- Bridge local pack cwd; `mcpServers: {}` until allowlist wiring; no ambient MCP.
+- Affinity per `conversationId+domain`; cross-domain resume запрещён (client agentId не форсирует чужой домен).
+- Hard verify: empty / secret-leak / domain-drift → repair or fail.
+- Harness memory: эпизоды изолированы по domain; profile shared; episode write best-effort after verify.
+
 
 ## Open Risks
 

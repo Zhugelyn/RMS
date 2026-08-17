@@ -3,9 +3,9 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `2-cursor-sdk` (acceptance closed 2026-08-15; next = Phase 3 Domain agent packs; Knowledge сдвинут на Phase 4)
+- Phase: `3-domain-agent-packs` (acceptance closed functionally 2026-08-15; leftover = Postgres durable memory)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge`)
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks)
 
 ## Product North Star
 
@@ -13,31 +13,29 @@
 
 Домены:
 
-- салон красоты: записи, расписание, клиенты;
-- маркетинг: реклама, мониторинг, монетизация;
-- повседневные задачи: планирование, встречи.
+- **salon / Babor (Брянск)**: развивать салон — идеи, удержание, локальный маркетинг ради салона; harness memory фактов о салоне;
+- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории;
+- **tasks**: расписание работ и напоминания.
 
 Позже: Яндекс Директ и другие внешние сервисы; генерация картинок; работа с фото и видео; RAG + Elasticsearch (можно готовые фреймворки).
 
-## Goal Phase 2
+## Goal Phase 3 (done functionally)
 
-Cursor SDK harness поверх Phase 1 shell.
+Domain agent packs + live harness:
 
-1. `CursorSdkLlmProvider` + internal Node bridge `@cursor/sdk`.
-2. Encrypt-at-rest Cursor API key (AES-GCM, master key из env).
-3. Harness: classify → specialist → verify для `salon|marketing|tasks`.
-4. Resume по `agentId`.
-5. Stub = fallback без ключа / при ошибке SDK.
-6. Без RAG/ES/MinIO/Директ.
+1. Packs on disk + PackCatalog ✅
+2. Bridge local pack runtime ✅
+3. Router + per-domain affinity ✅
+4. Hard verify + isolation ✅
+5. Harness memory inject/write (in-memory) ✅
 
-Phase 2 specialist = persona-switch. Настоящие domain packs (AGENTS.md / skills / MCP / отдельный Agent на домен) + harness memory (profile + episodes) — **Phase 3**, не Knowledge.
-
-## Phase 2 non-goals
+## Phase 3 non-goals / leftover
 
 - Elasticsearch, embeddings, RAG frameworks
 - MinIO, генерация картинок, фото/видео пайплайн
 - Яндекс Директ и прочие ads API
 - Kubernetes / Nginx prod
+- Postgres durable harness memory (interface ready; in-process store now)
 
 ## Token Budget Rules
 

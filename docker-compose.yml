@@ -1,11 +1,12 @@
 services:
   cursor-sdk-bridge:
     build:
-      context: ./src/CursorSdkBridge
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: CursorSdkBridge/Dockerfile
     environment:
       PORT: "8090"
       CURSOR_BRIDGE_MODEL: ${CURSOR__MODEL:-composer-2.5}
+      AGENT_PACKS_ROOT: /packs
     # Internal only — assistant-api calls this over compose network.
     expose:
       - "8090"
@@ -19,8 +20,8 @@ services:
 
   assistant-api:
     build:
-      context: ./src/AssistantApi
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: AssistantApi/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       Assistant__ServiceKey: ${ASSISTANT__SERVICEKEY}

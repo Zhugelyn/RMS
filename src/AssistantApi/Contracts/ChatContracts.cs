@@ -54,4 +54,9 @@ public sealed class ChatResponse
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ChatIntent? Intent { get; set; }
+
+    /// <summary>Resolved domain pack id (Phase 3), e.g. salon|marketing|tasks.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [MaxLength(64)]
+    public string? DomainPack { get; set; }
 }

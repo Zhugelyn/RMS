@@ -1,0 +1,15 @@
+{
+  "id": "salon",
+  "schemaVersion": 1,
+  "displayName": "Салон красоты",
+  "answersUser": true,
+  "resumePolicy": "per-domain-conversation",
+  "model": "composer-2.5",
+  "effort": "medium",
+  "runtime": {
+    "cwd": ".",
+    "skillsDir": "skills",
+    "promptsDir": "prompts",
+    "mcpConfig": "mcp.json"
+  }
+}

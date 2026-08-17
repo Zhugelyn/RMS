@@ -1,0 +1,15 @@
+{
+  "id": "marketing",
+  "schemaVersion": 1,
+  "displayName": "Маркетинг",
+  "answersUser": true,
+  "resumePolicy": "per-domain-conversation",
+  "model": "composer-2.5",
+  "effort": "medium",
+  "runtime": {
+    "cwd": ".",
+    "skillsDir": "skills",
+    "promptsDir": "prompts",
+    "mcpConfig": "mcp.json"
+  }
+}

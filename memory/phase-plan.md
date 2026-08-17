@@ -82,26 +82,34 @@ Harness memory (не Cursor `agentId` и не RAG):
 
 Acceptance (slice=`phase3-domain-agent-packs`):
 
-- [ ] Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` с `AGENTS.md`, `skills/`, `prompts/`, `mcp.json`, `pack.json`.
-- [ ] Router-pack классифицирует в домен (не keyword-only `Contains`); пользовательский ответ даёт только specialist pack.
-- [ ] `Agent.create` / resume **per domain**; mapping `conversationId+domain → agentId` в assistant-api.
-- [ ] Bridge принимает pack runtime (cwd/skills/MCP allowlist/model), не один голый `prompt`.
-- [ ] Cross-domain: marketing MCP/skills не грузятся в salon agent (тест изоляции).
-- [ ] Verify per-pack реально режет drift/secrets; Phase 2 soft-skip убран на Cursor path.
-- [ ] Harness memory: profile (shared) + episodes (per domain); инжект в pack; эпизод пишется после verify.
-- [ ] Isolation memory: marketing pack не видит salon episodes (тест).
-- [ ] `/v1/chat` аддитивно: optional `domainPack` / resolved domain в response; `schemaVersion` не ломаем.
-- [ ] Без Cursor key — stub fallback как в Phase 2.
-- [ ] `dotnet test` (+ pack isolation + memory isolation tests) проходит; compose поднимает stack.
-- [ ] ADR/catalog/contracts/run-log обновлены.
+- [x] Каталог `src/AgentPacks/{salon,marketing,tasks,_router}` с `AGENTS.md`, `skills/`, `prompts/`, `mcp.json`, `pack.json`. (slice `phase3-pack-layout`)
+- [x] Router-pack классифицирует в домен (SDK path); fallback — pack classify-hints scoring; пользовательский ответ даёт только specialist pack.
+- [x] `Agent.create` / resume **per domain**; mapping `conversationId+domain → agentId` (in-memory affinity).
+- [x] Bridge принимает pack runtime (`packId` → local cwd/skills, empty MCP allowlist/model), не один голый `prompt`.
+- [x] Cross-domain: marketing MCP/skills не грузятся в salon agent (отдельный cwd + тест изоляции).
+- [x] Verify per-pack реально режет drift/secrets; Phase 2 soft-skip убран на Cursor path.
+- [x] Harness memory: profile (shared) + episodes (per domain); инжект в pack; эпизод пишется после verify. (in-process store; Postgres durable — follow-up)
+- [x] Isolation memory: marketing pack не видит salon episodes (тест).
+- [x] `/v1/chat` аддитивно: optional `domainPack` в response; `schemaVersion` не ломаем.
+- [x] Без Cursor key — stub fallback как в Phase 2.
+- [x] `dotnet test` (+ pack isolation + memory isolation tests) проходит; compose build context включает packs.
+- [x] ADR/catalog/contracts/run-log обновлены.
 
 Slices (один run = один):
 
-1. `phase3-pack-layout` — каталог packs + `pack.json` schema, без смены runtime.
-2. `phase3-bridge-pack-runtime` — bridge: cwd/skills/MCP allowlist/model per pack.
-3. `phase3-router-and-affinity` — router pack + agentId affinity per domain.
-4. `phase3-verify-isolation` — жёсткий verify + isolation tests; выкинуть Phase 2 soft-skip.
-5. `phase3-harness-memory` — profile + episode store, inject, write-after-verify, domain isolation.
+1. [x] `phase3-pack-layout` — каталог packs + `pack.json` schema + `PackCatalog` loader/validator, без смены runtime chat/bridge/DomainHarness.
+2. [x] `phase3-bridge-pack-runtime` — bridge: cwd/skills/MCP allowlist/model per pack.
+3. [x] `phase3-router-and-affinity` — router pack + agentId affinity per domain.
+4. [x] `phase3-verify-isolation` — жёсткий verify + isolation tests; выкинуть Phase 2 soft-skip.
+5. [x] `phase3-harness-memory` — profile + episode store (in-memory contract), inject, write-after-verify, domain isolation.
+
+Domain notes (product):
+
+- `salon` = салон красоты **Babor**, Брянск; growth/идеи/локальный маркетинг **ради салона** + память фактов.
+- `marketing` = рынок красоты, бренды, тренды, таргет/аудитории.
+- `tasks` = расписание работ и напоминания.
+
+Status Phase 3: **acceptance closed functionally** (2026-08-15). Leftover harden: Postgres for harness memory (ADR-008).
 
 Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный публичный harness-сервис, Kubernetes, полный chat log как память.
 
