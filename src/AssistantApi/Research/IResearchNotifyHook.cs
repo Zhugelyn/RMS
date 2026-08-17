@@ -1,8 +1,8 @@
 namespace AssistantApi.Research;
 
 /// <summary>
-/// Internal hook for Telegram notify after research (bot /research UI = next slice).
-/// Default = no-op stub.
+/// Hook after research run: gateway Telegram notify (status/plan text).
+/// Default without Gateway:BaseUrl = no-op; compose uses GatewayResearchNotifyHook.
 /// </summary>
 public interface IResearchNotifyHook
 {

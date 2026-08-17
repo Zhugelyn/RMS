@@ -1,3 +1,4 @@
+using System.Text;
 using TelegramGateway.Contracts;
 using TelegramGateway.Security;
 
@@ -47,16 +48,22 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
             return;
         }
 
-        var intent = ResolveIntent(text);
         if (text.StartsWith("/start", StringComparison.OrdinalIgnoreCase))
         {
             await _telegramBotClient.SendMessageAsync(
                 chatId,
-                "Telegram AI Phase 1 shell.\nКоманды: /salon /marketing /tasks\nИли открой Mini App.",
+                "Telegram AI.\nКоманды: /salon /marketing /tasks\n/research — Instagram research (on|off|account|now|plan)\nИли открой Mini App → Маркетинг.",
                 cancellationToken);
             return;
         }
 
+        if (text.StartsWith("/research", StringComparison.OrdinalIgnoreCase))
+        {
+            await HandleResearchAsync(chatId, userId, text, cancellationToken);
+            return;
+        }
+
+        var intent = ResolveIntent(text);
         var request = new AssistantChatRequest
         {
             SchemaVersion = 1,
@@ -88,6 +95,212 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
             }
         }
     }
+
+    private async Task HandleResearchAsync(
+        long chatId,
+        string telegramUserId,
+        string text,
+        CancellationToken cancellationToken)
+    {
+        var userId = $"tg-{telegramUserId}";
+        var notifyChatId = chatId.ToString();
+        var args = SplitArgs(text);
+
+        try
+        {
+            if (args.Length == 0 || args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
+            {
+                var latest = await _assistantApiClient.GetResearchLatestAsync(userId, cancellationToken);
+                await _telegramBotClient.SendMessageAsync(chatId, FormatStatus(latest), cancellationToken);
+                return;
+            }
+
+            var cmd = args[0].ToLowerInvariant();
+            switch (cmd)
+            {
+                case "on":
+                {
+                    var settings = await _assistantApiClient.PutResearchSettingsAsync(new ResearchSettingsUpdateRequest
+                    {
+                        UserId = userId,
+                        Enabled = true,
+                        NotifyChatId = notifyChatId
+                    }, cancellationToken);
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        FormatSettingsLine(settings, "Research включён. Уведомления → этот чат."),
+                        cancellationToken);
+                    return;
+                }
+                case "off":
+                {
+                    var settings = await _assistantApiClient.PutResearchSettingsAsync(new ResearchSettingsUpdateRequest
+                    {
+                        UserId = userId,
+                        Enabled = false,
+                        NotifyChatId = notifyChatId
+                    }, cancellationToken);
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        FormatSettingsLine(settings, "Research выключен."),
+                        cancellationToken);
+                    return;
+                }
+                case "account":
+                {
+                    if (args.Length < 2)
+                    {
+                        await _telegramBotClient.SendMessageAsync(
+                            chatId,
+                            "Использование: /research account @handle",
+                            cancellationToken);
+                        return;
+                    }
+
+                    var handle = string.Join(' ', args.Skip(1));
+                    if (SecretScanner.ContainsForbiddenSecret(handle))
+                    {
+                        await _telegramBotClient.SendMessageAsync(
+                            chatId,
+                            "Не принимаю токены. Передай только @handle аккаунта.",
+                            cancellationToken);
+                        return;
+                    }
+
+                    var settings = await _assistantApiClient.PutResearchSettingsAsync(new ResearchSettingsUpdateRequest
+                    {
+                        UserId = userId,
+                        InstagramHandle = handle,
+                        NotifyChatId = notifyChatId
+                    }, cancellationToken);
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        FormatSettingsLine(settings, $"Аккаунт: @{settings.InstagramHandle}"),
+                        cancellationToken);
+                    return;
+                }
+                case "now":
+                {
+                    var run = await _assistantApiClient.RunResearchAsync(new ResearchRunRequest
+                    {
+                        UserId = userId,
+                        NotifyChatId = notifyChatId
+                    }, cancellationToken);
+                    var sb = new StringBuilder();
+                    sb.AppendLine(run.Message ?? run.Outcome);
+                    if (!string.IsNullOrWhiteSpace(run.ErrorCode))
+                    {
+                        sb.AppendLine($"code={run.ErrorCode}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(run.PlanPreview))
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine(run.PlanPreview);
+                    }
+                    else
+                    {
+                        sb.AppendLine(FormatSettingsLine(run.Settings, null));
+                    }
+
+                    await _telegramBotClient.SendMessageAsync(chatId, sb.ToString().Trim(), cancellationToken);
+                    return;
+                }
+                case "plan":
+                {
+                    var latest = await _assistantApiClient.GetResearchLatestAsync(userId, cancellationToken);
+                    var planText = string.IsNullOrWhiteSpace(latest.PlanPreview)
+                        ? "Плана пока нет. Запусти /research now или дождись scheduler."
+                        : latest.PlanPreview!;
+                    await _telegramBotClient.SendMessageAsync(chatId, planText, cancellationToken);
+                    return;
+                }
+                default:
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Команды: /research | on | off | account @handle | now | plan",
+                        cancellationToken);
+                    return;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Research command failed userId={UserId}", userId);
+            await _telegramBotClient.SendMessageAsync(
+                chatId,
+                "Ошибка research. Попробуй ещё раз.",
+                cancellationToken);
+        }
+    }
+
+    private static string[] SplitArgs(string text)
+    {
+        // "/research@bot on" or "/research on"
+        var withoutCmd = text;
+        var space = text.IndexOf(' ');
+        if (space < 0)
+        {
+            return [];
+        }
+
+        withoutCmd = text[(space + 1)..].Trim();
+        if (string.IsNullOrWhiteSpace(withoutCmd))
+        {
+            return [];
+        }
+
+        return withoutCmd.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    private static string FormatStatus(ResearchLatestResponse latest)
+    {
+        var s = latest.Settings;
+        var sb = new StringBuilder();
+        sb.AppendLine($"Research: {(s.Enabled ? "on" : "off")}");
+        sb.AppendLine($"account: {(string.IsNullOrWhiteSpace(s.InstagramHandle) ? "—" : "@" + s.InstagramHandle)}");
+        sb.AppendLine($"cadence: {s.CadenceDays}d tz={s.Timezone ?? "—"}");
+        sb.AppendLine($"last: {Fmt(s.LastRunAt)} next: {Fmt(s.NextRunAt)}");
+        if (!string.IsNullOrWhiteSpace(s.LastError))
+        {
+            sb.AppendLine($"lastError: {s.LastError}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(latest.SnapshotSummary))
+        {
+            sb.AppendLine();
+            sb.AppendLine("Snapshot: " + latest.SnapshotSummary);
+        }
+
+        if (!string.IsNullOrWhiteSpace(latest.PlanPreview))
+        {
+            sb.AppendLine();
+            sb.AppendLine(latest.PlanPreview);
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static string FormatSettingsLine(ResearchSettingsDto s, string? head)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(head))
+        {
+            sb.AppendLine(head);
+        }
+
+        sb.AppendLine($"enabled={s.Enabled} cadence={s.CadenceDays}d");
+        sb.AppendLine($"account={(string.IsNullOrWhiteSpace(s.InstagramHandle) ? "—" : "@" + s.InstagramHandle)}");
+        sb.AppendLine($"last={Fmt(s.LastRunAt)} next={Fmt(s.NextRunAt)}");
+        if (!string.IsNullOrWhiteSpace(s.LastError))
+        {
+            sb.AppendLine($"lastError={s.LastError}");
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static string Fmt(DateTimeOffset? value) =>
+        value is null ? "—" : value.Value.UtcDateTime.ToString("yyyy-MM-dd HH:mm") + "Z";
 
     private static string? ResolveIntent(string text)
     {

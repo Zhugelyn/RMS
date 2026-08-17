@@ -32,7 +32,8 @@ public interface IResearchSchedulerJob
     Task<ResearchScheduleTickResult> ProcessOneAsync(
         ResearchSettings settings,
         DateTimeOffset now,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        bool force = false);
 }
 
 public sealed class ResearchSchedulerJob : IResearchSchedulerJob
@@ -108,9 +109,10 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
     public async Task<ResearchScheduleTickResult> ProcessOneAsync(
         ResearchSettings settings,
         DateTimeOffset now,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool force = false)
     {
-        if (!settings.Enabled)
+        if (!settings.Enabled && !force)
         {
             return new ResearchScheduleTickResult { Outcome = ResearchScheduleOutcome.NoOp };
         }
@@ -120,15 +122,19 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
             return new ResearchScheduleTickResult { Outcome = ResearchScheduleOutcome.NoOp };
         }
 
-        if (!ResearchCadence.IsDue(settings, now))
+        if (!force && !ResearchCadence.IsDue(settings, now))
         {
             return new ResearchScheduleTickResult { Outcome = ResearchScheduleOutcome.SkippedNotDue };
         }
 
-        var dueAt = settings.NextRunAt!.Value;
-        var periodKey = ResearchCadence.PeriodKey(dueAt);
+        var dueAt = force
+            ? now
+            : settings.NextRunAt!.Value;
+        var periodKey = force
+            ? $"manual-{now.UtcDateTime:yyyyMMddHHmmss}"
+            : ResearchCadence.PeriodKey(dueAt);
 
-        if (await _runs.HasSuccessfulRunAsync(settings.UserId, periodKey, cancellationToken))
+        if (!force && await _runs.HasSuccessfulRunAsync(settings.UserId, periodKey, cancellationToken))
         {
             // Second tick same window: do not re-capture; ensure nextRunAt moved.
             if (settings.NextRunAt <= now)

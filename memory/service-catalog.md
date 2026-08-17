@@ -1,32 +1,33 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-scheduler` ✅ → next `phase4-miniapp-research`).
+Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-miniapp-research` ✅ → next `phase4-generate-image`).
 
 ## Service: telegram-gateway
 
 - Owner: telegram-bot-agent
 - Business capability: Telegram chat + Mini App UI; доставка запросов в assistant-api
 - Code: `src/TelegramGateway`
-- Public API: `POST /telegram/webhook`; `POST /api/miniapp/chat`; static Mini App (`/`); health; Phase 4 — `/research` + research settings UI (planned)
+- Public API: `POST /telegram/webhook`; `POST /api/miniapp/chat`; Mini App research proxy `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`; internal `POST /internal/notify` (X-Service-Key); static Mini App (`/`); health
+- Bot: `/research` | `on` | `off` | `account @handle` | `now` | `plan` | status
 - Events produced: нет в Phase 1
 - Events consumed: нет
 - Database: optional mapping telegramUserId -> userId (пока inline `tg-{id}`)
 - Object storage: нет
 - External dependencies: Telegram Bot API, assistant-api
-- Security notes: владеет `Telegram:BotToken`; не хранит Cursor API key / Instagram token; SecretScanner отклоняет секреты из сообщений; Mini App без секретов; HttpClient logging для Telegram отключён
+- Security notes: владеет `Telegram:BotToken`; не хранит Cursor API key / Instagram token; SecretScanner отклоняет секреты из сообщений; Mini App без IG token; research mutations требуют `tg-*`; HttpClient logging для Telegram отключён
 
 ## Service: assistant-api
 
 - Owner: ai-assistant-agent
-- Business capability: chat completion + Phase 2 Cursor SDK harness + durable harness/research settings (Postgres)
+- Business capability: chat completion + Phase 2 Cursor SDK harness + durable harness/research settings (Postgres) + research APIs
 - Code: `src/AssistantApi`
-- Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
+- Public API: `POST /v1/chat`; `GET/PUT /v1/research/settings`; `POST /v1/research/run`; `GET /v1/research/latest`; `GET /health/live`, `GET /health/ready`
 - Events produced: нет
 - Events consumed: нет
 - Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, `research_snapshots`, `research_plans`, `research_schedule_runs`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
 - Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); MinIO = Phase 6
-- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009)
-- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram; Postgres password env-only
+- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009); optional notify → gateway (`Gateway__BaseUrl`)
+- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram/Mini App; Postgres password env-only; research userId must be `tg-*`
 
 ## Service: postgres (assistant-api data plane)
 
@@ -59,8 +60,8 @@
 - Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt, lastError) ✅
 - Artifacts: `IResearchArtifactStore` (Postgres/in-mem) — normalized snapshot posts/visual notes (cap last K) + 14-day plan items (`date,caption,hashtags,imagePrompt,mediaPath?,telegramFileId?,status`). Capture: `IInstagramResearchCapture` after Graph fetch. Inject: marketing pack only (`ResearchPackInjector`). Episode domain=`marketing`. Soft-fail persist. **Not RAG.** ✅ (`phase4-research-artifacts`)
 - Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011). **Not OpenAI Images.**
-- UI: gateway Mini App research settings + `/research` command (next = `phase4-miniapp-research`)
-- Scheduler: `ResearchSchedulerHostedService` + `ResearchSchedulerJob` — 14d cadence, ListDue, idempotent `research_schedule_runs` (userId+period), lastError on Graph fail, no-op without token/enabled; `NoOpResearchNotifyHook` stub. No Hangfire. ✅ (`phase4-scheduler`)
+- UI: gateway Mini App research settings + `/research` command ✅ (`phase4-miniapp-research`)
+- Scheduler: `ResearchSchedulerHostedService` + `ResearchSchedulerJob` — 14d cadence, ListDue, idempotent `research_schedule_runs` (userId+period), lastError on Graph fail, no-op without token/enabled; notify = `GatewayResearchNotifyHook` → gateway `/internal/notify` (NoOp when `Gateway:BaseUrl` empty). No Hangfire. ✅
 - Do not add separate `instagram-research-api` until independent ownership
 
 ## Reserved (do not implement in Phase 4)

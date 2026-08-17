@@ -119,9 +119,23 @@ builder.Services.AddSingleton<IInstagramResearchCapture, InstagramResearchCaptur
 builder.Services
     .AddOptions<ResearchSchedulerOptions>()
     .Bind(builder.Configuration.GetSection(ResearchSchedulerOptions.SectionName));
-builder.Services.AddSingleton<IResearchNotifyHook, NoOpResearchNotifyHook>();
+builder.Services
+    .AddOptions<GatewayNotifyOptions>()
+    .Bind(builder.Configuration.GetSection(GatewayNotifyOptions.SectionName));
+
+var gatewayNotifyBase = builder.Configuration.GetSection(GatewayNotifyOptions.SectionName)["BaseUrl"];
+if (!string.IsNullOrWhiteSpace(gatewayNotifyBase))
+{
+    builder.Services.AddHttpClient<IResearchNotifyHook, GatewayResearchNotifyHook>();
+}
+else
+{
+    builder.Services.AddSingleton<IResearchNotifyHook, NoOpResearchNotifyHook>();
+}
+
 builder.Services.AddSingleton<IResearchSchedulerJob, ResearchSchedulerJob>();
 builder.Services.AddHostedService<ResearchSchedulerHostedService>();
+builder.Services.AddSingleton<IResearchApiService, ResearchApiService>();
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
 builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();
@@ -200,7 +214,111 @@ app.MapPost("/v1/chat", async (
 })
 .WithName("Chat");
 
+// Phase 4 Mini App / bot research — owner = assistant-api. No IG token in DTO/response.
+app.MapGet("/v1/research/settings", async (
+    [FromQuery] string? userId,
+    IResearchApiService research,
+    CancellationToken cancellationToken) =>
+{
+    if (!IsTelegramUserId(userId))
+    {
+        return Results.Problem(
+            detail: "userId must be tg-<telegramUserId>.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed");
+    }
+
+    var dto = await research.GetSettingsAsync(userId!, cancellationToken);
+    return Results.Ok(dto);
+})
+.WithName("ResearchSettingsGet");
+
+app.MapPut("/v1/research/settings", async (
+    [FromBody] ResearchSettingsUpdateRequest request,
+    IResearchApiService research,
+    CancellationToken cancellationToken) =>
+{
+    if (!IsTelegramUserId(request.UserId))
+    {
+        return Results.Problem(
+            detail: "userId must be tg-<telegramUserId>. Anonymous writes rejected.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed");
+    }
+
+    if (LooksLikeSecret(request.InstagramHandle ?? string.Empty) ||
+        LooksLikeSecret(request.Timezone ?? string.Empty) ||
+        LooksLikeSecret(request.NotifyChatId ?? string.Empty))
+    {
+        return Results.Problem(
+            detail: "Secrets and Instagram tokens must not be sent in research settings.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Secret rejected");
+    }
+
+    try
+    {
+        var dto = await research.UpsertSettingsAsync(request, cancellationToken);
+        return Results.Ok(dto);
+    }
+    catch (ResearchValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+})
+.WithName("ResearchSettingsPut");
+
+app.MapPost("/v1/research/run", async (
+    [FromBody] ResearchRunRequest request,
+    IResearchApiService research,
+    CancellationToken cancellationToken) =>
+{
+    if (!IsTelegramUserId(request.UserId))
+    {
+        return Results.Problem(
+            detail: "userId must be tg-<telegramUserId>. Anonymous runs rejected.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed");
+    }
+
+    try
+    {
+        var result = await research.RunNowAsync(request, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (ResearchValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+})
+.WithName("ResearchRun");
+
+app.MapGet("/v1/research/latest", async (
+    [FromQuery] string? userId,
+    IResearchApiService research,
+    CancellationToken cancellationToken) =>
+{
+    if (!IsTelegramUserId(userId))
+    {
+        return Results.Problem(
+            detail: "userId must be tg-<telegramUserId>.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed");
+    }
+
+    var latest = await research.GetLatestAsync(userId!, cancellationToken);
+    return Results.Ok(latest);
+})
+.WithName("ResearchLatest");
+
 app.Run();
+
+static bool IsTelegramUserId(string? userId) =>
+    !string.IsNullOrWhiteSpace(userId)
+    && userId.StartsWith("tg-", StringComparison.Ordinal)
+    && userId.Length > 3
+    && userId.Length <= 64
+    && userId[3..].All(char.IsDigit);
 
 static bool LooksLikeSecret(string text)
 {

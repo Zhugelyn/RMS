@@ -16,7 +16,7 @@
     <header class="brand">
       <p class="brand-mark">Telegram AI</p>
       <h1 id="headline">Выбери домен</h1>
-      <p class="lede">Оболочка Phase 1: салон, маркетинг и задачи без реальной бизнес-логики.</p>
+      <p class="lede">Салон, маркетинг (Instagram research) и задачи — через бота и Mini App.</p>
     </header>
 
     <nav class="domain-nav" aria-label="Домены">
@@ -35,6 +35,34 @@
       </form>
       <p id="status" class="status" role="status" aria-live="polite"></p>
       <pre id="reply" class="reply" hidden></pre>
+    </section>
+
+    <section id="research-panel" class="panel research-panel" hidden>
+      <h2>Instagram Research</h2>
+      <p class="panel-lede">Настройки своего аккаунта. IG token сюда не вводится — только на сервере.</p>
+      <form id="research-form" class="research-form">
+        <label class="check">
+          <input type="checkbox" id="research-enabled" />
+          Включён (каденция 14 дней)
+        </label>
+        <label for="research-handle">Instagram handle</label>
+        <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" />
+        <label for="research-tz">Timezone</label>
+        <input id="research-tz" type="text" maxlength="64" placeholder="Europe/Moscow" autocomplete="off" />
+        <label for="research-cadence">Cadence days</label>
+        <input id="research-cadence" type="number" min="1" max="90" value="14" />
+        <div class="research-actions">
+          <button type="submit" class="cta" id="research-save">Сохранить</button>
+          <button type="button" class="cta cta-secondary" id="research-run">Run now</button>
+        </div>
+      </form>
+      <dl class="research-meta" id="research-meta">
+        <div><dt>last run</dt><dd id="research-last">—</dd></div>
+        <div><dt>next run</dt><dd id="research-next">—</dd></div>
+        <div><dt>last error</dt><dd id="research-error">—</dd></div>
+      </dl>
+      <pre id="research-plan" class="reply" hidden></pre>
+      <p id="research-status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>
   <script src="/app.js"></script>

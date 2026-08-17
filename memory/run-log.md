@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17f
+
+- Trigger: webhook slice=phase4-miniapp-research
+- Slice: phase4-miniapp-research
+- Status: passed
+- Checks: Mini App marketing research settings (no IG token); bot `/research on|off|account|now|plan|status`; gateway proxy GET/PUT settings, POST run, GET latest; `GatewayResearchNotifyHook` → `/internal/notify` (не NoOp); mutations require `tg-*`; `dotnet test` 79/79 (62 api + 17 gateway); no GenerateImage/RAG/Apify
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, run-log, README
+- Next slice: `phase4-generate-image` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17e
 
 - Trigger: webhook slice=phase4-scheduler
