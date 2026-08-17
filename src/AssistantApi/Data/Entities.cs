@@ -38,7 +38,7 @@ public sealed class ResearchSettingsEntity
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
-/// <summary>Placeholder for feed snapshot (fetch/inject in later slices).</summary>
+/// <summary>Normalized feed snapshot JSON (ADR-010). Cap last K in store; no raw IG token.</summary>
 public sealed class ResearchSnapshotEntity
 {
     public long Id { get; set; }
@@ -47,7 +47,7 @@ public sealed class ResearchSnapshotEntity
     public string PayloadJson { get; set; } = "{}";
 }
 
-/// <summary>Placeholder for 14-day research plan (later slices).</summary>
+/// <summary>14-day research plan JSON (items: date/caption/hashtags/imagePrompt/…). Not RAG.</summary>
 public sealed class ResearchPlanEntity
 {
     public long Id { get; set; }

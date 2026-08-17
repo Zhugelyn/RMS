@@ -5,6 +5,7 @@ using AssistantApi.Instagram;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Research;
 using AssistantApi.Security;
 using AssistantApi.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -113,6 +114,8 @@ builder.Services.AddSingleton<IDomainHarness>(sp => new DomainHarness(sp.GetRequ
 builder.Services.AddSingleton<IPackPromptBuilder, PackPromptBuilder>();
 builder.Services.AddSingleton<IAgentAffinityStore, InMemoryAgentAffinityStore>();
 builder.Services.AddAssistantPersistence(builder.Configuration);
+builder.Services.AddSingleton<IResearchPackInjector, ResearchPackInjector>();
+builder.Services.AddSingleton<IInstagramResearchCapture, InstagramResearchCapture>();
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
 builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();

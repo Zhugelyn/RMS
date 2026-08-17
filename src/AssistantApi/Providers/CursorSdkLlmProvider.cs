@@ -3,6 +3,7 @@ using AssistantApi.Harness;
 using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
+using AssistantApi.Research;
 using AssistantApi.Security;
 using Microsoft.Extensions.Options;
 
@@ -17,6 +18,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
     private readonly IPackPromptBuilder _prompts;
     private readonly IAgentAffinityStore _affinity;
     private readonly IHarnessMemoryStore _memory;
+    private readonly IResearchPackInjector _researchInject;
     private readonly CursorOptions _options;
     private readonly ILogger<CursorSdkLlmProvider> _logger;
 
@@ -28,6 +30,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         IPackPromptBuilder prompts,
         IAgentAffinityStore affinity,
         IHarnessMemoryStore memory,
+        IResearchPackInjector researchInject,
         IOptions<CursorOptions> options,
         ILogger<CursorSdkLlmProvider> logger)
     {
@@ -38,6 +41,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         _prompts = prompts;
         _affinity = affinity;
         _memory = memory;
+        _researchInject = researchInject;
         _options = options.Value;
         _logger = logger;
     }
@@ -66,6 +70,29 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
             var profile = await _memory.GetProfileAsync(request.UserId, cancellationToken);
             var episodes = await _memory.GetRecentEpisodesAsync(request.UserId, packId, limit: 5, cancellationToken);
             var memoryBlock = _prompts.BuildMemoryBlock(profile, episodes);
+            // Marketing only: latest snapshot summary + last plan (not full history; not salon).
+            string? researchBlock = null;
+            try
+            {
+                researchBlock = await _researchInject.BuildInjectBlockAsync(
+                    request.UserId, packId, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Research inject failed conversationId={ConversationId} pack={PackId}",
+                    request.ConversationId,
+                    packId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(researchBlock))
+            {
+                memoryBlock = string.IsNullOrWhiteSpace(memoryBlock)
+                    ? researchBlock
+                    : memoryBlock + "\n\n" + researchBlock;
+            }
+
             var prompt = _prompts.BuildSpecialistPrompt(pack, request, memoryBlock);
 
             // Affinity is source of truth: never resume another domain's agentId from the client.

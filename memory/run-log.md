@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17d
+
+- Trigger: webhook slice=phase4-research-artifacts
+- Slice: phase4-research-artifacts
+- Status: passed
+- Checks: snapshot+14-day plan persist (Postgres/in-mem, cap last K, no embeddings/ES); Graph fetch→capture; marketing episode; marketing inject latest snapshot+plan; salon isolation; soft-fail persist/inject не валит chat; `dotnet test` 61/61 (50 api + 11 gateway); no scheduler/Mini App research/GenerateImage/Apify/RAG
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, ADR-010 note, run-log
+- Next slice: `phase4-scheduler` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17c
 
 - Trigger: webhook slice=phase4-ig-graph

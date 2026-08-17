@@ -4,6 +4,7 @@ using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Research;
 using AssistantApi.Security;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -244,6 +245,7 @@ public sealed class HarnessAndSecretTests
             new PackPromptBuilder(),
             new InMemoryAgentAffinityStore(),
             new InMemoryHarnessMemoryStore(),
+            new ResearchPackInjector(new InMemoryResearchArtifactStore()),
             MsOptions.Create(new CursorOptions()),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
@@ -271,7 +273,8 @@ public sealed class HarnessAndSecretTests
         IPackCatalog catalog,
         FakeCursorClient client,
         IAgentAffinityStore affinity,
-        IHarnessMemoryStore memory) =>
+        IHarnessMemoryStore memory,
+        IResearchPackInjector? researchInject = null) =>
         new(
             new FakeKeyStore("sk-test-key-not-real-xxxxxx"),
             new DomainHarness(catalog),
@@ -280,6 +283,7 @@ public sealed class HarnessAndSecretTests
             new PackPromptBuilder(),
             affinity,
             memory,
+            researchInject ?? new ResearchPackInjector(new InMemoryResearchArtifactStore()),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
