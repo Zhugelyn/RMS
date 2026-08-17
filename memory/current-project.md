@@ -3,9 +3,9 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `3-domain-agent-packs` (acceptance closed functionally 2026-08-15; leftover = Postgres durable memory)
+- Phase: `4-instagram-research` (docs slice; Phase 3 packs functionally closed, Postgres leftover → Phase 4)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks)
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks); Postgres — Phase 4
 
 ## Product North Star
 
@@ -14,28 +14,33 @@
 Домены:
 
 - **salon / Babor (Брянск)**: развивать салон — идеи, удержание, локальный маркетинг ради салона; harness memory фактов о салоне;
-- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории;
+- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; **Phase 4** — Instagram Research своего аккаунта;
 - **tasks**: расписание работ и напоминания.
 
-Позже: Яндекс Директ и другие внешние сервисы; генерация картинок; работа с фото и видео; RAG + Elasticsearch (можно готовые фреймворки).
+Позже: RAG + Elasticsearch (Phase 5); MinIO / фото-видео (Phase 6); Яндекс Директ (Phase 7).
 
-## Goal Phase 3 (done functionally)
+## Goal Phase 4 (current)
 
-Domain agent packs + live harness:
+Marketing Instagram Research:
 
-1. Packs on disk + PackCatalog ✅
-2. Bridge local pack runtime ✅
-3. Router + per-domain affinity ✅
-4. Hard verify + isolation ✅
-5. Harness memory inject/write (in-memory) ✅
+1. Docs + ADR (этот slice) ✅ next
+2. Postgres durable settings + harness/research memory
+3. Instagram Graph API своего аккаунта (без Apify)
+4. 14-дневный scheduler; Mini App + `/research`
+5. GenerateImage через local marketing-pack + volume (не OpenAI Images)
+6. Hardening
 
-## Phase 3 non-goals / leftover
+## Phase 4 non-goals
 
-- Elasticsearch, embeddings, RAG frameworks
-- MinIO, генерация картинок, фото/видео пайплайн
-- Яндекс Директ и прочие ads API
-- Kubernetes / Nginx prod
-- Postgres durable harness memory (interface ready; in-process store now)
+- RAG / embeddings / Elasticsearch
+- Apify / чужие crawl-сервисы
+- Отдельный OpenAI Images API
+- MinIO, Яндекс Директ, Kubernetes / Nginx prod
+
+## Phase 3 leftover (не закрывать packs «целиком»)
+
+- Packs runtime ✅
+- Postgres durable harness memory — закрывается в `phase4-postgres-settings`, не отдельным Phase 3 reopen
 
 ## Token Budget Rules
 
@@ -43,3 +48,4 @@ Domain agent packs + live harness:
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
+- Этот run: только `phase4-docs`; следующий = `phase4-postgres-settings` (не стартовать здесь).

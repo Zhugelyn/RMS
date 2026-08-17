@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17
+
+- Trigger: webhook slice=phase4-docs
+- Slice: phase4-docs
+- Status: passed
+- Checks: README Phase 4 + non-goals; phase-plan Phase 4 slices + RAG→5; ADR-009/010/011; catalog/contracts/security/.env.example; `dotnet test` 29/29 (docs-only, no feature code)
+- Memory updated: current-project, phase-plan, architecture-decisions, service-catalog, integration-contracts, security-baseline, run-log
+- Next slice: `phase4-postgres-settings` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-15e
 
 - Trigger: user follow-up — continue Phase 3 live harness + Babor/domain specs

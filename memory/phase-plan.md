@@ -61,7 +61,7 @@ Service boundary:
 - `assistant-api` владеет: routing, `conversationId+domain → agentId`, **harness memory** (профиль + эпизоды), verify orchestration, secret injection в MCP.
 - `cursor-sdk-bridge` исполняет pack: cwd/skills/MCP/model, `Agent.create` / `resume` **per domain**. Не владеет user memory.
 - Telegram/Mini App по-прежнему шлют `intent`; не знают pack layout и не хранят память.
-- RAG/MinIO/Директ **не** реализуются здесь. В pack можно зарезервировать MCP-слоты (stub/deny), реализации — Phase 4–6.
+- RAG/MinIO/Директ **не** реализуются здесь. В pack можно зарезервировать MCP-слоты (stub/deny), реализации — Phase 5–7.
 
 Harness memory (не Cursor `agentId` и не RAG):
 
@@ -88,7 +88,7 @@ Acceptance (slice=`phase3-domain-agent-packs`):
 - [x] Bridge принимает pack runtime (`packId` → local cwd/skills, empty MCP allowlist/model), не один голый `prompt`.
 - [x] Cross-domain: marketing MCP/skills не грузятся в salon agent (отдельный cwd + тест изоляции).
 - [x] Verify per-pack реально режет drift/secrets; Phase 2 soft-skip убран на Cursor path.
-- [x] Harness memory: profile (shared) + episodes (per domain); инжект в pack; эпизод пишется после verify. (in-process store; Postgres durable — follow-up)
+- [x] Harness memory: profile (shared) + episodes (per domain); инжект в pack; эпизод пишется после verify. (in-process store; Postgres durable — follow-up / Phase 4 settings)
 - [x] Isolation memory: marketing pack не видит salon episodes (тест).
 - [x] `/v1/chat` аддитивно: optional `domainPack` в response; `schemaVersion` не ломаем.
 - [x] Без Cursor key — stub fallback как в Phase 2.
@@ -109,26 +109,69 @@ Domain notes (product):
 - `marketing` = рынок красоты, бренды, тренды, таргет/аудитории.
 - `tasks` = расписание работ и напоминания.
 
-Status Phase 3: **acceptance closed functionally** (2026-08-15). Leftover harden: Postgres for harness memory (ADR-008).
+Status Phase 3: **acceptance closed functionally** (2026-08-15). **Не закрыта целиком:** leftover Postgres durable harness memory (ADR-008) → подхватывается в Phase 4 `phase4-postgres-settings`. Packs runtime остаётся.
 
 Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный публичный harness-сервис, Kubernetes, полный chat log как память.
 
-## Phase 4 — Knowledge
+## Phase 4 — Marketing Instagram Research
+
+Status: **open** (docs slice in progress → next impl = `phase4-postgres-settings`).
+
+Суть: маркетинговый research по ленте **своего** Instagram-аккаунта. Источник — только бесплатный **Instagram Graph API**. Счедулер **14 дней**. Настройки в Mini App и команда бота `/research`. Картинки — **Cursor GenerateImage** через local `marketing` pack + volume (не отдельный OpenAI Images). Артефакты research (`snapshot` + `plan` + `episodes`) в **Postgres assistant-api** — это **не RAG**.
+
+Service boundary:
+
+- Owner данных research / settings / artifacts = `assistant-api` (Postgres).
+- Graph API client — adapter внутри assistant-api (или pack MCP позже); secrets только env/secret store.
+- `telegram-gateway`: команда `/research` + Mini App settings UI; не хранит IG token.
+- `marketing` pack: GenerateImage skill/tool + volume для артефактов картинок; Apify/OpenAI Images запрещены.
+- Не отдельный `instagram-research-api`, пока нет независимого ownership/deploy cadence.
+
+Acceptance (фаза целиком; закрывать по slices):
+
+- [ ] Postgres: durable harness memory + research settings/artifacts (snapshot, plan, episodes).
+- [ ] Instagram Graph API своего аккаунта как единственный источник ленты; Apify нет.
+- [ ] Счедулер research на 14 дней; настройки в Mini App и `/research` в боте.
+- [ ] GenerateImage через local marketing-pack + volume; не OpenAI Images API.
+- [ ] Research artifacts ≠ RAG (нет embeddings/ES в этой фазе).
+- [ ] Secrets: IG token не из чата; encrypt-at-rest / env; не в logs/git.
+- [ ] `dotnet test` + compose зелёные; ADR-009/010/011, catalog, contracts, security, run-log.
+
+Slices (один run = один):
+
+1. [x] `phase4-docs` — README + phase-plan Phase 4 + сдвиг RAG на 5; ADR-009/010/011; catalog/contracts/security/run-log; `.env.example`. Без кода сервисов.
+2. [ ] `phase4-postgres-settings` — Postgres в compose; migrations; durable profile/episodes + research settings schema.
+3. [ ] `phase4-ig-graph` — Instagram Graph API client (свой аккаунт); token store; fetch media/insights; без Apify.
+4. [ ] `phase4-research-artifacts` — snapshot + plan + episodes persist; 14-дневный plan model; inject в marketing pack.
+5. [ ] `phase4-scheduler` — scheduler/job на окно 14 дней; idempotent runs; failure modes.
+6. [ ] `phase4-miniapp-research` — Mini App research settings + bot `/research` (start/status).
+7. [ ] `phase4-generate-image` — Cursor GenerateImage via local marketing-pack + volume mount.
+8. [ ] `phase4-hardening` — security/tests/limits; token rotation notes; non-goals guard (no RAG/Apify/OpenAI Images).
+
+Non-goals Phase 4:
+
+- RAG / embeddings / Elasticsearch (→ Phase 5)
+- Apify, scrapers чужих аккаунтов, платные crawl
+- Отдельный OpenAI Images / DALL·E
+- MinIO как object store (→ Phase 6), Яндекс Директ (→ Phase 7)
+- Closing Phase 3 packs целиком «задним числом» — packs остаются; Postgres leftover закрывается здесь
+
+## Phase 5 — Knowledge (RAG)
 
 - RAG service + embeddings + Elasticsearch. Можно готовые фреймворки.
-- Это **документы/база знаний**, не harness memory из Phase 3 (профиль + «задача→результат»).
+- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4).
 - Отдельный ownership данных и retriever contract.
 - Не смешивать индекс салона и маркетинга без явного решения.
 - Retriever подключается **в pack** домена (MCP/skill), не в общий промпт.
 
-## Phase 5 — Files / Video / Images
+## Phase 6 — Files / Video / Images storage
 
 - MinIO, metadata DB, scanning hook, presigned URLs.
-- Генерация картинок и работа с фото/видео через отдельные adapters.
+- Работа с фото/видео через отдельные adapters (поверх GenerateImage из Phase 4 при необходимости).
 - Большие файлы не проксировать через assistant-api без причины.
 - File tools — MCP/skill конкретного pack, не shared agent.
 
-## Phase 6 — External tools
+## Phase 7 — External tools
 
 - Яндекс Директ и другие ads/CRM integrations.
 - Отдельные tool adapters, секреты per-integration, least privilege.
