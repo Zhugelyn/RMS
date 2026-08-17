@@ -11,12 +11,14 @@ RUN apt-get update \
     && groupadd --gid 10001 appuser \
     && useradd --uid 10001 --gid 10001 --create-home appuser
 COPY --from=deps /app/node_modules ./node_modules
-COPY CursorSdkBridge/package.json CursorSdkBridge/server.mjs ./
+COPY CursorSdkBridge/package.json CursorSdkBridge/server.mjs CursorSdkBridge/image-collect.mjs ./
 COPY AgentPacks /packs
-RUN chown -R appuser:appuser /app /packs
+RUN mkdir -p /data/marketing-images \
+    && chown -R appuser:appuser /app /packs /data/marketing-images
 USER appuser
 ENV PORT=8090
 ENV AGENT_PACKS_ROOT=/packs
+ENV RESEARCH_IMAGE_VOLUME=/data/marketing-images
 EXPOSE 8090
 HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=3 \
   CMD curl -f http://127.0.0.1:8090/health || exit 1

@@ -2,10 +2,14 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { Agent } from "@cursor/sdk";
+import { collectImages, isImageToolSoftFail, IMAGE_CAP } from "./image-collect.mjs";
 
 const port = Number(process.env.PORT || 8090);
 const defaultModel = process.env.CURSOR_BRIDGE_MODEL || "composer-2.5";
 const packsRoot = process.env.AGENT_PACKS_ROOT || path.resolve(process.cwd(), "../AgentPacks");
+const imageVolumeRoot = process.env.RESEARCH_IMAGE_VOLUME
+  ? path.resolve(process.env.RESEARCH_IMAGE_VOLUME)
+  : null;
 
 function sendJson(res, status, body) {
   const payload = JSON.stringify(body);
@@ -75,7 +79,28 @@ function loadPackRuntime(packId) {
   };
 }
 
-async function runAgent({ apiKey, prompt, agentId, model, pack }) {
+/**
+ * Research GenerateImage job: cwd must stay under RESEARCH_IMAGE_VOLUME (ADR-011).
+ * Pack skills/AGENTS are prepared into that cwd by assistant-api.
+ */
+function resolveLocalCwd(localCwd) {
+  if (!localCwd || typeof localCwd !== "string") {
+    throw Object.assign(new Error("local_cwd_required"), { status: 400 });
+  }
+  if (!imageVolumeRoot) {
+    throw Object.assign(new Error("image_volume_not_configured"), { status: 400 });
+  }
+  const resolved = path.resolve(localCwd);
+  if (!resolved.startsWith(imageVolumeRoot + path.sep) && resolved !== imageVolumeRoot) {
+    throw Object.assign(new Error("local_cwd_escape"), { status: 400 });
+  }
+  if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
+    throw Object.assign(new Error("local_cwd_missing"), { status: 400 });
+  }
+  return resolved;
+}
+
+async function runAgent({ apiKey, prompt, agentId, model, pack, forceLocalCwd }) {
   const modelId = model || pack?.model || defaultModel;
   /** @type {import("@cursor/sdk").SDKAgent} */
   let agent;
@@ -85,15 +110,16 @@ async function runAgent({ apiKey, prompt, agentId, model, pack }) {
     model: { id: modelId },
   };
 
-  if (pack) {
-    // Local pack runtime: cwd = pack root (AGENTS.md + .cursor/skills). MCP denied unless allowlist wired.
+  const cwd = forceLocalCwd || pack?.cwd || null;
+  if (cwd) {
+    // Local pack / research-media runtime: cwd has AGENTS.md + .cursor/skills.
     createOptions.local = {
-      cwd: pack.cwd,
+      cwd,
       settingSources: ["project"],
     };
-    createOptions.mcpServers = pack.mcpServers;
+    createOptions.mcpServers = pack?.mcpServers || {};
   } else {
-    // Legacy Phase 2 path (no pack): cloud no-repo.
+    // Legacy Phase 2 path (no pack): cloud no-repo. Regular /v1/chat may stay here.
     createOptions.cloud = { repos: [] };
   }
 
@@ -101,8 +127,8 @@ async function runAgent({ apiKey, prompt, agentId, model, pack }) {
     agent = await Agent.resume(agentId, {
       apiKey,
       model: { id: modelId },
-      ...(pack
-        ? { local: { cwd: pack.cwd, settingSources: ["project"] }, mcpServers: pack.mcpServers }
+      ...(cwd
+        ? { local: { cwd, settingSources: ["project"] }, mcpServers: pack?.mcpServers || {} }
         : {}),
     });
   } else {
@@ -123,7 +149,7 @@ async function runAgent({ apiKey, prompt, agentId, model, pack }) {
       agentId: agent.agentId,
       text: String(text).trim(),
       packId: pack?.packId || null,
-      cwd: pack?.cwd || null,
+      cwd: cwd || null,
     };
   } finally {
     try {
@@ -141,6 +167,8 @@ const server = http.createServer(async (req, res) => {
         status: "ok",
         packsRoot,
         packsMounted: fs.existsSync(packsRoot),
+        imageVolume: imageVolumeRoot,
+        imageVolumeMounted: Boolean(imageVolumeRoot && fs.existsSync(imageVolumeRoot)),
       });
       return;
     }
@@ -152,6 +180,12 @@ const server = http.createServer(async (req, res) => {
       const agentId = body.agentId || undefined;
       const model = body.model || undefined;
       const packId = body.packId || undefined;
+      const collect = Boolean(body.collectImages);
+      const localCwdRaw = body.localCwd || undefined;
+      const imageCap = Math.min(
+        IMAGE_CAP,
+        Math.max(0, Number.isFinite(Number(body.imageCap)) ? Number(body.imageCap) : IMAGE_CAP),
+      );
 
       if (!apiKey || typeof apiKey !== "string") {
         sendJson(res, 400, { error: "apiKey_required" });
@@ -163,8 +197,20 @@ const server = http.createServer(async (req, res) => {
       }
 
       let pack = null;
-      if (packId) {
+      if (packId && !collect) {
         pack = loadPackRuntime(packId);
+      } else if (packId && collect) {
+        // Research image job: load pack only for model defaults; cwd overridden by volume.
+        try {
+          pack = loadPackRuntime(packId);
+        } catch {
+          pack = { packId, cwd: null, model: defaultModel, mcpServers: {} };
+        }
+      }
+
+      let forceLocalCwd = null;
+      if (collect || localCwdRaw) {
+        forceLocalCwd = resolveLocalCwd(localCwdRaw);
       }
 
       console.log(
@@ -174,13 +220,53 @@ const server = http.createServer(async (req, res) => {
           promptLength: prompt.length,
           model: model || pack?.model || defaultModel,
           packId: pack?.packId || null,
-          runtime: pack ? "local-pack" : "cloud-no-repo",
+          runtime: forceLocalCwd ? "local-images" : pack ? "local-pack" : "cloud-no-repo",
+          collectImages: collect,
+          imageCap,
         }),
       );
 
-      const result = await runAgent({ apiKey, prompt, agentId, model, pack });
-      sendJson(res, 200, result);
-      return;
+      const sinceMs = Date.now() - 1000;
+      try {
+        const result = await runAgent({
+          apiKey,
+          prompt,
+          agentId,
+          model,
+          pack,
+          forceLocalCwd,
+        });
+
+        const response = {
+          agentId: result.agentId,
+          text: result.text,
+          packId: result.packId,
+        };
+
+        if (collect && forceLocalCwd) {
+          response.images = collectImages(forceLocalCwd, { sinceMs, cap: imageCap });
+        }
+
+        sendJson(res, 200, response);
+        return;
+      } catch (err) {
+        const message = scrub(err?.message || String(err), apiKey);
+        if (collect && isImageToolSoftFail(message)) {
+          const images =
+            forceLocalCwd != null
+              ? collectImages(forceLocalCwd, { sinceMs, cap: imageCap })
+              : [];
+          sendJson(res, 200, {
+            agentId: agentId || "soft-fail",
+            text: "",
+            packId: pack?.packId || packId || null,
+            images,
+            error: "image-tool-missing",
+          });
+          return;
+        }
+        throw err;
+      }
     }
 
     sendJson(res, 404, { error: "not_found" });
@@ -196,5 +282,12 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(JSON.stringify({ msg: "cursor_sdk_bridge_listen", port, packsRoot }));
+  console.log(
+    JSON.stringify({
+      msg: "cursor_sdk_bridge_listen",
+      port,
+      packsRoot,
+      imageVolume: imageVolumeRoot,
+    }),
+  );
 });
