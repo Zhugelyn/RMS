@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-postgres-settings` ✅ → next `phase4-ig-graph`).
+Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-ig-graph` ✅ → next `phase4-research-artifacts`).
 
 ## Service: telegram-gateway
 
@@ -25,8 +25,8 @@
 - Events consumed: нет
 - Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, stub `research_snapshots`/`research_plans`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
 - Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); MinIO = Phase 6
-- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Phase 4 — Instagram Graph API (own account, next slice)
-- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text; Cursor API key encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram; Postgres password env-only
+- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009)
+- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram; Postgres password env-only
 
 ## Service: postgres (assistant-api data plane)
 
@@ -54,9 +54,10 @@
 ## Phase 4 — Instagram Research (in progress)
 
 - Capability: 14-day marketing research from own Instagram Graph feed; Mini App settings + bot `/research`
-- Feed source: Instagram Graph API only (ADR-009). **Apify — no.** (client = next slice)
+- Feed source: Instagram Graph API only (ADR-009). **Apify — no.** Client: `HttpInstagramGraphClient` + stub/fallback without token ✅
+- Token: `INSTAGRAM__ACCESSTOKEN` (+ `IGUSERID`/`BUSINESSACCOUNTID`) env → AES-GCM seal; reject from chat
 - Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt) ✅
-- Artifacts tables stubbed: snapshot + plan (ADR-010). **Not RAG.** Fetch/inject later.
+- Artifacts tables stubbed: snapshot + plan (ADR-010). **Not RAG.** Persist/inject = `phase4-research-artifacts`
 - Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011). **Not OpenAI Images.**
 - UI: gateway Mini App research settings + `/research` command (later slices)
 - Do not add separate `instagram-research-api` until independent ownership
