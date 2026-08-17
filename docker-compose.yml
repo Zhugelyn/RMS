@@ -50,6 +50,12 @@ services:
       Cursor__EncryptedApiKey: ${CURSOR__ENCRYPTEDAPIKEY:-}
       Cursor__MasterKey: ${CURSOR__MASTERKEY:-}
       Cursor__Model: ${CURSOR__MODEL:-composer-2.5}
+      # Phase 4 IG Graph (own account only). Empty → stub skip; compose stays green.
+      Instagram__AccessToken: ${INSTAGRAM__ACCESSTOKEN:-}
+      Instagram__EncryptedAccessToken: ${INSTAGRAM__ENCRYPTEDACCESSTOKEN:-}
+      Instagram__MasterKey: ${INSTAGRAM__MASTERKEY:-}
+      Instagram__IgUserId: ${INSTAGRAM__IGUSERID:-}
+      Instagram__BusinessAccountId: ${INSTAGRAM__BUSINESSACCOUNTID:-}
     ports:
       - "5080:8080"
     depends_on:

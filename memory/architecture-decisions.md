@@ -116,6 +116,7 @@ ADR-журнал для решений, которые должны пережи
 - Consequences: Ограничение = доступный Graph scope своего аккаунта. Research не про конкурентный crawl. Token — secret store / env, не из Telegram.
 - Alternatives considered: Apify Instagram scrapers; неофициальные mobile API; ручной CSV upload only.
 - Security impact: IG token encrypt-at-rest / env; не в git/logs/Mini App/chat; least privilege Graph permissions; rate-limit handling.
+- Impl 2026-08-17 (`phase4-ig-graph`): `IInstagramGraphClient` / `HttpInstagramGraphClient` + stub; `EncryptedInstagramTokenStore`; media mapper fixtures; SSRF CDN allowlist download; soft errors for rate-limit/expiry.
 - Links: `memory/phase-plan.md` Phase 4, `memory/security-baseline.md`
 
 ## ADR-010: Research artifacts (snapshot+plan+episodes) ≠ RAG

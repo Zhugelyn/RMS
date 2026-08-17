@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17c
+
+- Trigger: webhook slice=phase4-ig-graph
+- Slice: phase4-ig-graph
+- Status: passed
+- Checks: Graph client own account only (no Apify); AES-GCM token store; media mapper+insights fixtures; SSRF CDN allowlist; stub skip without token; chat/gateway reject IG token; `dotnet test` 53/53; compose YAML OK (docker CLI absent in env); no scheduler/Mini App research/GenerateImage/RAG/artifacts persist
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, run-log
+- Next slice: `phase4-research-artifacts` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17b
 
 - Trigger: webhook slice=phase4-postgres-settings

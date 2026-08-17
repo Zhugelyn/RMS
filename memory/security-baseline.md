@@ -61,9 +61,12 @@
 
 ## Phase 4 controls
 
-- `INSTAGRAM__ACCESSTOKEN` только env/secret store / encrypt-at-rest; не из chat, Mini App, query, webhook body. (Graph client = next slice)
-- Graph API = own account only; Apify и foreign scrapers запрещены (ADR-009).
-- Research artifacts in Postgres (snapshot/plan stubs + settings) — не логировать raw dumps/tokens (ADR-010).
+- `INSTAGRAM__ACCESSTOKEN` только env/secret store / AES-GCM encrypt-at-rest (`EncryptedInstagramTokenStore`); не из chat, Mini App, query, webhook body. ✅ (`phase4-ig-graph`)
+- Graph API = own account only; Apify и foreign scrapers запрещены (ADR-009). Client: `HttpInstagramGraphClient` + stub without token.
+- Media download SSRF: allowlist `*.cdninstagram.com` / `*.fbcdn.net`; no IP literals; size limit; no auto-redirect off-list.
+- Rate-limit / token expiry → soft error codes; never log/return raw token or Graph error bodies with secrets.
+- SecretScanner + `/v1/chat` reject IG token patterns (`INSTAGRAM__ACCESSTOKEN`, `IGQVJ`, `access_token=`, EAA…).
+- Research artifacts in Postgres (snapshot/plan stubs + settings) — не логировать raw dumps/tokens (ADR-010); persist/inject = next slice.
 - GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) — later slice.
 - Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте — later slices.
 - Volume path: no path traversal; size limits on generated images before Telegram send.
@@ -76,6 +79,6 @@
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Mini App initData auth ещё не enforced.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4: Graph token expiry / rate limits; GenerateImage availability; snapshot/plan fetch/inject not wired yet (`phase4-ig-graph` / `phase4-research-artifacts`).
+- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; snapshot/plan persist/inject not wired yet (`phase4-research-artifacts`).
 
 

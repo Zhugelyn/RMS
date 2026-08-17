@@ -15,15 +15,30 @@ public static partial class SecretScanner
 
         if (text.Contains("CURSOR_API_KEY", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("cursor api key", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("INSTAGRAM__ACCESSTOKEN", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("INSTAGRAM_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("IG_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("api_key=", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("apikey=", StringComparison.OrdinalIgnoreCase))
+            text.Contains("apikey=", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("access_token=", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
-        return CursorLikeKey.IsMatch(text);
+        if (text.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("IGQWR", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return CursorLikeKey.IsMatch(text) || InstagramLikeToken.IsMatch(text);
     }
 
     [GeneratedRegex(@"\bsk-[A-Za-z0-9_\-]{16,}\b", RegexOptions.CultureInvariant)]
     private static partial Regex CursorLikeKeyRegex();
+
+    [GeneratedRegex(@"\bEAA[A-Za-z0-9]{20,}\b", RegexOptions.CultureInvariant)]
+    private static partial Regex InstagramLikeTokenRegex();
+
+    private static readonly Regex InstagramLikeToken = InstagramLikeTokenRegex();
 }

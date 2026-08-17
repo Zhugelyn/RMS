@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": "179000111222333",
+      "caption": "Morning glow at Babor",
+      "media_type": "IMAGE",
+      "media_url": "https://scontent.cdninstagram.com/v/t51.2885-15/img1.jpg",
+      "permalink": "https://www.instagram.com/p/ABC123/",
+      "timestamp": "2024-06-01T10:15:30+0000"
+    },
+    {
+      "id": "179000444555666",
+      "caption": "Reels tip",
+      "media_type": "VIDEO",
+      "media_url": "https://instagram.fxyz1-1.fna.fbcdn.net/v/t51.2885-15/vid1.mp4",
+      "thumbnail_url": "https://scontent.cdninstagram.com/v/t51.2885-15/thumb1.jpg",
+      "permalink": "https://www.instagram.com/reel/DEF456/",
+      "timestamp": "2024-06-02T18:00:00+0000"
+    }
+  ],
+  "paging": {
+    "cursors": {
+      "after": "cursor-after"
+    }
+  }
+}

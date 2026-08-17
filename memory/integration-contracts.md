@@ -111,10 +111,10 @@
 
 - Owner: assistant-api
 - Consumers: marketing pack (inject — later); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
-- Source: Instagram Graph API own account only (ADR-009). No Apify. (client = `phase4-ig-graph`)
+- Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅ (`phase4-ig-graph`)
 - Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt` — **no raw IG token in row**
 - Artifacts (Postgres stubs, ADR-010 — **not RAG**):
-  - `research_snapshots`: media/insights slice placeholder
+  - `research_snapshots`: media/insights slice placeholder — persist = `phase4-research-artifacts`
   - `research_plans`: 14-day plan placeholder
   - harness `harness_episodes` for brief task→result (research domain later)
 - Bot: `/research` start|status (gateway → assistant) — not this slice
@@ -124,11 +124,12 @@
 
 ## External: instagram-graph (Phase 4)
 
-- Owner: assistant-api adapter
-- Auth: `INSTAGRAM__ACCESSTOKEN` (+ business account id) from env/secret store
-- Scope: own account media/insights only
-- Failure: rate-limit / token expiry → user-visible soft error; no secret leak
-- Non-goals: foreign profiles, Apify, unofficial mobile API
+- Owner: assistant-api adapter (`AssistantApi.Instagram`)
+- Auth: `INSTAGRAM__ACCESSTOKEN` (+ `INSTAGRAM__IGUSERID` / `BUSINESSACCOUNTID`) from env/secret store; AES-GCM encrypt-at-rest (`EncryptedInstagramTokenStore`); master = `Instagram:MasterKey` or shared `Cursor:MasterKey`
+- Scope: own account media (`caption,media_url,timestamp,permalink,media_type`) + optional insights when scope allows
+- Media download: SSRF allowlist `*.cdninstagram.com` / `*.fbcdn.net` + size limit
+- Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
+- Non-goals: foreign profiles, Apify, unofficial mobile API, snapshot persist (next slice)
 
 ## File Contract Template
 
