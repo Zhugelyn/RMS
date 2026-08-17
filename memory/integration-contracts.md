@@ -110,13 +110,15 @@
 ## Data: assistant-api.instagram-research (Phase 4)
 
 - Owner: assistant-api
-- Consumers: marketing pack (inject — later); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
-- Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅ (`phase4-ig-graph`)
+- Consumers: marketing pack (inject ✅); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
+- Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅
 - Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt` — **no raw IG token in row**
-- Artifacts (Postgres stubs, ADR-010 — **not RAG**):
-  - `research_snapshots`: media/insights slice placeholder — persist = `phase4-research-artifacts`
-  - `research_plans`: 14-day plan placeholder
-  - harness `harness_episodes` for brief task→result (research domain later)
+- Artifacts (Postgres, ADR-010 — **not RAG**):
+  - `research_snapshots`: normalized posts + visual notes + summary JSON; cap last K; no raw token ✅
+  - `research_plans`: 14 items `{date, caption, hashtags, imagePrompt, mediaPath?, telegramFileId?, status}` ✅
+  - harness `harness_episodes` domain=`marketing` after capture («Research … → план») ✅
+- Capture: `IInstagramResearchCapture` — Graph fetch → snapshot → plan → episode; soft-fail persist
+- Inject: `IResearchPackInjector` — latest snapshot summary + last plan **only** into marketing pack (salon isolation)
 - Bot: `/research` start|status (gateway → assistant) — not this slice
 - Mini App: research settings screen (no IG token in browser) — not this slice
 - Images: GenerateImage via local marketing-pack + volume (ADR-011) — not this slice
@@ -129,7 +131,7 @@
 - Scope: own account media (`caption,media_url,timestamp,permalink,media_type`) + optional insights when scope allows
 - Media download: SSRF allowlist `*.cdninstagram.com` / `*.fbcdn.net` + size limit
 - Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
-- Non-goals: foreign profiles, Apify, unofficial mobile API, snapshot persist (next slice)
+- Non-goals: foreign profiles, Apify, unofficial mobile API; scheduler/Mini App `/research` (later slices)
 
 ## File Contract Template
 

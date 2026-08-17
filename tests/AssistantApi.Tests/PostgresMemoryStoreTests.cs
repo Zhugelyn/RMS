@@ -115,6 +115,7 @@ public sealed class PostgresMemoryStoreTests : IAsyncLifetime
         var sp = services.BuildServiceProvider();
         Assert.IsType<InMemoryHarnessMemoryStore>(sp.GetRequiredService<IHarnessMemoryStore>());
         Assert.IsType<InMemoryResearchSettingsStore>(sp.GetRequiredService<IResearchSettingsStore>());
+        Assert.IsType<InMemoryResearchArtifactStore>(sp.GetRequiredService<IResearchArtifactStore>());
     }
 
     [Fact]

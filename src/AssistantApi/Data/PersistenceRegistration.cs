@@ -35,6 +35,7 @@ public static class PersistenceRegistration
         {
             services.AddSingleton<IHarnessMemoryStore, InMemoryHarnessMemoryStore>();
             services.AddSingleton<IResearchSettingsStore, InMemoryResearchSettingsStore>();
+            services.AddSingleton<IResearchArtifactStore, InMemoryResearchArtifactStore>();
             return services;
         }
 
@@ -43,6 +44,7 @@ public static class PersistenceRegistration
 
         services.AddSingleton<IHarnessMemoryStore, PostgresHarnessMemoryStore>();
         services.AddSingleton<IResearchSettingsStore, PostgresResearchSettingsStore>();
+        services.AddSingleton<IResearchArtifactStore, PostgresResearchArtifactStore>();
         services.AddSingleton<AssistantDbHealthCheck>();
         services.AddHostedService<MigrateAssistantDbHostedService>();
         return services;

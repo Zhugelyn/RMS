@@ -128,6 +128,7 @@ ADR-журнал для решений, которые должны пережи
 - Consequences: Marketing pack инжектит snapshot/plan/episodes по лимиту символов. Retriever/vector search не появляется в Phase 4. Phase 3 packs не «закрываются целиком» — Postgres leftover закрывается здесь.
 - Alternatives considered: сразу RAG над постами; хранить полный media blob в ES; отдельный research-microservice.
 - Security impact: PII/tokens не в snapshot dump логов; domain isolation (research → marketing); retention/TTL явно в hardening slice.
+- Impl 2026-08-17 (`phase4-research-artifacts`): `IResearchArtifactStore` + `InstagramResearchCapture` (Graph→snapshot→14-day plan→marketing episode); `ResearchPackInjector` only for marketing pack; soft-fail persist/inject; fixtures/isolation tests. No embeddings/ES.
 - Links: `memory/phase-plan.md` Phase 4, ADR-008
 
 ## ADR-011: Image generation = Cursor GenerateImage via local marketing pack + volume

@@ -66,7 +66,7 @@
 - Media download SSRF: allowlist `*.cdninstagram.com` / `*.fbcdn.net`; no IP literals; size limit; no auto-redirect off-list.
 - Rate-limit / token expiry → soft error codes; never log/return raw token or Graph error bodies with secrets.
 - SecretScanner + `/v1/chat` reject IG token patterns (`INSTAGRAM__ACCESSTOKEN`, `IGQVJ`, `access_token=`, EAA…).
-- Research artifacts in Postgres (snapshot/plan stubs + settings) — не логировать raw dumps/tokens (ADR-010); persist/inject = next slice.
+- Research artifacts in Postgres (snapshot/plan + settings) — не логировать raw dumps/tokens (ADR-010); persist/inject ✅; soft-fail; marketing-only inject.
 - GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) — later slice.
 - Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте — later slices.
 - Volume path: no path traversal; size limits on generated images before Telegram send.
@@ -79,6 +79,6 @@
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Mini App initData auth ещё не enforced.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; snapshot/plan persist/inject not wired yet (`phase4-research-artifacts`).
+- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; scheduler/Mini App `/research` not wired yet (`phase4-scheduler`).
 
 
