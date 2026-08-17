@@ -109,13 +109,13 @@ Domain notes (product):
 - `marketing` = рынок красоты, бренды, тренды, таргет/аудитории.
 - `tasks` = расписание работ и напоминания.
 
-Status Phase 3: **acceptance closed functionally** (2026-08-15). **Не закрыта целиком:** leftover Postgres durable harness memory (ADR-008) → подхватывается в Phase 4 `phase4-postgres-settings`. Packs runtime остаётся.
+Status Phase 3: **acceptance closed functionally** (2026-08-15). Leftover Postgres durable harness memory (ADR-008) closed in Phase 4 `phase4-postgres-settings` (2026-08-17). Packs runtime остаётся.
 
 Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный публичный harness-сервис, Kubernetes, полный chat log как память.
 
 ## Phase 4 — Marketing Instagram Research
 
-Status: **open** (docs slice in progress → next impl = `phase4-postgres-settings`).
+Status: **open** (postgres-settings ✅ → next impl = `phase4-ig-graph`).
 
 Суть: маркетинговый research по ленте **своего** Instagram-аккаунта. Источник — только бесплатный **Instagram Graph API**. Счедулер **14 дней**. Настройки в Mini App и команда бота `/research`. Картинки — **Cursor GenerateImage** через local `marketing` pack + volume (не отдельный OpenAI Images). Артефакты research (`snapshot` + `plan` + `episodes`) в **Postgres assistant-api** — это **не RAG**.
 
@@ -129,7 +129,7 @@ Service boundary:
 
 Acceptance (фаза целиком; закрывать по slices):
 
-- [ ] Postgres: durable harness memory + research settings/artifacts (snapshot, plan, episodes).
+- [x] Postgres: durable harness memory + research settings schema (snapshots/plans tables stub; fetch/inject later). Artifacts wiring incomplete until later slices.
 - [ ] Instagram Graph API своего аккаунта как единственный источник ленты; Apify нет.
 - [ ] Счедулер research на 14 дней; настройки в Mini App и `/research` в боте.
 - [ ] GenerateImage через local marketing-pack + volume; не OpenAI Images API.
@@ -140,7 +140,7 @@ Acceptance (фаза целиком; закрывать по slices):
 Slices (один run = один):
 
 1. [x] `phase4-docs` — README + phase-plan Phase 4 + сдвиг RAG на 5; ADR-009/010/011; catalog/contracts/security/run-log; `.env.example`. Без кода сервисов.
-2. [ ] `phase4-postgres-settings` — Postgres в compose; migrations; durable profile/episodes + research settings schema.
+2. [x] `phase4-postgres-settings` — Postgres в compose; migrations; durable profile/episodes + research settings schema.
 3. [ ] `phase4-ig-graph` — Instagram Graph API client (свой аккаунт); token store; fetch media/insights; без Apify.
 4. [ ] `phase4-research-artifacts` — snapshot + plan + episodes persist; 14-дневный plan model; inject в marketing pack.
 5. [ ] `phase4-scheduler` — scheduler/job на окно 14 дней; idempotent runs; failure modes.

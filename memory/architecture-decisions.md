@@ -102,10 +102,10 @@ ADR-журнал для решений, которые должны пережи
 - Date: 2026-08-15
 - Context: Cursor `agentId` помнит только текущий SDK-агент; новый create / смена домена / рестарт контейнера — контекст пользователя пропадает. Нужна короткая память «кто это» и «что уже сделали». Полный транскрипт и Elasticsearch — слишком жирно и смешивает домены.
 - Decision: `assistant-api` владеет store. Два слоя: (1) **UserProfile** — короткие shared факты; (2) **HarnessEpisode** `{userId, domain, task, result, at}` — бриф, cap last K. Specialist pack получает profile + свои episodes. Router — profile + last-domain, без чужих эпизодов. Запись эпизода после успешного verify; fail записи не валит HTTP-ответ. Это не RAG (Phase 5) и не `Agent.resume`.
-- Consequences: specialist не слепой после нового `Agent.create`. Токен-бюджет: жёсткий лимит символов на инжект. **Impl 2026-08-15:** `IHarnessMemoryStore` + in-process store (isolation OK). Durable **PostgreSQL** — Phase 4 `phase4-postgres-settings` (не блокирует pack runtime).
+- Consequences: specialist не слепой после нового `Agent.create`. Токен-бюджет: жёсткий лимит символов на инжект. **Impl 2026-08-15:** `IHarnessMemoryStore` + in-process store (isolation OK). **Durable PostgreSQL 2026-08-17:** `phase4-postgres-settings` — `PostgresHarnessMemoryStore` when `ConnectionStrings:AssistantDb` set; in-process fallback otherwise.
 - Alternatives considered: тащить всю историю в Cursor agent; один shared log на все домены; отдельный memory-microservice; сразу Elasticsearch.
 - Security impact: domain isolation эпизодов; scanner на task/result; PII не в логах; retention/TTL позже явно.
-- Links: `memory/phase-plan.md` Phase 3 slice `phase3-harness-memory`
+- Links: `memory/phase-plan.md` Phase 3 slice `phase3-harness-memory`, Phase 4 `phase4-postgres-settings`
 
 ## ADR-009: Instagram feed source = Graph API of own account only (no Apify)
 

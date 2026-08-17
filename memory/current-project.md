@@ -3,9 +3,9 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `4-instagram-research` (docs slice; Phase 3 packs functionally closed, Postgres leftover → Phase 4)
+- Phase: `4-instagram-research` (slice `phase4-postgres-settings` done → next `phase4-ig-graph`)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks); Postgres — Phase 4
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres`)
 
 ## Product North Star
 
@@ -23,9 +23,9 @@
 
 Marketing Instagram Research:
 
-1. Docs + ADR (этот slice) ✅ next
-2. Postgres durable settings + harness/research memory
-3. Instagram Graph API своего аккаунта (без Apify)
+1. Docs + ADR ✅
+2. Postgres durable settings + harness/research memory ✅
+3. Instagram Graph API своего аккаунта (без Apify) ← next
 4. 14-дневный scheduler; Mini App + `/research`
 5. GenerateImage через local marketing-pack + volume (не OpenAI Images)
 6. Hardening
@@ -37,10 +37,10 @@ Marketing Instagram Research:
 - Отдельный OpenAI Images API
 - MinIO, Яндекс Директ, Kubernetes / Nginx prod
 
-## Phase 3 leftover (не закрывать packs «целиком»)
+## Phase 3 leftover
 
 - Packs runtime ✅
-- Postgres durable harness memory — закрывается в `phase4-postgres-settings`, не отдельным Phase 3 reopen
+- Postgres durable harness memory ✅ (`phase4-postgres-settings`)
 
 ## Token Budget Rules
 
@@ -48,4 +48,4 @@ Marketing Instagram Research:
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: только `phase4-docs`; следующий = `phase4-postgres-settings` (не стартовать здесь).
+- Этот run: только `phase4-postgres-settings`; следующий = `phase4-ig-graph` (не стартовать здесь).

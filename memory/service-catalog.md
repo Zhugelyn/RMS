@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (docs → postgres-settings next).
+Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-postgres-settings` ✅ → next `phase4-ig-graph`).
 
 ## Service: telegram-gateway
 
@@ -18,15 +18,21 @@
 ## Service: assistant-api
 
 - Owner: ai-assistant-agent
-- Business capability: chat completion + Phase 2 Cursor SDK harness
+- Business capability: chat completion + Phase 2 Cursor SDK harness + durable harness/research settings (Postgres)
 - Code: `src/AssistantApi`
 - Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
 - Events produced: нет
 - Events consumed: нет
-- Database: affinity in-memory; harness memory in-process today. Phase 4: PostgreSQL — `user_profiles`, `harness_episodes`, research `snapshot`/`plan`/`episodes` + settings (owner assistant-api)
+- Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, stub `research_snapshots`/`research_plans`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
 - Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); MinIO = Phase 6
-- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Phase 4 — Instagram Graph API (own account)
-- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text; Cursor API key encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram
+- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Phase 4 — Instagram Graph API (own account, next slice)
+- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text; Cursor API key encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram; Postgres password env-only
+
+## Service: postgres (assistant-api data plane)
+
+- Owner: assistant-api (database-per-service)
+- Image: `postgres:16-alpine` via compose
+- Not shared with gateway; no cross-service table reads
 
 ## Service: cursor-sdk-bridge (internal)
 
@@ -43,15 +49,16 @@
 - Product: salon=Babor (Брянск) growth; marketing=beauty market; tasks=schedule/reminders; `_router` classify-only.
 - Schema: `src/AgentPacks/pack.schema.json`.
 - Loader: `PackCatalog`; runtime: bridge local cwd per packId; affinity + harness memory in assistant-api.
-- Memory: `IHarnessMemoryStore` in-process; Postgres durable = `phase4-postgres-settings`.
+- Memory: `IHarnessMemoryStore` → Postgres when CS set, else in-process; domain episode isolation.
 
-## Phase 4 — Instagram Research (planned ownership)
+## Phase 4 — Instagram Research (in progress)
 
 - Capability: 14-day marketing research from own Instagram Graph feed; Mini App settings + bot `/research`
-- Feed source: Instagram Graph API only (ADR-009). **Apify — no.**
-- Artifacts: snapshot + plan + episodes in Postgres (ADR-010). **Not RAG.**
+- Feed source: Instagram Graph API only (ADR-009). **Apify — no.** (client = next slice)
+- Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt) ✅
+- Artifacts tables stubbed: snapshot + plan (ADR-010). **Not RAG.** Fetch/inject later.
 - Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011). **Not OpenAI Images.**
-- UI: gateway Mini App research settings + `/research` command
+- UI: gateway Mini App research settings + `/research` command (later slices)
 - Do not add separate `instagram-research-api` until independent ownership
 
 ## Reserved (do not implement in Phase 4)

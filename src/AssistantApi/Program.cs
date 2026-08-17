@@ -104,6 +104,7 @@ else
     // No Postgres: in-process stores; ready stays green without a DB probe.
     app.MapHealthChecks("/health/ready");
 }
+
 app.MapPost("/v1/chat", async (
     [FromBody] ChatRequest request,
     ChatService chatService,
