@@ -14,6 +14,7 @@ public sealed class AssistantDbContext : DbContext
     public DbSet<ResearchSettingsEntity> ResearchSettings => Set<ResearchSettingsEntity>();
     public DbSet<ResearchSnapshotEntity> ResearchSnapshots => Set<ResearchSnapshotEntity>();
     public DbSet<ResearchPlanEntity> ResearchPlans => Set<ResearchPlanEntity>();
+    public DbSet<ResearchScheduleRunEntity> ResearchScheduleRuns => Set<ResearchScheduleRunEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,7 +56,23 @@ public sealed class AssistantDbContext : DbContext
             e.Property(x => x.CadenceDays).IsRequired().HasDefaultValue(14);
             e.Property(x => x.Timezone).HasMaxLength(64);
             e.Property(x => x.NotifyChatId).HasMaxLength(128);
+            e.Property(x => x.LastError).HasMaxLength(512);
             e.Property(x => x.UpdatedAt).IsRequired();
+            e.HasIndex(x => new { x.Enabled, x.NextRunAt })
+                .HasDatabaseName("ix_research_settings_enabled_next_run");
+        });
+
+        modelBuilder.Entity<ResearchScheduleRunEntity>(e =>
+        {
+            e.ToTable("research_schedule_runs");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.UserId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.PeriodKey).HasMaxLength(32).IsRequired();
+            e.Property(x => x.CompletedAt).IsRequired();
+            e.HasIndex(x => new { x.UserId, x.PeriodKey })
+                .IsUnique()
+                .HasDatabaseName("ux_research_schedule_runs_user_period");
         });
 
         modelBuilder.Entity<ResearchSnapshotEntity>(e =>

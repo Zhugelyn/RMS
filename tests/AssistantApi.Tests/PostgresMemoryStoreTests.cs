@@ -88,6 +88,39 @@ public sealed class PostgresMemoryStoreTests : IAsyncLifetime
         Assert.True(loaded.Enabled);
         Assert.Equal("Europe/Moscow", loaded.Timezone);
         Assert.Equal("tg-1", loaded.NotifyChatId);
+        Assert.Null(loaded.LastError);
+    }
+
+    [Fact]
+    public async Task ListDue_returns_only_enabled_with_nextRunAt_le_now()
+    {
+        var store = new PostgresResearchSettingsStore(_factory);
+        var now = new DateTimeOffset(2026, 8, 17, 12, 0, 0, TimeSpan.Zero);
+        await store.UpsertAsync(new ResearchSettings
+        {
+            UserId = "due",
+            Enabled = true,
+            CadenceDays = 14,
+            NextRunAt = now.AddMinutes(-5)
+        }, CancellationToken.None);
+        await store.UpsertAsync(new ResearchSettings
+        {
+            UserId = "future",
+            Enabled = true,
+            CadenceDays = 14,
+            NextRunAt = now.AddDays(2)
+        }, CancellationToken.None);
+        await store.UpsertAsync(new ResearchSettings
+        {
+            UserId = "off",
+            Enabled = false,
+            CadenceDays = 14,
+            NextRunAt = now.AddMinutes(-5)
+        }, CancellationToken.None);
+
+        var due = await store.ListDueAsync(now, CancellationToken.None);
+        Assert.Single(due);
+        Assert.Equal("due", due[0].UserId);
     }
 
     [Fact]
@@ -100,6 +133,7 @@ public sealed class PostgresMemoryStoreTests : IAsyncLifetime
         Assert.Contains("research_settings", entityTypes);
         Assert.Contains("research_snapshots", entityTypes);
         Assert.Contains("research_plans", entityTypes);
+        Assert.Contains("research_schedule_runs", entityTypes);
     }
 
     [Fact]
@@ -116,6 +150,7 @@ public sealed class PostgresMemoryStoreTests : IAsyncLifetime
         Assert.IsType<InMemoryHarnessMemoryStore>(sp.GetRequiredService<IHarnessMemoryStore>());
         Assert.IsType<InMemoryResearchSettingsStore>(sp.GetRequiredService<IResearchSettingsStore>());
         Assert.IsType<InMemoryResearchArtifactStore>(sp.GetRequiredService<IResearchArtifactStore>());
+        Assert.IsType<InMemoryResearchScheduleRunStore>(sp.GetRequiredService<IResearchScheduleRunStore>());
     }
 
     [Fact]

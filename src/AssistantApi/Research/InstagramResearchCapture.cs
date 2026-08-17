@@ -22,7 +22,7 @@ public sealed class ResearchCaptureResult
 /// <summary>
 /// After Graph fetch: persist snapshot + 14-day plan + marketing episode.
 /// Persist failures are soft (logged) — never throw to HTTP chat callers.
-/// No scheduler / Mini App / GenerateImage in this slice.
+/// Scheduler calls this from BackgroundService; Mini App / GenerateImage = later slices.
 /// </summary>
 public interface IInstagramResearchCapture
 {
