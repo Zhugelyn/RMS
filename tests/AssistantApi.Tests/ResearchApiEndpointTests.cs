@@ -146,6 +146,7 @@ public sealed class ResearchApiEndpointTests
                         BaseUrl = "http://gateway.test",
                         ServiceKey = ServiceKey
                     }),
+                    Microsoft.Extensions.Options.Options.Create(new AssistantApi.Options.ResearchOptions()),
                     sp.GetRequiredService<IResearchArtifactStore>(),
                     Microsoft.Extensions.Logging.Abstractions.NullLogger<GatewayResearchNotifyHook>.Instance);
             });

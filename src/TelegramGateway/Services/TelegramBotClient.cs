@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,6 +10,7 @@ namespace TelegramGateway.Services;
 public interface ITelegramBotClient
 {
     Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken);
+    Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken);
     Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken);
 }
 
@@ -55,6 +57,44 @@ public sealed class TelegramBotClient : ITelegramBotClient
         }
     }
 
+    public async Task SendPhotoAsync(
+        long chatId,
+        Stream photo,
+        string fileName,
+        string? caption,
+        CancellationToken cancellationToken)
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(chatId.ToString()), "chat_id");
+        if (!string.IsNullOrWhiteSpace(caption))
+        {
+            var cap = caption.Length <= 1024 ? caption : caption[..1024];
+            content.Add(new StringContent(cap), "caption");
+        }
+
+        var streamContent = new StreamContent(photo);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue(GuessContentType(fileName));
+        content.Add(streamContent, "photo", string.IsNullOrWhiteSpace(fileName) ? "image.jpg" : fileName);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/bot{_botToken}/sendPhoto")
+        {
+            Content = content
+        };
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Telegram sendPhoto failed status={StatusCode}", (int)response.StatusCode);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Telegram sendPhoto failed");
+        }
+    }
+
     public async Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/bot{_botToken}/getUpdates?timeout=25&offset={offset}");
@@ -67,6 +107,18 @@ public sealed class TelegramBotClient : ITelegramBotClient
 
         var payload = await response.Content.ReadFromJsonAsync<TelegramGetUpdatesResponse>(JsonOptions, cancellationToken);
         return payload?.Result ?? [];
+    }
+
+    private static string GuessContentType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => "application/octet-stream"
+        };
     }
 }
 

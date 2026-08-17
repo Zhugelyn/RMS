@@ -8,8 +8,8 @@ using Microsoft.Extensions.Options;
 namespace AssistantApi.Research;
 
 /// <summary>
-/// Posts research status/plan text to telegram-gateway internal notify (bot token stays in gateway).
-/// Soft-fails: never throws to scheduler.
+/// Posts research status/plan text (+ optional photo paths) to telegram-gateway internal notify.
+/// Soft-fails: never throws to scheduler. Text is always sent even when photos=0.
 /// </summary>
 public sealed class GatewayResearchNotifyHook : IResearchNotifyHook
 {
@@ -20,16 +20,19 @@ public sealed class GatewayResearchNotifyHook : IResearchNotifyHook
 
     private readonly HttpClient _http;
     private readonly IResearchArtifactStore _artifacts;
+    private readonly ResearchOptions _research;
     private readonly ILogger<GatewayResearchNotifyHook> _logger;
 
     public GatewayResearchNotifyHook(
         HttpClient http,
         IOptions<GatewayNotifyOptions> options,
+        IOptions<ResearchOptions> research,
         IResearchArtifactStore artifacts,
         ILogger<GatewayResearchNotifyHook> logger)
     {
         _http = http;
         _artifacts = artifacts;
+        _research = research.Value;
         _logger = logger;
         var o = options.Value;
         _http.BaseAddress = new Uri(o.BaseUrl.TrimEnd('/') + "/");
@@ -63,6 +66,11 @@ public sealed class GatewayResearchNotifyHook : IResearchNotifyHook
             ? $"Research OK (period {evt.PeriodKey})."
             : $"Research failed (period {evt.PeriodKey}): {evt.ErrorCode ?? "error"}.";
 
+        if (evt.Success && string.Equals(evt.ErrorCode, ResearchImageLimits.SoftFailErrorCode, StringComparison.Ordinal))
+        {
+            text += " Картинки пропущены (image-tool-missing).";
+        }
+
         if (!string.IsNullOrWhiteSpace(planPreview))
         {
             text += "\n\n" + planPreview;
@@ -73,11 +81,25 @@ public sealed class GatewayResearchNotifyHook : IResearchNotifyHook
             text = text[..3500] + "…";
         }
 
+        var photos = evt.PhotoPaths
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(p => p.Replace('\\', '/'))
+            .Take(ResearchImageLimits.MaxImages)
+            .ToList();
+
         try
         {
             using var response = await _http.PostAsJsonAsync(
                 "internal/notify",
-                new { chatId, text },
+                new
+                {
+                    chatId,
+                    text,
+                    photoPaths = photos.Count == 0 ? null : photos,
+                    imageVolumePath = string.IsNullOrWhiteSpace(_research.ImageVolumePath)
+                        ? null
+                        : _research.ImageVolumePath
+                },
                 JsonOptions,
                 cancellationToken);
 

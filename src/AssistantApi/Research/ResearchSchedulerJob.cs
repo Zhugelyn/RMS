@@ -183,19 +183,28 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
 
         if (IsCaptureSuccess(capture))
         {
+            // Soft-fail GenerateImage: plan without pictures, job still Captured (ADR-011).
+            var softImageError = capture.ImageErrorCode;
             await _runs.MarkSuccessfulAsync(settings.UserId, periodKey, now, cancellationToken);
             await UpsertScheduleAsync(
                 settings,
                 nextRunAt: ResearchCadence.AdvanceNextRun(dueAt, settings.CadenceDays),
                 lastRunAt: now,
-                lastError: null,
+                lastError: softImageError,
                 cancellationToken);
-            await SafeNotifyAsync(settings, periodKey, success: true, null, cancellationToken);
+            await SafeNotifyAsync(
+                settings,
+                periodKey,
+                success: true,
+                softImageError,
+                cancellationToken,
+                photoPaths: capture.ImagePaths);
             return new ResearchScheduleTickResult
             {
                 Outcome = ResearchScheduleOutcome.Captured,
                 PeriodKey = periodKey,
-                Capture = capture
+                Capture = capture,
+                ErrorCode = softImageError
             };
         }
 
@@ -261,7 +270,8 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
         string periodKey,
         bool success,
         string? errorCode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<string>? photoPaths = null)
     {
         try
         {
@@ -272,7 +282,8 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
                 PeriodKey = periodKey,
                 Success = success,
                 ErrorCode = errorCode,
-                Message = success ? "research-ok" : "research-failed"
+                Message = success ? "research-ok" : "research-failed",
+                PhotoPaths = photoPaths ?? Array.Empty<string>()
             }, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
