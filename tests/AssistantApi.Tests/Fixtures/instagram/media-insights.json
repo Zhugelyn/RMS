@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "name": "impressions",
+      "period": "lifetime",
+      "values": [{ "value": 1200 }],
+      "title": "Impressions",
+      "description": "Total number of times the media object has been seen",
+      "id": "179000111222333/insights/impressions/lifetime"
+    },
+    {
+      "name": "reach",
+      "period": "lifetime",
+      "values": [{ "value": 900 }],
+      "title": "Reach",
+      "id": "179000111222333/insights/reach/lifetime"
+    },
+    {
+      "name": "engagement",
+      "period": "lifetime",
+      "values": [{ "value": 85 }],
+      "title": "Engagement",
+      "id": "179000111222333/insights/engagement/lifetime"
+    },
+    {
+      "name": "saved",
+      "period": "lifetime",
+      "values": [{ "value": 12 }],
+      "title": "Saved",
+      "id": "179000111222333/insights/saved/lifetime"
+    },
+    {
+      "name": "video_views",
+      "period": "lifetime",
+      "values": [{ "value": 400 }],
+      "title": "Video Views",
+      "id": "179000111222333/insights/video_views/lifetime"
+    }
+  ]
+}

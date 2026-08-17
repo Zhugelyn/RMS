@@ -9,15 +9,20 @@ public sealed class AesGcmSecretProtector : ISecretProtector
 {
     private readonly byte[] _key;
 
-    public AesGcmSecretProtector(IOptions<CursorOptions> options)
+    public AesGcmSecretProtector(string masterKey)
     {
-        var master = options.Value.MasterKey;
-        if (string.IsNullOrWhiteSpace(master) || master.Length < 16)
+        if (string.IsNullOrWhiteSpace(masterKey) || masterKey.Length < 16)
         {
-            throw new InvalidOperationException("Cursor:MasterKey must be at least 16 characters.");
+            throw new InvalidOperationException("Secret master key must be at least 16 characters.");
         }
 
-        _key = DeriveKey(master);
+        _key = DeriveKey(masterKey);
+    }
+
+    /// <summary>Cursor-path convenience ctor (existing DI / tests).</summary>
+    public AesGcmSecretProtector(IOptions<CursorOptions> options)
+        : this(options.Value.MasterKey)
+    {
     }
 
     public string Protect(string plaintext)

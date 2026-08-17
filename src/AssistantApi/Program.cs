@@ -1,6 +1,7 @@
 using AssistantApi.Contracts;
 using AssistantApi.Data;
 using AssistantApi.Harness;
+using AssistantApi.Instagram;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
@@ -34,20 +35,68 @@ builder.Services
         "Cursor:MasterKey must be at least 16 characters when set.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<InstagramOptions>()
+    .Bind(builder.Configuration.GetSection(InstagramOptions.SectionName))
+    .Validate(o => string.IsNullOrWhiteSpace(o.MasterKey) || o.MasterKey.Length >= 16,
+        "Instagram:MasterKey must be at least 16 characters when set.")
+    .ValidateOnStart();
+
 var cursorSection = builder.Configuration.GetSection(CursorOptions.SectionName);
+var instagramSection = builder.Configuration.GetSection(InstagramOptions.SectionName);
 var hasCursorKeyMaterial =
     !string.IsNullOrWhiteSpace(cursorSection["ApiKey"]) ||
     !string.IsNullOrWhiteSpace(cursorSection["EncryptedApiKey"]);
+var hasInstagramTokenMaterial =
+    !string.IsNullOrWhiteSpace(instagramSection["AccessToken"]) ||
+    !string.IsNullOrWhiteSpace(instagramSection["EncryptedAccessToken"]);
+
+var resolvedMasterKey =
+    !string.IsNullOrWhiteSpace(instagramSection["MasterKey"]) ? instagramSection["MasterKey"]!
+    : !string.IsNullOrWhiteSpace(cursorSection["MasterKey"]) ? cursorSection["MasterKey"]!
+    : string.Empty;
+
+if ((hasCursorKeyMaterial || hasInstagramTokenMaterial) &&
+    (string.IsNullOrWhiteSpace(resolvedMasterKey) || resolvedMasterKey.Length < 16))
+{
+    throw new InvalidOperationException(
+        "A master key (≥16 chars) is required when Cursor or Instagram secrets are set " +
+        "(Cursor:MasterKey and/or Instagram:MasterKey).");
+}
+
+if (hasCursorKeyMaterial || hasInstagramTokenMaterial)
+{
+    builder.Services.AddSingleton<ISecretProtector>(_ => new AesGcmSecretProtector(resolvedMasterKey));
+}
 
 if (hasCursorKeyMaterial)
 {
-    builder.Services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
     builder.Services.AddSingleton<ICursorApiKeyStore, EncryptedCursorApiKeyStore>();
 }
 else
 {
     builder.Services.AddSingleton<ICursorApiKeyStore, EmptyCursorApiKeyStore>();
 }
+
+if (hasInstagramTokenMaterial)
+{
+    builder.Services.AddSingleton<IInstagramTokenStore, EncryptedInstagramTokenStore>();
+}
+else
+{
+    builder.Services.AddSingleton<IInstagramTokenStore, EmptyInstagramTokenStore>();
+}
+
+builder.Services.AddSingleton<StubInstagramGraphClient>();
+builder.Services.AddHttpClient<HttpInstagramGraphClient>();
+builder.Services.AddHttpClient<IInstagramMediaDownloader, InstagramMediaDownloader>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        // SSRF: never auto-follow; caller must re-check allowlist per hop if following manually.
+        AllowAutoRedirect = false
+    });
+builder.Services.AddTransient<FallbackInstagramGraphClient>();
+builder.Services.AddTransient<IInstagramGraphClient>(sp => sp.GetRequiredService<FallbackInstagramGraphClient>());
 
 builder.Services
     .AddOptions<AgentPacksOptions>()
@@ -147,13 +196,25 @@ app.Run();
 static bool LooksLikeSecret(string text)
 {
     if (text.Contains("CURSOR_API_KEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("INSTAGRAM__ACCESSTOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("INSTAGRAM_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("IG_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
         (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20))
     {
         return true;
     }
 
+    // Instagram long-lived user tokens often start with IGQ / EAA / IGT.
+    if (text.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("IGQWR", StringComparison.OrdinalIgnoreCase) ||
+        (text.Contains("EAA", StringComparison.Ordinal) && text.Length > 40))
+    {
+        return true;
+    }
+
     return text.Contains("api_key=", StringComparison.OrdinalIgnoreCase)
-           || text.Contains("apikey=", StringComparison.OrdinalIgnoreCase);
+           || text.Contains("apikey=", StringComparison.OrdinalIgnoreCase)
+           || text.Contains("access_token=", StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class Program;

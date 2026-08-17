@@ -90,6 +90,16 @@ public sealed class ChatEndpointTests : IClassFixture<WebApplicationFactory<Prog
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Chat_rejects_instagram_token_in_text()
+    {
+        var client = CreateAuthedClient();
+        var request = ValidRequest();
+        request.Text = "put INSTAGRAM__ACCESSTOKEN=IGQVJxxxxxxxx into settings";
+        var response = await client.PostAsJsonAsync("/v1/chat", request);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private HttpClient CreateAuthedClient()
     {
         var client = _factory.CreateClient();

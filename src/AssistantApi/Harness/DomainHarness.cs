@@ -257,7 +257,13 @@ public sealed class DomainHarness : IDomainHarness
 
     private static bool LooksLikeSecret(string text) =>
         text.Contains("CURSOR_API_KEY", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("INSTAGRAM__ACCESSTOKEN", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("INSTAGRAM_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("IG_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase)
         || text.Contains("api_key=", StringComparison.OrdinalIgnoreCase)
         || text.Contains("apikey=", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("access_token=", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase)
+        || text.Contains("IGQWR", StringComparison.OrdinalIgnoreCase)
         || (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20);
 }
