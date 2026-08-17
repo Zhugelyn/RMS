@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17e
+
+- Trigger: webhook slice=phase4-scheduler
+- Slice: phase4-scheduler
+- Status: passed
+- Checks: BackgroundService 14d cadence from research_settings; ListDue; LastError; idempotent userId+period (research_schedule_runs); nextRunAt/lastRunAt after success; Graph fail → lastError, host alive; no token/disabled → no-op; NoOp notify hook; `dotnet test` 68/68 (57 api + 11 gateway); no Mini App /research UI, GenerateImage, Hangfire, RAG/Apify
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, run-log
+- Next slice: `phase4-miniapp-research` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17d
 
 - Trigger: webhook slice=phase4-research-artifacts

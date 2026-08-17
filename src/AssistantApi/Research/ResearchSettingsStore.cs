@@ -14,12 +14,17 @@ public sealed class ResearchSettings
     public string? NotifyChatId { get; init; }
     public DateTimeOffset? NextRunAt { get; init; }
     public DateTimeOffset? LastRunAt { get; init; }
+    /// <summary>Last soft failure code/message. Cleared on successful run. Never stores tokens.</summary>
+    public string? LastError { get; init; }
 }
 
 public interface IResearchSettingsStore
 {
     Task<ResearchSettings?> GetAsync(string userId, CancellationToken cancellationToken);
     Task UpsertAsync(ResearchSettings settings, CancellationToken cancellationToken);
+
+    /// <summary>Enabled settings with NextRunAt ≤ now (due for scheduler).</summary>
+    Task<IReadOnlyList<ResearchSettings>> ListDueAsync(DateTimeOffset now, CancellationToken cancellationToken);
 }
 
 public static class ResearchSettingsDefaults
@@ -35,11 +40,15 @@ public static class ResearchSettingsDefaults
         Timezone = s.Timezone,
         NotifyChatId = s.NotifyChatId,
         NextRunAt = s.NextRunAt,
-        LastRunAt = s.LastRunAt
+        LastRunAt = s.LastRunAt,
+        LastError = string.IsNullOrWhiteSpace(s.LastError) ? null : TrimError(s.LastError)
     };
+
+    private static string TrimError(string value) =>
+        value.Length <= 512 ? value : value[..512];
 }
 
-/// <summary>Dev fallback when Postgres is not configured. No Graph/scheduler wiring.</summary>
+/// <summary>Dev fallback when Postgres is not configured.</summary>
 public sealed class InMemoryResearchSettingsStore : IResearchSettingsStore
 {
     private readonly ConcurrentDictionary<string, ResearchSettings> _items = new(StringComparer.Ordinal);
@@ -54,6 +63,17 @@ public sealed class InMemoryResearchSettingsStore : IResearchSettingsStore
     {
         _items[settings.UserId] = ResearchSettingsDefaults.Normalize(settings);
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ResearchSettings>> ListDueAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var due = _items.Values
+            .Where(s => ResearchCadence.IsDue(s, now))
+            .OrderBy(s => s.NextRunAt)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<ResearchSettings>>(due);
     }
 }
 
@@ -92,6 +112,7 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
                 NotifyChatId = normalized.NotifyChatId,
                 NextRunAt = normalized.NextRunAt,
                 LastRunAt = normalized.LastRunAt,
+                LastError = normalized.LastError,
                 UpdatedAt = DateTimeOffset.UtcNow
             });
         }
@@ -104,10 +125,28 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
             existing.NotifyChatId = normalized.NotifyChatId;
             existing.NextRunAt = normalized.NextRunAt;
             existing.LastRunAt = normalized.LastRunAt;
+            existing.LastError = normalized.LastError;
             existing.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ResearchSettings>> ListDueAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        // Load enabled rows then filter due in-process: SQLite EF cannot translate
+        // nullable DateTimeOffset comparisons; Postgres volume is tiny (per-user settings).
+        var rows = await db.ResearchSettings.AsNoTracking()
+            .Where(x => x.Enabled)
+            .ToListAsync(cancellationToken);
+        return rows
+            .Where(x => x.NextRunAt is { } due && due <= now)
+            .OrderBy(x => x.NextRunAt)
+            .Select(ToModel)
+            .ToList();
     }
 
     private static ResearchSettings ToModel(ResearchSettingsEntity e) => new()
@@ -119,6 +158,7 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
         Timezone = e.Timezone,
         NotifyChatId = e.NotifyChatId,
         NextRunAt = e.NextRunAt,
-        LastRunAt = e.LastRunAt
+        LastRunAt = e.LastRunAt,
+        LastError = e.LastError
     };
 }

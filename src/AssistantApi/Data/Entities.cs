@@ -35,7 +35,19 @@ public sealed class ResearchSettingsEntity
     public string? NotifyChatId { get; set; }
     public DateTimeOffset? NextRunAt { get; set; }
     public DateTimeOffset? LastRunAt { get; set; }
+    /// <summary>Last soft failure (no tokens). Cleared on success.</summary>
+    public string? LastError { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>Idempotent successful research run window (userId + periodKey).</summary>
+public sealed class ResearchScheduleRunEntity
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    /// <summary>UTC date of due NextRunAt window, e.g. 2026-08-17.</summary>
+    public string PeriodKey { get; set; } = string.Empty;
+    public DateTimeOffset CompletedAt { get; set; }
 }
 
 /// <summary>Normalized feed snapshot JSON (ADR-010). Cap last K in store; no raw IG token.</summary>

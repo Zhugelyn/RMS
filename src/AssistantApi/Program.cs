@@ -116,6 +116,12 @@ builder.Services.AddSingleton<IAgentAffinityStore, InMemoryAgentAffinityStore>()
 builder.Services.AddAssistantPersistence(builder.Configuration);
 builder.Services.AddSingleton<IResearchPackInjector, ResearchPackInjector>();
 builder.Services.AddSingleton<IInstagramResearchCapture, InstagramResearchCapture>();
+builder.Services
+    .AddOptions<ResearchSchedulerOptions>()
+    .Bind(builder.Configuration.GetSection(ResearchSchedulerOptions.SectionName));
+builder.Services.AddSingleton<IResearchNotifyHook, NoOpResearchNotifyHook>();
+builder.Services.AddSingleton<IResearchSchedulerJob, ResearchSchedulerJob>();
+builder.Services.AddHostedService<ResearchSchedulerHostedService>();
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
 builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();

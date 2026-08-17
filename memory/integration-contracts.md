@@ -112,15 +112,17 @@
 - Owner: assistant-api
 - Consumers: marketing pack (inject ✅); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
 - Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅
-- Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt` — **no raw IG token in row**
+- Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt`, `lastError?` — **no raw IG token in row**
 - Artifacts (Postgres, ADR-010 — **not RAG**):
   - `research_snapshots`: normalized posts + visual notes + summary JSON; cap last K; no raw token ✅
   - `research_plans`: 14 items `{date, caption, hashtags, imagePrompt, mediaPath?, telegramFileId?, status}` ✅
   - harness `harness_episodes` domain=`marketing` after capture («Research … → план») ✅
+  - `research_schedule_runs`: unique `(userId, periodKey)` successful windows ✅
 - Capture: `IInstagramResearchCapture` — Graph fetch → snapshot → plan → episode; soft-fail persist
+- Scheduler: `IResearchSchedulerJob` / `ResearchSchedulerHostedService` — due `enabled && nextRunAt≤now`; cadenceDays default 14; success → nextRunAt+=cadence, lastRunAt, clear lastError, mark period; Graph fail → lastError, keep snapshot, no period mark; no token/disabled → no-op; notify = `IResearchNotifyHook` (NoOp stub) ✅
 - Inject: `IResearchPackInjector` — latest snapshot summary + last plan **only** into marketing pack (salon isolation)
-- Bot: `/research` start|status (gateway → assistant) — not this slice
-- Mini App: research settings screen (no IG token in browser) — not this slice
+- Bot: `/research` start|status (gateway → assistant) — next slice
+- Mini App: research settings screen (no IG token in browser) — next slice
 - Images: GenerateImage via local marketing-pack + volume (ADR-011) — not this slice
 - Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
 
@@ -131,7 +133,7 @@
 - Scope: own account media (`caption,media_url,timestamp,permalink,media_type`) + optional insights when scope allows
 - Media download: SSRF allowlist `*.cdninstagram.com` / `*.fbcdn.net` + size limit
 - Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
-- Non-goals: foreign profiles, Apify, unofficial mobile API; scheduler/Mini App `/research` (later slices)
+- Non-goals: foreign profiles, Apify, unofficial mobile API; Mini App `/research` UI (next slice)
 
 ## File Contract Template
 

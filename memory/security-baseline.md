@@ -67,8 +67,9 @@
 - Rate-limit / token expiry → soft error codes; never log/return raw token or Graph error bodies with secrets.
 - SecretScanner + `/v1/chat` reject IG token patterns (`INSTAGRAM__ACCESSTOKEN`, `IGQVJ`, `access_token=`, EAA…).
 - Research artifacts in Postgres (snapshot/plan + settings) — не логировать raw dumps/tokens (ADR-010); persist/inject ✅; soft-fail; marketing-only inject.
+- Scheduler: `lastError` sanitized (no token fragments); idempotent period keys; tick exceptions swallowed by BackgroundService; Graph fail не валит host. ✅ (`phase4-scheduler`)
 - GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) — later slice.
-- Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте — later slices.
+- Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте — next slice (`phase4-miniapp-research`).
 - Volume path: no path traversal; size limits on generated images before Telegram send.
 - Postgres: credentials только env (`POSTGRES__PASSWORD` / `ConnectionStrings__AssistantDb`); migrations без secrets in git; database-per-service owner=assistant-api; ready fails if CS set but DB down; without CS → in-process fallback.
 
@@ -79,6 +80,6 @@
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Mini App initData auth ещё не enforced.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; scheduler/Mini App `/research` not wired yet (`phase4-scheduler`).
+- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; Mini App `/research` not wired yet (`phase4-miniapp-research`).
 
 
