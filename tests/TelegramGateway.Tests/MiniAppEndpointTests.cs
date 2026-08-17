@@ -103,6 +103,27 @@ public sealed class MiniAppEndpointTests
                 Provider = "stub"
             });
         }
+
+        public Task<ResearchSettingsDto> GetResearchSettingsAsync(string userId, CancellationToken cancellationToken) =>
+            Task.FromResult(new ResearchSettingsDto { UserId = userId });
+
+        public Task<ResearchSettingsDto> PutResearchSettingsAsync(
+            ResearchSettingsUpdateRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(new ResearchSettingsDto { UserId = request.UserId });
+
+        public Task<ResearchRunResponse> RunResearchAsync(ResearchRunRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new ResearchRunResponse
+            {
+                Outcome = "NoOp",
+                Settings = new ResearchSettingsDto { UserId = request.UserId }
+            });
+
+        public Task<ResearchLatestResponse> GetResearchLatestAsync(string userId, CancellationToken cancellationToken) =>
+            Task.FromResult(new ResearchLatestResponse
+            {
+                Settings = new ResearchSettingsDto { UserId = userId }
+            });
     }
 
     private sealed class NoopTelegram : ITelegramBotClient

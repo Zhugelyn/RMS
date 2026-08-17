@@ -265,7 +265,8 @@ public sealed class ResearchSchedulerTests
         public Task<ResearchScheduleTickResult> ProcessOneAsync(
             ResearchSettings settings,
             DateTimeOffset now,
-            CancellationToken cancellationToken) =>
+            CancellationToken cancellationToken,
+            bool force = false) =>
             Task.FromResult(new ResearchScheduleTickResult { Outcome = ResearchScheduleOutcome.NoOp });
     }
 }
