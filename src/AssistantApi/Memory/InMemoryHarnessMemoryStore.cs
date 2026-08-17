@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace AssistantApi.Memory;
 
 /// <summary>
-/// Process-local harness memory. Swap to Postgres-backed store when ConnectionStrings:AssistantDb is set (later harden).
+/// Process-local harness memory. Used when ConnectionStrings:AssistantDb is unset (dev fallback).
 /// </summary>
 public sealed class InMemoryHarnessMemoryStore : IHarnessMemoryStore
 {

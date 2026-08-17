@@ -1,6 +1,6 @@
 using AssistantApi.Contracts;
+using AssistantApi.Data;
 using AssistantApi.Harness;
-using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
@@ -63,13 +63,19 @@ builder.Services.AddSingleton<IPackCatalog>(sp =>
 builder.Services.AddSingleton<IDomainHarness>(sp => new DomainHarness(sp.GetRequiredService<IPackCatalog>()));
 builder.Services.AddSingleton<IPackPromptBuilder, PackPromptBuilder>();
 builder.Services.AddSingleton<IAgentAffinityStore, InMemoryAgentAffinityStore>();
-builder.Services.AddSingleton<IHarnessMemoryStore, InMemoryHarnessMemoryStore>();
+builder.Services.AddAssistantPersistence(builder.Configuration);
 builder.Services.AddSingleton<StubLlmProvider>();
 builder.Services.AddSingleton<CursorSdkLlmProvider>();
 builder.Services.AddSingleton<ILlmProvider, FallbackLlmProvider>();
 builder.Services.AddSingleton<ChatService>();
 builder.Services.AddProblemDetails();
-builder.Services.AddHealthChecks();
+
+var healthChecks = builder.Services.AddHealthChecks();
+if (PersistenceRegistration.HasPostgres(builder.Configuration))
+{
+    // Honest fail ready when ConnectionStrings:AssistantDb is set but DB is unreachable.
+    healthChecks.AddCheck<AssistantDbHealthCheck>("assistant-db", tags: new[] { "ready" });
+}
 
 builder.Services.AddHttpClient<ICursorSdkClient, HttpCursorSdkClient>((sp, client) =>
 {
@@ -86,8 +92,18 @@ _ = app.Services.GetRequiredService<IPackCatalog>();
 app.UseMiddleware<ServiceKeyAuthMiddleware>();
 
 app.MapHealthChecks("/health/live");
-app.MapHealthChecks("/health/ready");
-
+if (PersistenceRegistration.HasPostgres(builder.Configuration))
+{
+    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready")
+    });
+}
+else
+{
+    // No Postgres: in-process stores; ready stays green without a DB probe.
+    app.MapHealthChecks("/health/ready");
+}
 app.MapPost("/v1/chat", async (
     [FromBody] ChatRequest request,
     ChatService chatService,
