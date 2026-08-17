@@ -110,7 +110,7 @@
 ## Data: assistant-api.instagram-research (Phase 4)
 
 - Owner: assistant-api
-- Consumers: marketing pack (inject ✅); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
+- Consumers: marketing pack (inject ✅); telegram-gateway (`/research`, Mini App settings) via research APIs ✅
 - Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅
 - Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt`, `lastError?` — **no raw IG token in row**
 - Artifacts (Postgres, ADR-010 — **not RAG**):
@@ -119,12 +119,32 @@
   - harness `harness_episodes` domain=`marketing` after capture («Research … → план») ✅
   - `research_schedule_runs`: unique `(userId, periodKey)` successful windows ✅
 - Capture: `IInstagramResearchCapture` — Graph fetch → snapshot → plan → episode; soft-fail persist
-- Scheduler: `IResearchSchedulerJob` / `ResearchSchedulerHostedService` — due `enabled && nextRunAt≤now`; cadenceDays default 14; success → nextRunAt+=cadence, lastRunAt, clear lastError, mark period; Graph fail → lastError, keep snapshot, no period mark; no token/disabled → no-op; notify = `IResearchNotifyHook` (NoOp stub) ✅
+- Scheduler: `IResearchSchedulerJob` / `ResearchSchedulerHostedService` — due `enabled && nextRunAt≤now`; cadenceDays default 14; success → nextRunAt+=cadence, lastRunAt, clear lastError, mark period; Graph fail → lastError, keep snapshot, no period mark; no token/disabled → no-op; notify = `IResearchNotifyHook` (`GatewayResearchNotifyHook` when `Gateway:BaseUrl` set) ✅
 - Inject: `IResearchPackInjector` — latest snapshot summary + last plan **only** into marketing pack (salon isolation)
-- Bot: `/research` start|status (gateway → assistant) — next slice
-- Mini App: research settings screen (no IG token in browser) — next slice
-- Images: GenerateImage via local marketing-pack + volume (ADR-011) — not this slice
+- Bot: `/research` on|off|account|now|plan|status ✅
+- Mini App: research settings (no IG token) ✅
+- Images: GenerateImage via local marketing-pack + volume (ADR-011) — next slice
 - Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
+
+## API: assistant-api.research
+
+- Owner: assistant-api
+- Consumers: telegram-gateway (Mini App + bot)
+- Methods:
+  - `GET /v1/research/settings?userId=tg-*`
+  - `PUT /v1/research/settings` body `{ userId, enabled?, instagramHandle?, cadenceDays?, timezone?, notifyChatId? }`
+  - `POST /v1/research/run` body `{ userId, notifyChatId? }` — force capture (period `manual-…`)
+  - `GET /v1/research/latest?userId=tg-*` — settings + snapshot summary + plan preview
+- Auth: `X-Service-Key`
+- Validation: userId must be `tg-<digits>`; reject secret-like handle/token fields; no IG token in request/response
+- Errors: ProblemDetails 400/401
+
+## API: telegram-gateway.research-proxy
+
+- Owner: telegram-gateway
+- Methods: `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`
+- Auth: browser → gateway (service key server-side); mutations require `tg-*` (no anonymous)
+- `POST /internal/notify` `{ chatId, text }` — `X-Service-Key`; used by assistant-api notify hook
 
 ## External: instagram-graph (Phase 4)
 
@@ -133,7 +153,8 @@
 - Scope: own account media (`caption,media_url,timestamp,permalink,media_type`) + optional insights when scope allows
 - Media download: SSRF allowlist `*.cdninstagram.com` / `*.fbcdn.net` + size limit
 - Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
-- Non-goals: foreign profiles, Apify, unofficial mobile API; Mini App `/research` UI (next slice)
+- Non-goals: foreign profiles, Apify, unofficial mobile API
+
 
 ## File Contract Template
 

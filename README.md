@@ -1,12 +1,13 @@
-# Telegram AI — Phase 3 packs + Phase 4 Instagram Research (docs)
+# Telegram AI — Phase 3 packs + Phase 4 Instagram Research
 
-Три контейнера (Compose) + domain packs на диске:
+Три контейнера (Compose) + domain packs на диске + Postgres:
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
-| `assistant-api` | `5080` | `POST /v1/chat`, harness, encrypt-at-rest key, packs, harness memory |
-| `telegram-gateway` | `5081` | Telegram bot + Mini App |
+| `assistant-api` | `5080` | `POST /v1/chat`, research APIs, harness, packs, Postgres |
+| `telegram-gateway` | `5081` | Telegram bot + Mini App (research settings) |
 | `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume + local pack cwd |
+| `postgres` | internal | durable harness + research settings/artifacts |
 
 Без `CURSOR__APIKEY` chat идёт в **stub fallback**.
 
@@ -16,8 +17,8 @@
 | --- | --- | --- |
 | 1 Shell | closed | gateway + assistant stub + Mini App |
 | 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
-| 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres durable memory — leftover |
-| **4 Marketing Instagram Research** | **docs (этот slice)** | Graph API своего аккаунта, 14-дневный research, GenerateImage local pack |
+| 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
+| **4 Marketing Instagram Research** | **open** (miniapp-research ✅ → next generate-image) | Graph API своего аккаунта, 14d scheduler, Mini App + `/research` |
 | 5 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 6 Files / media | later | MinIO, фото/видео adapters |
 | 7 External tools | later | Яндекс Директ и др. |
@@ -169,8 +170,26 @@ curl -sS -X POST http://127.0.0.1:5081/api/miniapp/chat \
   -d '{"text":"прайс","intent":"marketing","conversationId":"mini-1","userId":"tg-1"}'
 ```
 
-UI: открой http://127.0.0.1:5081/ — экраны Салон / Маркетинг / Задачи.  
-Phase 4 (следующие slices): настройки research + `/research` в боте.
+UI: открой http://127.0.0.1:5081/ — Салон / Маркетинг / Задачи.  
+Вкладка **Маркетинг** → блок Instagram Research (enabled, @handle, cadence=14, timezone, last/next, lastError, plan preview, Save / Run now). IG token в UI нет.
+
+### Research API (через gateway proxy)
+
+```bash
+# settings (userId обязателен tg-*)
+curl -sS 'http://127.0.0.1:5081/api/miniapp/research/settings?userId=tg-1'
+curl -sS -X PUT http://127.0.0.1:5081/api/miniapp/research/settings \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"tg-1","enabled":true,"instagramHandle":"@mybrand","cadenceDays":14,"timezone":"Europe/Moscow","notifyChatId":"1"}'
+
+curl -sS -X POST http://127.0.0.1:5081/api/miniapp/research/run \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"tg-1","notifyChatId":"1"}'
+
+curl -sS 'http://127.0.0.1:5081/api/miniapp/research/latest?userId=tg-1'
+```
+
+Assistant (service key): `GET/PUT /v1/research/settings`, `POST /v1/research/run`, `GET /v1/research/latest`.
 
 ### Webhook (симуляция update)
 
@@ -209,8 +228,8 @@ dotnet test
 
 Покрытие:
 
-- assistant-api: health public, chat auth, stub response, reject secrets, packs/harness
-- gateway: SecretScanner, update→assistant mapping, Mini App HTML/proxy
+- assistant-api: health, chat, research settings/run/latest, packs/harness/scheduler
+- gateway: SecretScanner, `/research` bot, Mini App research proxy + internal notify
 
 ## Локальный `dotnet run` (без Docker)
 
@@ -238,7 +257,7 @@ dotnet run --urls http://127.0.0.1:5081
 1. Создай бота у BotFather → токен в `.env`.
 2. `TELEGRAM__USEPOLLING=true` — для local/dev (default).
 3. Напиши боту `/start`, `/salon`, `/marketing`, `/tasks` или обычный текст.
-4. Phase 4 (после impl): `/research` — запуск/статус 14-дневного Instagram research.
+4. `/research` — status; `on` | `off` | `account @handle` | `now` | `plan`. IG token в чат не принимать.
 5. Для webhook (позже/prod): выставь публичный URL на `POST /telegram/webhook`, `TELEGRAM__USEPOLLING=false`, опционально `TELEGRAM__WEBHOOKSECRETTOKEN`.
 
 Mini App: в BotFather привяжи Web App URL на `https://<твой-хост>/` (локально нужен tunnel, например Cloudflare/ngrok).
