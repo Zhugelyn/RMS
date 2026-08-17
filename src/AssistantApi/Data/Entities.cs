@@ -1,0 +1,59 @@
+namespace AssistantApi.Data;
+
+/// <summary>Shared user profile for harness memory (ADR-008).</summary>
+public sealed class UserProfileEntity
+{
+    public string UserId { get; set; } = string.Empty;
+    public string? DisplayName { get; set; }
+    public string? Locale { get; set; }
+    public string? Timezone { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>Per-domain harness episode «задача→результат» (ADR-008).</summary>
+public sealed class HarnessEpisodeEntity
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+    public string Task { get; set; } = string.Empty;
+    public string Result { get; set; } = string.Empty;
+    public DateTimeOffset At { get; set; }
+    public string? ConversationId { get; set; }
+    public string? TraceId { get; set; }
+}
+
+/// <summary>Instagram research schedule settings (Phase 4). No IG token here.</summary>
+public sealed class ResearchSettingsEntity
+{
+    public string UserId { get; set; } = string.Empty;
+    public string? InstagramHandle { get; set; }
+    public bool Enabled { get; set; }
+    public int CadenceDays { get; set; } = 14;
+    public string? Timezone { get; set; }
+    public string? NotifyChatId { get; set; }
+    public DateTimeOffset? NextRunAt { get; set; }
+    public DateTimeOffset? LastRunAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>Placeholder for feed snapshot (fetch/inject in later slices).</summary>
+public sealed class ResearchSnapshotEntity
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public DateTimeOffset CapturedAt { get; set; }
+    public string PayloadJson { get; set; } = "{}";
+}
+
+/// <summary>Placeholder for 14-day research plan (later slices).</summary>
+public sealed class ResearchPlanEntity
+{
+    public long Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateOnly WindowStart { get; set; }
+    public DateOnly WindowEnd { get; set; }
+    public string PayloadJson { get; set; } = "{}";
+}

@@ -98,27 +98,28 @@
 ## Data: assistant-api.harness-memory (Phase 3 → Phase 4 Postgres)
 
 - Owner: assistant-api
-- Impl: `IHarnessMemoryStore` / in-process now; Postgres durable = `phase4-postgres-settings`
+- Impl: `IHarnessMemoryStore` → `PostgresHarnessMemoryStore` when `ConnectionStrings:AssistantDb` set; else `InMemoryHarnessMemoryStore`
+- Tables: `user_profiles`, `harness_episodes` (EF migrations)
 - Profile: `{ userId, displayName?, locale?, timezone?, notes? }` — shared, short
 - Episode: `{ userId, domain, task, result, at, conversationId?, traceId? }` — per-domain, brief
-- Consistency: strong внутри assistant-api process (→ DB transactions after Postgres)
-- Isolation: read episodes WHERE domain = current pack; never cross-inject
+- Consistency: strong внутри assistant-api (DB transactions when Postgres)
+- Isolation: read episodes WHERE domain = current pack; never cross-inject (tests)
 - Retention: cap last K per (userId, domain)
 - Not: embeddings, full messages[], Cursor agent transcript
 
 ## Data: assistant-api.instagram-research (Phase 4)
 
 - Owner: assistant-api
-- Consumers: marketing pack (inject); telegram-gateway (`/research`, Mini App settings) via assistant APIs
-- Source: Instagram Graph API own account only (ADR-009). No Apify.
-- Artifacts (Postgres, ADR-010 — **not RAG**):
-  - `snapshot`: media/insights slice at run time (structured, size-capped)
-  - `plan`: 14-day research/content plan
-  - `episodes`: brief task→result for research runs
-- Settings: schedule window days (default 14), enabled flags, account binding metadata (no raw token in settings row if sealed separately)
-- Bot: `/research` start|status (gateway → assistant)
-- Mini App: research settings screen (no IG token in browser)
-- Images: GenerateImage via local marketing-pack + volume (ADR-011); paths in artifacts, not base64 dumps in chat
+- Consumers: marketing pack (inject — later); telegram-gateway (`/research`, Mini App settings) via assistant APIs (later)
+- Source: Instagram Graph API own account only (ADR-009). No Apify. (client = `phase4-ig-graph`)
+- Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt` — **no raw IG token in row**
+- Artifacts (Postgres stubs, ADR-010 — **not RAG**):
+  - `research_snapshots`: media/insights slice placeholder
+  - `research_plans`: 14-day plan placeholder
+  - harness `harness_episodes` for brief task→result (research domain later)
+- Bot: `/research` start|status (gateway → assistant) — not this slice
+- Mini App: research settings screen (no IG token in browser) — not this slice
+- Images: GenerateImage via local marketing-pack + volume (ADR-011) — not this slice
 - Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
 
 ## External: instagram-graph (Phase 4)

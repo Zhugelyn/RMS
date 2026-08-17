@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17b
+
+- Trigger: webhook slice=phase4-postgres-settings
+- Slice: phase4-postgres-settings
+- Status: passed
+- Checks: postgres in compose; EF migrations user_profiles/harness_episodes/research_settings (+ snapshot/plan stubs); PostgresHarnessMemoryStore when ConnectionStrings:AssistantDb set; in-process fallback without CS; ready fails if DB down; domain isolation tests; `dotnet test` 34/34; `docker compose config` OK; no Graph/Apify/Mini App research/scheduler/GenerateImage
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, ADR-008 note, run-log
+- Next slice: `phase4-ig-graph` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17
 
 - Trigger: webhook slice=phase4-docs
