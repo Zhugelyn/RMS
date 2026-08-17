@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-research-artifacts` ✅ → next `phase4-scheduler`).
+Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-scheduler` ✅ → next `phase4-miniapp-research`).
 
 ## Service: telegram-gateway
 
@@ -23,7 +23,7 @@
 - Public API: `POST /v1/chat`, `GET /health/live`, `GET /health/ready`
 - Events produced: нет
 - Events consumed: нет
-- Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, `research_snapshots`, `research_plans`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
+- Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, `research_snapshots`, `research_plans`, `research_schedule_runs`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
 - Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); MinIO = Phase 6
 - External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009)
 - Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram; Postgres password env-only
@@ -56,11 +56,11 @@
 - Capability: 14-day marketing research from own Instagram Graph feed; Mini App settings + bot `/research`
 - Feed source: Instagram Graph API only (ADR-009). **Apify — no.** Client: `HttpInstagramGraphClient` + stub/fallback without token ✅
 - Token: `INSTAGRAM__ACCESSTOKEN` (+ `IGUSERID`/`BUSINESSACCOUNTID`) env → AES-GCM seal; reject from chat
-- Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt) ✅
+- Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt, lastError) ✅
 - Artifacts: `IResearchArtifactStore` (Postgres/in-mem) — normalized snapshot posts/visual notes (cap last K) + 14-day plan items (`date,caption,hashtags,imagePrompt,mediaPath?,telegramFileId?,status`). Capture: `IInstagramResearchCapture` after Graph fetch. Inject: marketing pack only (`ResearchPackInjector`). Episode domain=`marketing`. Soft-fail persist. **Not RAG.** ✅ (`phase4-research-artifacts`)
 - Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011). **Not OpenAI Images.**
-- UI: gateway Mini App research settings + `/research` command (later slices)
-- Scheduler: 14-day job (next = `phase4-scheduler`)
+- UI: gateway Mini App research settings + `/research` command (next = `phase4-miniapp-research`)
+- Scheduler: `ResearchSchedulerHostedService` + `ResearchSchedulerJob` — 14d cadence, ListDue, idempotent `research_schedule_runs` (userId+period), lastError on Graph fail, no-op without token/enabled; `NoOpResearchNotifyHook` stub. No Hangfire. ✅ (`phase4-scheduler`)
 - Do not add separate `instagram-research-api` until independent ownership
 
 ## Reserved (do not implement in Phase 4)
