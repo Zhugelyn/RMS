@@ -19,7 +19,7 @@
 | 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
-| **5 Research Client UI** | studio ✅; **next=`phase5-ui-hardening`** | Mini App studio + bot web_app (ADR-012); не RAG |
+| **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |
@@ -48,7 +48,7 @@
 
 ## Phase 5 — Research Client UI
 
-Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/research/latest`: `analytics`, `posts[]`, `items[]` (+ `planPreview`). Media: `GET /api/miniapp/research/media` (initData + path guard). Env: `TELEGRAM__WEBAPPURL=https://…` для MenuButton / inline «Открыть студию».
+Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/research/latest`: `analytics`, `posts[]`, `items[]`, `source` (+ `planPreview`). Media: `GET /api/miniapp/research/media` (initData + path guard). Env: `TELEGRAM__WEBAPPURL=https://…` для MenuButton / inline «Открыть студию». Hardening: a11y/limits/VK allowlist+gallery ✅.
 
 ### Non-goals Phase 5
 

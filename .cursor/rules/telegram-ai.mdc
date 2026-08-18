@@ -9,8 +9,8 @@ alwaysApply: true
 - Phase 1: `telegram-gateway` (bot + Mini App) + `assistant-api` + stub `ILlmProvider`. Подъём только через Docker Compose.
 - Phase 2 closed: Cursor SDK + persona-switch harness. Phase 3 packs functionally closed.
 - Phase 4 closed: Marketing Instagram Research (Graph API own account, scheduler, GenerateImage volume, hardening).
-- Phase 5 leftover: Research Studio ✅; `phase5-ui-hardening` **open** (Phase 6 closed).
-- Phase 6 closed: VK Public Research (official `wall.get`, service token, media+hardening ✅). Next = `phase5-ui-hardening`. RAG = Phase 7 — не открывать. MinIO = 8; Direct = 9.
+- Phase 5 closed: Research Studio + `phase5-ui-hardening` ✅ (a11y/limits/VK gallery).
+- Phase 6 closed: VK Public Research (official `wall.get`, service token, media+hardening ✅). Next open = Phase 7 RAG — не открывать без явного slice. MinIO = 8; Direct = 9.
 - Phase 4 leftovers: лента только Instagram Graph API своего аккаунта (Apify нет); GenerateImage = Cursor local marketing-pack + volume (не OpenAI Images); research memory = snapshot+plan+episodes в Postgres ≠ RAG.
 - Не реализуй RAG, embeddings, Elasticsearch, MinIO, Яндекс Директ, пока phase-plan не открыл фазу.
 - VK: только официальный API; не HTML/`m.vk.com`/Apify. Service token не из чата. User VK ID OAuth — не в Phase 6, пока service token достаточен.

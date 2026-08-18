@@ -199,6 +199,7 @@ public sealed class VkSettingsTests
         var latestBody = await latest.Content.ReadFromJsonAsync<ResearchLatestResponse>(JsonOptions);
         Assert.NotNull(latestBody!.SnapshotSummary);
         Assert.Contains("source=vk", latestBody.SnapshotSummary!, StringComparison.Ordinal);
+        Assert.Equal(ResearchSources.Vk, latestBody.Source);
         Assert.Equal(2, latestBody.Settings.VkCommunities.Count);
     }
 

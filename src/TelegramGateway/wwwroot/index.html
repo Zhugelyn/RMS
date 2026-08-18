@@ -11,39 +11,46 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#domain-nav">К доменам</a>
   <div class="atmosphere" aria-hidden="true"></div>
   <main class="shell">
     <header class="brand">
       <p class="brand-mark">Telegram AI</p>
       <h1 id="headline">Выбери домен</h1>
-      <p class="lede">Салон, маркетинг (Instagram research studio) и задачи — через бота и Mini App.</p>
+      <p class="lede">Салон, маркетинг (Instagram + VK research studio) и задачи — через бота и Mini App.</p>
     </header>
 
-    <nav class="domain-nav" aria-label="Домены">
-      <button type="button" class="domain" data-intent="salon">Салон</button>
-      <button type="button" class="domain" data-intent="marketing">Маркетинг</button>
-      <button type="button" class="domain" data-intent="tasks">Задачи</button>
+    <nav id="domain-nav" class="domain-nav" aria-label="Домены" role="tablist">
+      <button type="button" class="domain" data-intent="salon" role="tab" aria-selected="false" aria-controls="panel">Салон</button>
+      <button type="button" class="domain" data-intent="marketing" role="tab" aria-selected="false" aria-controls="research-panel">Маркетинг</button>
+      <button type="button" class="domain" data-intent="tasks" role="tab" aria-selected="false" aria-controls="panel">Задачи</button>
     </nav>
 
-    <section id="panel" class="panel" hidden>
+    <section id="panel" class="panel" hidden role="tabpanel" aria-labelledby="panel-title">
       <h2 id="panel-title"></h2>
       <p id="panel-copy"></p>
       <form id="chat-form" class="chat-form">
         <label for="message">Сообщение</label>
-        <textarea id="message" rows="3" maxlength="1000" placeholder="Короткий запрос…" required></textarea>
+        <textarea id="message" rows="3" maxlength="1000" placeholder="Короткий запрос…" required aria-describedby="message-hint"></textarea>
+        <p id="message-hint" class="field-hint">До 1000 символов.</p>
         <button type="submit" class="cta">Спросить ассистента</button>
       </form>
       <p id="status" class="status" role="status" aria-live="polite"></p>
-      <pre id="reply" class="reply" hidden></pre>
+      <pre id="reply" class="reply" hidden tabindex="0"></pre>
     </section>
 
-    <section id="research-panel" class="panel research-studio" hidden data-studio="research">
-      <header class="studio-header" id="studio-header">
+    <section id="research-panel" class="panel research-studio" hidden data-studio="research" role="tabpanel" aria-labelledby="studio-heading" aria-busy="false">
+      <header class="studio-header" id="studio-header" tabindex="-1">
         <div class="studio-title-row">
-          <h2>Research Studio</h2>
-          <span id="studio-enabled" class="studio-badge" data-on="0">off</span>
+          <h2 id="studio-heading">Research Studio</h2>
+          <span id="studio-enabled" class="studio-badge" data-on="0" aria-label="Research выключен">off</span>
         </div>
         <p class="studio-handle" id="studio-handle">@—</p>
+        <p class="studio-source-row" id="studio-source-row" hidden>
+          <span class="studio-source-label">Источник snapshot</span>
+          <span id="studio-source" class="studio-source-badge" data-source="">—</span>
+        </p>
+        <p class="studio-summary" id="studio-summary" hidden></p>
         <dl class="studio-runs">
           <div><dt>last</dt><dd id="research-last">—</dd></div>
           <div><dt>next</dt><dd id="research-next">—</dd></div>
@@ -56,35 +63,46 @@
         <div id="analytics-grid" class="analytics-grid" data-studio="analytics"></div>
       </section>
 
+      <section class="studio-posts" id="studio-posts" aria-label="Посты snapshot">
+        <h3>Посты snapshot</h3>
+        <p class="section-limit-hint" id="posts-limit-hint">Показ ≤20 из ≤50.</p>
+        <div id="posts-empty" class="studio-empty" hidden>Постов нет — Run IG / Run VK или дождись scheduler.</div>
+        <ul id="posts-feed" class="posts-feed" data-studio="posts"></ul>
+      </section>
+
       <section class="studio-gallery" aria-label="План 14 дней">
         <h3>План 14 дней</h3>
-        <div id="gallery-empty" class="studio-empty" hidden>Плана пока нет — Run now или дождись scheduler.</div>
+        <p class="section-limit-hint">Галерея ≤14 карточек; фото только через media proxy.</p>
+        <div id="gallery-empty" class="studio-empty" hidden>Плана пока нет — Run IG / Run VK или дождись scheduler.</div>
         <div id="plan-gallery" class="plan-gallery" data-studio="gallery"></div>
       </section>
 
       <details class="studio-settings" id="studio-settings">
         <summary>Настройки research</summary>
-        <form id="research-form" class="research-form">
+        <form id="research-form" class="research-form" novalidate>
           <label class="check">
             <input type="checkbox" id="research-enabled" />
             Включён
           </label>
           <label for="research-handle">Instagram handle</label>
-          <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" />
+          <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" aria-describedby="handle-hint" />
+          <p id="handle-hint" class="studio-hint">Только @handle. IG token — только в env сервера.</p>
           <label for="research-vk">VK паблики (allowlist)</label>
-          <textarea id="research-vk" rows="3" maxlength="800" placeholder="babor_bryansk&#10;club123&#10;-456789" autocomplete="off"></textarea>
-          <p class="studio-hint">Только screen_name / owner_id. VK token — только в env сервера.</p>
+          <textarea id="research-vk" rows="3" maxlength="800" placeholder="babor_bryansk&#10;club123&#10;-456789" autocomplete="off" aria-describedby="vk-hint vk-count"></textarea>
+          <p id="vk-hint" class="studio-hint">Только screen_name / owner_id (≤10). VK token — только в env сервера.</p>
+          <p id="vk-count" class="studio-count" aria-live="polite" data-vk-limit="10">0 / 10</p>
           <label for="research-tz">Timezone</label>
           <input id="research-tz" type="text" maxlength="64" placeholder="Europe/Moscow" autocomplete="off" />
           <label for="research-cadence">Cadence (days)</label>
-          <input id="research-cadence" type="number" min="1" max="90" value="14" />
+          <input id="research-cadence" type="number" min="1" max="90" value="14" aria-describedby="cadence-hint" />
+          <p id="cadence-hint" class="studio-hint">1–90 дней (по умолчанию 14).</p>
           <div class="research-actions">
             <button type="submit" class="cta" id="research-save">Save</button>
             <button type="button" class="cta cta-secondary" id="research-run">Run IG</button>
             <button type="button" class="cta cta-secondary" id="research-vk-run">Run VK</button>
           </div>
         </form>
-        <p class="studio-error-line" id="research-error-line">last error: —</p>
+        <p class="studio-error-line" id="research-error-line" role="status">last error: —</p>
       </details>
 
       <p id="research-status" class="status" role="status" aria-live="polite"></p>

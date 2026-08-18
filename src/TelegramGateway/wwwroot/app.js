@@ -3,6 +3,18 @@
   tg?.ready();
   tg?.expand();
 
+  // Studio UI limits (Phase 5 hardening) — keep in sync with server caps.
+  const LIMITS = {
+    galleryCap: 14,
+    postsCap: 20,
+    postsServerCap: 50,
+    vkMax: 10,
+    cadenceMin: 1,
+    cadenceMax: 90,
+    messageMax: 1000,
+    captionPreview: 160
+  };
+
   // Theme: Telegram themeParams + leaf palette fallbacks.
   const tp = tg?.themeParams || {};
   const root = document.documentElement;
@@ -53,16 +65,26 @@
   const researchStatus = document.getElementById("research-status");
   const researchRunBtn = document.getElementById("research-run");
   const researchVkRunBtn = document.getElementById("research-vk-run");
+  const researchSaveBtn = document.getElementById("research-save");
+  const studioHeader = document.getElementById("studio-header");
   const studioHandle = document.getElementById("studio-handle");
   const studioEnabled = document.getElementById("studio-enabled");
+  const studioSourceRow = document.getElementById("studio-source-row");
+  const studioSource = document.getElementById("studio-source");
+  const studioSummary = document.getElementById("studio-summary");
   const analyticsGrid = document.getElementById("analytics-grid");
   const analyticsEmpty = document.getElementById("analytics-empty");
   const planGallery = document.getElementById("plan-gallery");
   const galleryEmpty = document.getElementById("gallery-empty");
+  const postsFeed = document.getElementById("posts-feed");
+  const postsEmpty = document.getElementById("posts-empty");
+  const postsLimitHint = document.getElementById("posts-limit-hint");
+  const vkCount = document.getElementById("vk-count");
 
   let activeIntent = null;
   let conversationId = `mini-${crypto.randomUUID()}`;
   const blobUrls = [];
+  let lastVkCommunities = [];
 
   function initDataHeaders() {
     const headers = { "Content-Type": "application/json" };
@@ -82,6 +104,17 @@
     return id ? String(id) : null;
   }
 
+  function hasTelegramAuth() {
+    return !!(resolveUserId() && tg?.initData);
+  }
+
+  function setMutationEnabled(enabled) {
+    const on = !!enabled;
+    if (researchSaveBtn) researchSaveBtn.disabled = !on;
+    if (researchRunBtn) researchRunBtn.disabled = !on;
+    if (researchVkRunBtn) researchVkRunBtn.disabled = !on;
+  }
+
   function fmt(iso) {
     if (!iso) return "—";
     try {
@@ -89,6 +122,12 @@
     } catch {
       return String(iso);
     }
+  }
+
+  function clampCadence(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return 14;
+    return Math.min(LIMITS.cadenceMax, Math.max(LIMITS.cadenceMin, Math.trunc(n)));
   }
 
   function formatVkCommunities(list) {
@@ -104,6 +143,7 @@
     if (!text || !text.trim()) return [];
     const out = [];
     const seen = new Set();
+    let truncated = false;
     for (const part of text.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean)) {
       let t = part.replace(/^@/, "");
       t = t.replace(/^https?:\/\/(m\.)?vk\.com\//i, "").replace(/\/$/, "");
@@ -124,30 +164,77 @@
       const key = item.screenName ? `n:${item.screenName.toLowerCase()}` : `o:${item.ownerId}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      if (out.length >= LIMITS.vkMax) {
+        truncated = true;
+        break;
+      }
       out.push(item);
-      if (out.length >= 10) break;
     }
+    out._truncated = truncated;
     return out;
+  }
+
+  function updateVkCount(list) {
+    if (!vkCount) return;
+    const n = Array.isArray(list) ? list.length : 0;
+    vkCount.textContent = `${n} / ${LIMITS.vkMax}`;
+    vkCount.dataset.count = String(n);
+    vkCount.classList.toggle("is-full", n >= LIMITS.vkMax);
   }
 
   function paintSettings(s) {
     researchEnabled.checked = !!s.enabled;
     researchHandle.value = s.instagramHandle ? `@${s.instagramHandle}` : "";
-    researchVk.value = formatVkCommunities(s.vkCommunities);
+    lastVkCommunities = Array.isArray(s.vkCommunities) ? s.vkCommunities : [];
+    researchVk.value = formatVkCommunities(lastVkCommunities);
+    updateVkCount(lastVkCommunities);
     researchTz.value = s.timezone || "";
-    researchCadence.value = String(s.cadenceDays || 14);
+    researchCadence.value = String(clampCadence(s.cadenceDays || 14));
     researchLast.textContent = fmt(s.lastRunAt);
     researchNext.textContent = fmt(s.nextRunAt);
-    researchErrorLine.textContent = "last error: " + (s.lastError || "—");
-    const vkN = Array.isArray(s.vkCommunities) ? s.vkCommunities.length : 0;
+    const err = s.lastError || "—";
+    researchErrorLine.textContent = "last error: " + err;
+    researchErrorLine.classList.toggle("has-error", !!(s.lastError && s.lastError !== "—"));
+    const vkN = lastVkCommunities.length;
     studioHandle.textContent = s.instagramHandle
       ? `@${s.instagramHandle}` + (vkN ? ` · vk:${vkN}` : "")
       : (vkN ? `vk:${vkN}` : "@—");
     studioEnabled.textContent = s.enabled ? "on" : "off";
     studioEnabled.dataset.on = s.enabled ? "1" : "0";
+    studioEnabled.setAttribute("aria-label", s.enabled ? "Research включён" : "Research выключен");
   }
 
-  function paintAnalytics(analytics) {
+  function normalizeSource(source, summary) {
+    const raw = (source || "").toLowerCase().trim();
+    if (raw === "vk" || raw === "instagram") return raw;
+    const s = String(summary || "").toLowerCase();
+    if (/\bsource=vk\b/.test(s) || /\bvk\b/.test(s) && /posts=/.test(s)) return "vk";
+    if (/\bsource=instagram\b/.test(s) || /graph/.test(s)) return "instagram";
+    return raw || "";
+  }
+
+  function paintSource(latest) {
+    const source = normalizeSource(latest?.source, latest?.snapshotSummary);
+    if (!source) {
+      studioSourceRow.hidden = true;
+      studioSource.textContent = "—";
+      studioSource.dataset.source = "";
+    } else {
+      studioSourceRow.hidden = false;
+      studioSource.textContent = source;
+      studioSource.dataset.source = source;
+    }
+
+    if (latest?.snapshotSummary) {
+      studioSummary.hidden = false;
+      studioSummary.textContent = String(latest.snapshotSummary).slice(0, 280);
+    } else {
+      studioSummary.hidden = true;
+      studioSummary.textContent = "";
+    }
+  }
+
+  function paintAnalytics(analytics, source) {
     analyticsGrid.innerHTML = "";
     const noInsights = !analytics || (
       analytics.impressions == null &&
@@ -157,6 +244,9 @@
     );
     if (noInsights) {
       analyticsEmpty.hidden = false;
+      analyticsEmpty.textContent = source === "vk"
+        ? "VK snapshot без Graph insights — смотри посты ниже."
+        : "нет данных Graph insights";
       return;
     }
     analyticsEmpty.hidden = true;
@@ -171,8 +261,47 @@
     for (const [label, value] of cards) {
       const el = document.createElement("div");
       el.className = "analytics-card";
+      el.setAttribute("role", "group");
+      el.setAttribute("aria-label", label);
       el.innerHTML = `<span class="analytics-label">${label}</span><span class="analytics-value">${value ?? "—"}</span>`;
       analyticsGrid.appendChild(el);
+    }
+  }
+
+  function paintPosts(posts, source) {
+    postsFeed.innerHTML = "";
+    const list = Array.isArray(posts) ? posts.slice(0, LIMITS.postsCap) : [];
+    if (postsLimitHint) {
+      postsLimitHint.textContent = `Показ ≤${LIMITS.postsCap} из ≤${LIMITS.postsServerCap}` +
+        (source ? ` · source=${source}` : "");
+    }
+    if (list.length === 0) {
+      postsEmpty.hidden = false;
+      postsEmpty.textContent = source === "vk"
+        ? "VK постов нет — проверь allowlist и Run VK."
+        : "Постов нет — Run IG / Run VK или дождись scheduler.";
+      return;
+    }
+    postsEmpty.hidden = true;
+    for (const post of list) {
+      const li = document.createElement("li");
+      li.className = "post-card";
+      if (source) li.dataset.source = source;
+      const caption = String(post.caption || "").slice(0, LIMITS.captionPreview);
+      const when = post.timestamp ? fmt(post.timestamp) : "—";
+      const metrics = [
+        post.impressions != null ? `imp ${post.impressions}` : null,
+        post.reach != null ? `reach ${post.reach}` : null,
+        post.engagement != null ? `eng ${post.engagement}` : null
+      ].filter(Boolean).join(" · ");
+      li.innerHTML = `
+        <div class="post-meta">
+          <time datetime="${escapeAttr(post.timestamp || "")}">${escapeHtml(when)}</time>
+          ${source ? `<span class="post-source">${escapeHtml(source)}</span>` : ""}
+        </div>
+        <p class="post-caption">${escapeHtml(caption || "(без текста)")}</p>
+        ${metrics ? `<p class="post-metrics">${escapeHtml(metrics)}</p>` : ""}`;
+      postsFeed.appendChild(li);
     }
   }
 
@@ -198,28 +327,38 @@
     }
   }
 
-  async function paintGallery(items) {
+  function mediaLooksVk(item) {
+    const path = String(item.mediaPath || item.imageUrl || "");
+    return /\/vk\//i.test(path) || /research-media\/[^/]+\/vk\//i.test(path);
+  }
+
+  async function paintGallery(items, source) {
     revokeBlobs();
     planGallery.innerHTML = "";
-    if (!items || items.length === 0) {
+    const list = Array.isArray(items) ? items.slice(0, LIMITS.galleryCap) : [];
+    if (list.length === 0) {
       galleryEmpty.hidden = false;
       return;
     }
     galleryEmpty.hidden = true;
 
-    for (const item of items) {
+    for (const item of list) {
       const card = document.createElement("article");
       card.className = "plan-card";
       card.dataset.status = item.status || "draft";
+      const itemSource = mediaLooksVk(item) ? "vk" : (source || "");
+      if (itemSource) card.dataset.source = itemSource;
 
       const media = document.createElement("div");
       media.className = "plan-media";
+      media.setAttribute("aria-hidden", item.imageUrl ? "false" : "true");
       if (item.imageUrl) {
         const src = await loadMediaBlob(item.imageUrl);
         if (src) {
           const img = document.createElement("img");
-          img.alt = item.date || "plan";
+          img.alt = `План ${item.date || ""}`.trim() || "plan";
           img.loading = "lazy";
+          img.decoding = "async";
           img.src = src;
           media.appendChild(img);
         } else {
@@ -234,16 +373,20 @@
       const body = document.createElement("div");
       body.className = "plan-body";
       const tags = (item.hashtags || []).map((h) => (h.startsWith("#") ? h : "#" + h)).join(" ");
+      const sourceChip = itemSource
+        ? `<span class="plan-source" aria-label="источник ${escapeAttr(itemSource)}">${escapeHtml(itemSource)}</span>`
+        : "";
       body.innerHTML = `
         <div class="plan-meta">
-          <time>${item.date || "—"}</time>
-          <span class="plan-status">${item.status || "draft"}</span>
+          <time>${escapeHtml(item.date || "—")}</time>
+          <span class="plan-status">${escapeHtml(item.status || "draft")}</span>
+          ${sourceChip}
         </div>
         <p class="plan-caption">${escapeHtml(item.caption || "")}</p>
         <p class="plan-tags">${escapeHtml(tags)}</p>
         <div class="plan-prompt">
           <code class="plan-prompt-text">${escapeHtml(item.imagePrompt || "")}</code>
-          <button type="button" class="copy-btn" data-copy="${escapeAttr(item.imagePrompt || "")}">copy</button>
+          <button type="button" class="copy-btn" data-copy="${escapeAttr(item.imagePrompt || "")}" aria-label="Скопировать image prompt">copy</button>
         </div>`;
 
       card.appendChild(media);
@@ -277,15 +420,36 @@
     }
   });
 
+  researchVk?.addEventListener("input", () => {
+    try {
+      const parsed = parseVkCommunities(researchVk.value);
+      updateVkCount(parsed);
+    } catch {
+      updateVkCount([]);
+    }
+  });
+
   async function loadResearch() {
     const userId = resolveUserId();
     if (!userId) {
       researchStatus.textContent = "Открой Mini App из Telegram (нужен tg userId).";
+      researchPanel.classList.add("is-error");
+      setMutationEnabled(false);
+      paintAnalytics(null, "");
+      paintPosts([], "");
+      await paintGallery([], "");
+      paintSource(null);
       return;
     }
 
-    researchStatus.textContent = "Загружаю…";
+    setMutationEnabled(hasTelegramAuth());
+    if (!tg?.initData) {
+      researchStatus.textContent = "Просмотр без initData: Save / Run недоступны.";
+    }
+
+    researchStatus.textContent = researchStatus.textContent || "Загружаю…";
     researchPanel.classList.add("is-loading");
+    researchPanel.setAttribute("aria-busy", "true");
     try {
       const [settingsRes, latestRes] = await Promise.all([
         fetch(`/api/miniapp/research/settings?userId=${encodeURIComponent(userId)}`),
@@ -301,28 +465,42 @@
       if (latestRes.ok) {
         const latest = await latestRes.json();
         if (latest.settings) paintSettings(latest.settings);
-        paintAnalytics(latest.analytics);
-        await paintGallery(latest.items || []);
+        const source = normalizeSource(latest.source, latest.snapshotSummary);
+        paintSource(latest);
+        paintAnalytics(latest.analytics, source);
+        paintPosts(latest.posts || [], source);
+        await paintGallery(latest.items || [], source);
       } else {
-        paintAnalytics(null);
-        await paintGallery([]);
+        paintSource(null);
+        paintAnalytics(null, "");
+        paintPosts([], "");
+        await paintGallery([], "");
       }
-      researchStatus.textContent = "";
+      if (tg?.initData) {
+        researchStatus.textContent = "";
+      }
       researchPanel.classList.remove("is-error");
     } catch (error) {
       researchStatus.textContent = error.message || "Ошибка загрузки";
       researchPanel.classList.add("is-error");
-      paintAnalytics(null);
-      await paintGallery([]);
+      paintSource(null);
+      paintAnalytics(null, "");
+      paintPosts([], "");
+      await paintGallery([], "");
     } finally {
       researchPanel.classList.remove("is-loading");
+      researchPanel.setAttribute("aria-busy", "false");
     }
   }
 
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
       activeIntent = btn.dataset.intent;
-      buttons.forEach((b) => b.classList.toggle("is-active", b === btn));
+      buttons.forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
       const meta = copy[activeIntent];
       const showResearch = activeIntent === "marketing";
 
@@ -337,6 +515,7 @@
       researchPanel.hidden = !showResearch;
       if (showResearch) {
         loadResearch();
+        studioHeader?.focus?.({ preventScroll: false });
       }
       if (!showResearch) {
         message.focus();
@@ -353,6 +532,10 @@
 
     const text = message.value.trim();
     if (!text) return;
+    if (text.length > LIMITS.messageMax) {
+      status.textContent = `Сообщение > ${LIMITS.messageMax} символов.`;
+      return;
+    }
 
     const submit = form.querySelector(".cta");
     submit.disabled = true;
@@ -413,8 +596,11 @@
       return;
     }
 
+    const cadenceDays = clampCadence(researchCadence.value);
+    researchCadence.value = String(cadenceDays);
+
     researchStatus.textContent = "Сохраняю…";
-    researchForm.querySelector("#research-save").disabled = true;
+    researchSaveBtn.disabled = true;
     try {
       const response = await fetch("/api/miniapp/research/settings", {
         method: "PUT",
@@ -424,7 +610,7 @@
           enabled: researchEnabled.checked,
           instagramHandle: handle,
           vkCommunities,
-          cadenceDays: Number(researchCadence.value) || 14,
+          cadenceDays,
           timezone: researchTz.value.trim() || null,
           notifyChatId: resolveNotifyChatId()
         })
@@ -435,11 +621,13 @@
       }
       const saved = await response.json();
       paintSettings(saved);
-      researchStatus.textContent = "Сохранено.";
+      researchStatus.textContent = vkCommunities._truncated
+        ? `Сохранено (VK allowlist обрезан до ${LIMITS.vkMax}).`
+        : "Сохранено.";
     } catch (error) {
       researchStatus.textContent = error.message || "Ошибка сохранения";
     } finally {
-      researchForm.querySelector("#research-save").disabled = false;
+      researchSaveBtn.disabled = !hasTelegramAuth();
     }
   });
 
@@ -452,6 +640,20 @@
     if (!tg?.initData) {
       researchStatus.textContent = "Нужен Telegram initData (открой Mini App из Telegram).";
       return;
+    }
+
+    if (source === "vk") {
+      let vkList = lastVkCommunities;
+      try {
+        vkList = parseVkCommunities(researchVk.value);
+      } catch (error) {
+        researchStatus.textContent = error.message || "Ошибка VK allowlist";
+        return;
+      }
+      if (!vkList.length) {
+        researchStatus.textContent = "VK allowlist пуст — добавь screen_name / owner_id и Save.";
+        return;
+      }
     }
 
     researchStatus.textContent = source === "vk" ? "Запускаю VK research…" : "Запускаю IG research…";
@@ -479,11 +681,13 @@
     } catch (error) {
       researchStatus.textContent = error.message || "Ошибка run";
     } finally {
-      researchRunBtn.disabled = false;
-      if (researchVkRunBtn) researchVkRunBtn.disabled = false;
+      setMutationEnabled(hasTelegramAuth());
     }
   }
 
   researchRunBtn.addEventListener("click", () => runResearch(null));
   researchVkRunBtn?.addEventListener("click", () => runResearch("vk"));
+
+  setMutationEnabled(hasTelegramAuth());
+  updateVkCount([]);
 })();

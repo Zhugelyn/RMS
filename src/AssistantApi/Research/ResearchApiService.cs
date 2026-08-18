@@ -301,6 +301,7 @@ public sealed class ResearchApiService : IResearchApiService
             Settings = settings,
             SnapshotSummary = snapshot?.Summary,
             SnapshotCapturedAt = snapshot?.CapturedAt,
+            Source = string.IsNullOrWhiteSpace(snapshot?.Source) ? null : snapshot.Source,
             PlanPreview = ResearchPlanPreview.Format(plan),
             PlanCreatedAt = plan?.CreatedAt,
             PlanItemCount = plan?.Items.Count,

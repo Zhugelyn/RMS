@@ -129,6 +129,7 @@ public sealed class ResearchApiEndpointTests
             UserId = userId,
             CapturedAt = DateTimeOffset.UtcNow,
             Summary = "Feed summary",
+            Source = ResearchSources.Instagram,
             PostCount = 2,
             Posts =
             [
@@ -178,7 +179,8 @@ public sealed class ResearchApiEndpointTests
         Assert.Equal(HttpStatusCode.OK, latest.StatusCode);
         var body = await latest.Content.ReadFromJsonAsync<ResearchLatestResponse>(JsonOptions);
         Assert.NotNull(body);
-        Assert.False(string.IsNullOrWhiteSpace(body!.PlanPreview));
+        Assert.Equal(ResearchSources.Instagram, body!.Source);
+        Assert.False(string.IsNullOrWhiteSpace(body.PlanPreview));
         Assert.NotNull(body.Analytics);
         Assert.Equal(150, body.Analytics!.Impressions);
         Assert.Equal(120, body.Analytics.Reach);
