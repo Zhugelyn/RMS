@@ -92,25 +92,26 @@
 - Hardening ✅: `Phase6HardeningTests` caps + non-goals (no scrape/Apify/user-OAuth/RAG/MinIO/Direct); README token rotation VK.
 - Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
 
-## Phase 7 controls (docs / ES / rag-api)
+## Phase 7 controls (docs / ES / rag-api / pack-retriever)
 
 - ADR-014: document RAG ≠ harness memory ≠ research artifacts; domain-split indexes (`kb-salon` / `kb-marketing`).
 - Owner: `rag-service` + Elasticsearch; assistant-api does **not** query ES; HTTP + `X-Service-Key` only.
-- Retriever via pack MCP (`salon`/`marketing`); `_router`/`tasks` without RAG (→ `phase7-pack-retriever`).
+- Retriever via pack MCP (`salon`/`marketing` allowlist `kb-retriever` + skill) ✅; `_router`/`tasks` without RAG ✅ (`phase7-pack-retriever`).
 - Secrets (`RAG__SERVICEKEY`, future ES creds): env/secret store only; never chat / Mini App / query / git.
-- Soft-fail: empty/failed retrieval must not fail `/v1/chat`; PII not in ES/query logs (hardening later).
+- Soft-fail: empty/failed retrieval must not fail `/v1/chat` ✅; PII not in ES/query logs (hardening later).
 - Embeddings: stub embedder ✅ (`phase7-rag-api`); no SaaS key.
 - Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG.
 - `phase7-docs`: placeholders in `.env.example`.
 - `phase7-es-compose` ✅: ES container in compose (internal `:9200`, health).
 - `phase7-rag-api` ✅: rag-service ingest/search + service key + domain isolation tests; assistant-api still no ES client. xpack.security off until hardening.
+- `phase7-pack-retriever` ✅: `HttpRagRetriever` + `RagPackInjector`; compose `Rag__BaseUrl`/`Rag__ServiceKey` + depends_on healthy rag-service.
 
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4–6 closed. Phase 7: rag-service ✅; pack retriever not wired — do not treat RAG keys as chat-input; ES local compose has security disabled until hardening.
+- Phase 4–6 closed. Phase 7: pack retriever ✅; hardening next — do not treat RAG keys as chat-input; ES local compose has security disabled until hardening.
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 

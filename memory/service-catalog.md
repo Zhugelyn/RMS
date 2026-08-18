@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; next=`phase7-pack-retriever`).
+Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅; next=`phase7-hardening`).
 
 ## Service: telegram-gateway
 
@@ -26,8 +26,8 @@
 - Events consumed: нет
 - Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, `research_snapshots`, `research_plans`, `research_schedule_runs`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
 - Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); VK downloads reuse volume in Phase 6; MinIO = Phase 8
-- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009); optional notify → gateway (`Gateway__BaseUrl`)
-- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram/Mini App; Postgres password env-only; research userId must be `tg-*`
+- External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009); optional notify → gateway (`Gateway__BaseUrl`); Phase 7 → `rag-service` HTTP (`Rag:BaseUrl` + `X-Service-Key`, never ES)
+- Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram/Mini App; Postgres password env-only; research userId must be `tg-*`; RAG service key env-only
 
 ## Service: postgres (assistant-api data plane)
 
@@ -46,11 +46,12 @@
 
 ## Domain packs (Phase 3)
 
-- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — `AGENTS.md`, `skills/` + `.cursor/skills`, `prompts/`, `mcp.json` (empty allowlist), `pack.json`.
+- Layout: `src/AgentPacks/{salon,marketing,tasks,_router}` — `AGENTS.md`, `skills/` + `.cursor/skills`, `prompts/`, `mcp.json`, `pack.json`.
 - Product: salon=Babor (Брянск) growth; marketing=beauty market; tasks=schedule/reminders; `_router` classify-only.
 - Schema: `src/AgentPacks/pack.schema.json`.
 - Loader: `PackCatalog`; runtime: bridge local cwd per packId; affinity + harness memory in assistant-api.
 - Memory: `IHarnessMemoryStore` → Postgres when CS set, else in-process; domain episode isolation.
+- Phase 7 RAG MCP: salon/marketing allowlist `kb-retriever` + skill `kb-retrieve`; `_router`/`tasks` empty; inject via `RagPackInjector` ✅
 
 ## Phase 4 — Instagram Research (closed)
 
@@ -98,6 +99,7 @@
 - Compose: depends_on healthy `elasticsearch`; internal `:8080`
 - Consumers (planned): assistant-api HTTP only — pack MCP wiring → `phase7-pack-retriever`
 - Soft-fail search → empty hits
+- Pack retriever ✅ (`phase7-pack-retriever`): `HttpRagRetriever` + `RagPackInjector`; compose `Rag__BaseUrl`/`Rag__ServiceKey`; next=`phase7-hardening`
 
 ## Phase 7 — Knowledge / RAG (open)
 

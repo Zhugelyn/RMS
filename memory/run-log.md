@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18p
+
+- Trigger: webhook (empty payload) → first open slice `phase7-pack-retriever`
+- Slice: phase7-pack-retriever
+- Status: passed
+- Checks: salon/marketing `mcp.json` allowlist `kb-retriever` + skill; router/tasks empty; `IRagRetriever`/`HttpRagRetriever` → rag-service `X-Service-Key`; `RagPackInjector` into Cursor path; soft-fail empty/HTTP; compose `Rag__BaseUrl`+depends_on healthy rag-service; no ES client/MinIO/Direct/Apify; `Phase7PackRetrieverTests`; `dotnet test` 195/195 (145 api + 39 gateway + 11 rag); next=`phase7-hardening`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-014 note, README, .env.example, run-log
+- Next slice: phase7-hardening
+- Blocker: none
+
 ## Run 2026-08-18o
 
 - Trigger: webhook (empty payload) → first open slice `phase7-rag-api`

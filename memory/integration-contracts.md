@@ -182,7 +182,7 @@
 ## rag-service (Phase 7, ADR-014)
 
 - Owner: rag-service ✅ (`phase7-rag-api`)
-- Consumers: assistant-api only (HTTP); packs call retriever MCP → assistant/rag path, not ES directly (→ `phase7-pack-retriever`)
+- Consumers: assistant-api HTTP only (`IRagRetriever` / `HttpRagRetriever`); packs declare MCP `kb-retriever` — inject via `RagPackInjector` (not ES directly) ✅ (`phase7-pack-retriever`)
 - Methods:
   - `POST /v1/ingest` — document upsert into domain index (`salon` | `marketing` → `kb-salon` | `kb-marketing`)
   - `POST /v1/search` — query + `domain` → hits[]; other domain's docs never returned (isolation tests)
@@ -192,8 +192,9 @@
 - Indexes: `kb-salon` / `kb-marketing` (Elasticsearch owned by rag-service; in-memory fallback if `Elasticsearch:Uris` empty)
 - Embeddings: `StubEmbedder` (deterministic hash-bag; no SaaS key)
 - ES data plane: compose `elasticsearch` + `rag-service` depends_on healthy
+- Pack wiring: salon/marketing mcp allowlist `kb-retriever` + skill; router/tasks empty; soft-fail inject does not break `/v1/chat`
 - Not: harness episodes, research snapshots, MinIO blobs, Direct tools, assistant-api ES client
-- Status: rag-api ✅; pack retriever → `phase7-pack-retriever`
+- Status: rag-api ✅; pack retriever ✅; next=`phase7-hardening`
 
 ## File Contract Template
 
