@@ -1,10 +1,10 @@
-namespace AssistantApi.Tests;
+namespace RagService.Tests;
 
 /// <summary>
-/// phase7-es-compose: Elasticsearch in Docker Compose with healthcheck;
-/// no app wiring (no rag-service, assistant-api does not depend on / connect to ES).
+/// phase7-rag-api compose contract: rag-service depends on healthy elasticsearch;
+/// assistant-api still must not talk to ES directly.
 /// </summary>
-public sealed class Phase7EsComposeTests
+public sealed class Phase7RagComposeTests
 {
     private static string FindRepoRoot()
     {
@@ -23,64 +23,50 @@ public sealed class Phase7EsComposeTests
         throw new InvalidOperationException("docker-compose.yml not found from test base directory.");
     }
 
-    private static string ReadCompose()
-    {
-        var path = Path.Combine(FindRepoRoot(), "docker-compose.yml");
-        return File.ReadAllText(path);
-    }
+    private static string ReadCompose() =>
+        File.ReadAllText(Path.Combine(FindRepoRoot(), "docker-compose.yml"));
 
     [Fact]
-    public void Compose_defines_elasticsearch_with_healthcheck_and_internal_expose()
+    public void Compose_defines_rag_service_depending_on_healthy_elasticsearch()
     {
         var yaml = ReadCompose();
-
-        Assert.Contains("elasticsearch:", yaml, StringComparison.Ordinal);
-        Assert.Contains("docker.elastic.co/elasticsearch/elasticsearch:", yaml, StringComparison.Ordinal);
-        Assert.Contains("elasticsearch-data:", yaml, StringComparison.Ordinal);
-        Assert.Contains("/_cluster/health", yaml, StringComparison.Ordinal);
-        Assert.Contains("discovery.type: single-node", yaml, StringComparison.Ordinal);
-
-        // Internal-only: expose 9200, do not publish host ports for ES.
-        var esBlock = ExtractServiceBlock(yaml, "elasticsearch");
-        Assert.Contains("expose:", esBlock, StringComparison.Ordinal);
-        Assert.Contains("\"9200\"", esBlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("ports:", esBlock, StringComparison.Ordinal);
-        Assert.Contains("healthcheck:", esBlock, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Compose_assistant_gateway_bridge_do_not_wire_elasticsearch_directly()
-    {
-        var yaml = ReadCompose();
-
-        // phase7-rag-api adds rag-service; assistant-api must still not talk to ES.
         Assert.Contains("rag-service:", yaml, StringComparison.Ordinal);
 
+        var rag = ExtractServiceBlock(yaml, "rag-service");
+        Assert.Contains("elasticsearch", rag, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("condition: service_healthy", rag, StringComparison.Ordinal);
+        Assert.Contains("Elasticsearch__Uris", rag, StringComparison.Ordinal);
+        Assert.Contains("Rag__ServiceKey", rag, StringComparison.Ordinal);
+        Assert.Contains("healthcheck:", rag, StringComparison.Ordinal);
+        Assert.Contains("expose:", rag, StringComparison.Ordinal);
+        // Internal only — no host port publish for rag-service.
+        Assert.DoesNotContain("ports:", rag, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Compose_assistant_api_still_does_not_wire_elasticsearch()
+    {
+        var yaml = ReadCompose();
         var apiBlock = ExtractServiceBlock(yaml, "assistant-api");
         Assert.DoesNotContain("elasticsearch", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
+        // Pack retriever slice wires RAG__BASEURL — not this slice.
         Assert.DoesNotContain("RAG__", apiBlock, StringComparison.Ordinal);
-
-        var gatewayBlock = ExtractServiceBlock(yaml, "telegram-gateway");
-        Assert.DoesNotContain("elasticsearch", gatewayBlock, StringComparison.OrdinalIgnoreCase);
-
-        var bridgeBlock = ExtractServiceBlock(yaml, "cursor-sdk-bridge");
-        Assert.DoesNotContain("elasticsearch", bridgeBlock, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("rag-service", apiBlock, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Compose_non_goals_no_minio_or_direct_services()
+    public void Compose_non_goals_no_minio_or_direct()
     {
         var yaml = ReadCompose();
-
         Assert.DoesNotContain("minio:", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("yandex-direct", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", yaml, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Assistant_api_source_has_no_elasticsearch_client_wiring()
+    public void Assistant_api_source_has_no_elasticsearch_client()
     {
         var repoRoot = FindRepoRoot();
         var apiRoot = Path.Combine(repoRoot, "src", "AssistantApi");
@@ -119,7 +105,6 @@ public sealed class Phase7EsComposeTests
         Assert.True(hits.Count == 0, "Unexpected ES/app wiring:\n" + string.Join("\n", hits));
     }
 
-    /// <summary>Naive YAML service block extractor (indent-based), enough for compose assertions.</summary>
     private static string ExtractServiceBlock(string yaml, string serviceName)
     {
         var marker = $"  {serviceName}:";
@@ -128,10 +113,8 @@ public sealed class Phase7EsComposeTests
 
         var from = start + marker.Length;
         var next = yaml.IndexOf("\n  ", from, StringComparison.Ordinal);
-        // Skip nested "  " that are deeper than 2 spaces — look for next top-level service under services:
         while (next >= 0)
         {
-            // next points at "\n  "; check if this is a sibling service (exactly two spaces then key then colon)
             var lineStart = next + 1;
             var lineEnd = yaml.IndexOf('\n', lineStart);
             if (lineEnd < 0)
@@ -145,14 +128,12 @@ public sealed class Phase7EsComposeTests
                 && line.TrimEnd().EndsWith(':')
                 && !line.TrimStart().StartsWith('#'))
             {
-                // Could be another service or "volumes:" at root — volumes at root starts at column 0.
                 break;
             }
 
             next = yaml.IndexOf("\n  ", lineEnd, StringComparison.Ordinal);
         }
 
-        // Also stop at root-level keys (volumes:)
         var rootVolumes = yaml.IndexOf("\nvolumes:", from, StringComparison.Ordinal);
         var end = yaml.Length;
         if (next >= 0)

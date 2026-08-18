@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; next=`phase7-rag-api`).
+Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; next=`phase7-pack-retriever`).
 
 ## Service: telegram-gateway
 
@@ -80,29 +80,37 @@
 - Photos: CDN `*.userapi.com` download to `Research:ImageVolumePath`; relative MediaPath only (no durable CDN URLs)
 - ApiBaseUrl: `api.vk.com` only; allowlist ≤10; wall ≤50; photos ≤14
 
-## Service: elasticsearch (Phase 7 data plane, reserved)
+## Service: elasticsearch (Phase 7 data plane)
 
-- Owner (planned): `rag-service` (not yet implemented)
+- Owner: `rag-service`
 - Image: `docker.elastic.co/elasticsearch/elasticsearch:8.15.3` via compose
 - Internal only `:9200`; health `_cluster/health` (yellow|green)
 - Volume: `elasticsearch-data`
-- **Not** connected to assistant-api / gateway / bridge in this slice
-- Security: xpack.security disabled for local compose until `phase7-rag-api` / hardening
+- Connected only via `rag-service` (assistant-api / gateway / bridge do **not** query ES)
+- Security: xpack.security disabled for local compose until hardening
+
+## Service: rag-service (Phase 7)
+
+- Owner: index + ingest/search HTTP API (ADR-014)
+- Endpoints: `POST /v1/ingest`, `POST /v1/search`, `GET /health/live|ready`
+- Auth: `X-Service-Key` (`Rag:ServiceKey` / `RAG__SERVICEKEY`)
+- Indexes: `kb-salon` / `kb-marketing`; stub embedder (no SaaS key)
+- Compose: depends_on healthy `elasticsearch`; internal `:8080`
+- Consumers (planned): assistant-api HTTP only — pack MCP wiring → `phase7-pack-retriever`
+- Soft-fail search → empty hits
 
 ## Phase 7 — Knowledge / RAG (open)
 
 - Docs ✅ (`phase7-docs`, ADR-014): RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP
-- ES compose ✅ (`phase7-es-compose`): container + health; no app wiring
-- Next slice: `phase7-rag-api` (rag-service ingest/search + domain isolation)
-- Owner (planned): `rag-service` → Elasticsearch; assistant-api does not query ES
-- Domain indexes: `kb-salon` / `kb-marketing`; pack MCP retriever only (`salon`/`marketing`; not `_router`/`tasks`)
+- ES compose ✅ (`phase7-es-compose`): container + health
+- rag-api ✅ (`phase7-rag-api`): ingest/search + domain isolation + stub embedder + service key
+- Next slice: `phase7-pack-retriever` (MCP/skill in salon/marketing packs)
 - Soft-fail: empty retrieval must not fail `/v1/chat`
-- Embeddings: prefer no new SaaS key; stub OK until dedicated slice
+- Embeddings: stub OK until dedicated slice
 - Non-goals: MinIO (8), Direct (9), Apify, mixing indexes, replacing harness/research with RAG
 
-## Reserved (do not implement in `phase7-es-compose`)
+## Reserved (do not implement in `phase7-rag-api`)
 
-- rag-service ingest/search code (→ `phase7-rag-api`)
 - pack MCP retriever wiring (→ `phase7-pack-retriever`)
 - files-minio (Phase 8)
 - yandex-direct-adapter (Phase 9)

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18o
+
+- Trigger: webhook (empty payload) → first open slice `phase7-rag-api`
+- Slice: phase7-rag-api
+- Status: passed
+- Checks: `rag-service` ingest/search + `X-Service-Key`; stub embedder; ES or in-memory; indexes `kb-salon`/`kb-marketing`; cross-domain isolation tests; compose depends_on healthy elasticsearch (internal); assistant-api no ES/RAG wiring; `Phase7RagApiTests`+compose 11/11; `dotnet test` 186/186 (136 api + 39 gateway + 11 rag); no MinIO/Direct/Apify; next=`phase7-pack-retriever`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-014 note, README, .env.example, run-log
+- Next slice: phase7-pack-retriever
+- Blocker: none (docker CLI absent; unit + compose YAML asserts cover wiring)
+
 ## Run 2026-08-18n
 
 - Trigger: webhook (empty payload) → first open slice `phase7-es-compose`
