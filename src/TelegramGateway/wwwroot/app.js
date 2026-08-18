@@ -147,7 +147,7 @@
     for (const part of text.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean)) {
       let t = part.replace(/^@/, "");
       t = t.replace(/^https?:\/\/(m\.)?vk\.com\//i, "").replace(/\/$/, "");
-      if (/access_token|service_token|VK__|IGQVJ|EAA|sk-/i.test(t)) {
+      if (/access_token|service_token|VK__|RAG__|ELASTIC|IGQVJ|EAA|sk-/i.test(t)) {
         throw new Error("Не вставляй VK/IG token — только screen_name / owner_id.");
       }
       let item = null;
@@ -583,7 +583,7 @@
     }
 
     const handle = researchHandle.value.trim();
-    if (/access_token|IGQVJ|EAA|sk-|VK__/i.test(handle)) {
+    if (/access_token|IGQVJ|EAA|sk-|VK__|RAG__|ELASTIC/i.test(handle)) {
       researchStatus.textContent = "Не вставляй IG/VK token — только @handle.";
       return;
     }
