@@ -91,6 +91,7 @@ services:
       Telegram__BotToken: ${TELEGRAM__BOTTOKEN}
       Telegram__WebhookSecretToken: ${TELEGRAM__WEBHOOKSECRETTOKEN:-}
       Telegram__UsePolling: ${TELEGRAM__USEPOLLING:-true}
+      Telegram__WebAppUrl: ${TELEGRAM__WEBAPPURL:-}
       Assistant__BaseUrl: http://assistant-api:8080
       Assistant__ServiceKey: ${ASSISTANT__SERVICEKEY}
       # Shared volume with assistant-api for research sendPhoto (ADR-011).
