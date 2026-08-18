@@ -166,4 +166,5 @@ ADR-журнал для решений, которые должны пережи
 - Security impact: service token не из chat / Mini App / query; encrypt-at-rest / env; не в logs/git/response; CDN download SSRF allowlist (`*.userapi.com`) — **reserved for client slice**; cap постов как у IG (≤50); комментарии/профили авторов не тянем (PII / 152-ФЗ).
 - Docs 2026-08-18 (`phase6-vk-docs`): ADR + README/catalog/contracts/security/.env.example. No service code in this slice.
 - Client 2026-08-18 (`phase6-vk-client`): `IVkWallClient` / `HttpVkWallClient` / stub+fallback; `EncryptedVkTokenStore`; `VkCdnUrlGuard` (`*.userapi.com`); compose `Vk__ServiceToken`; no artifacts/settings/media persist.
+- Artifacts 2026-08-18 (`phase6-vk-artifacts`): `IVkResearchCapture` + `FromVkFetch` → snapshot `source=vk` + plan + marketing episode; inject; cap ≤50; soft-fail; no CDN URLs in payload; no settings/media.
 - Links: `memory/phase-plan.md` Phase 6, `memory/security-baseline.md`, ADR-009, ADR-010

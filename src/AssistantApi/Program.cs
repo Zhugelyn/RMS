@@ -143,6 +143,7 @@ builder.Services.AddSingleton<IAgentAffinityStore, InMemoryAgentAffinityStore>()
 builder.Services.AddAssistantPersistence(builder.Configuration);
 builder.Services.AddSingleton<IResearchPackInjector, ResearchPackInjector>();
 builder.Services.AddSingleton<IInstagramResearchCapture, InstagramResearchCapture>();
+builder.Services.AddSingleton<IVkResearchCapture, VkResearchCapture>();
 builder.Services
     .AddOptions<ResearchSchedulerOptions>()
     .Bind(builder.Configuration.GetSection(ResearchSchedulerOptions.SectionName));

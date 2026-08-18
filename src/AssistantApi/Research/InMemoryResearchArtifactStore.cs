@@ -80,7 +80,8 @@ public sealed class InMemoryResearchArtifactStore : IResearchArtifactStore
         Posts = s.Posts.ToList(),
         Summary = s.Summary,
         PostCount = s.PostCount,
-        SourceStatus = s.SourceStatus
+        SourceStatus = s.SourceStatus,
+        Source = s.Source
     };
 
     private static ResearchPlan ClonePlan(ResearchPlan p, long id) => new()

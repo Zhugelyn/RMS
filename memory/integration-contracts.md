@@ -167,11 +167,12 @@
 - Auth: `VK__SERVICETOKEN` from env/secret store; AES-GCM encrypt-at-rest (`EncryptedVkTokenStore`); master = `Vk:MasterKey` or shared Instagram/Cursor MasterKey
 - Methods (official API only): `utils.resolveScreenName` → `wall.get` for open communities; stub skip without token
 - Payload: post `text` + photo attachments; Donut posts soft-skipped in mapper; closed wall → `vk-wall-closed`; no comments / author profiles
-- Cap: ≤50 posts (`VkFetchLimits`, align with IG); additive snapshot field `source=vk` — **artifacts slice**
+- Cap: ≤50 posts (`VkFetchLimits`, align with IG); additive snapshot field `source=vk` ✅ (`IVkResearchCapture` / `ResearchSnapshotBuilder.FromVkFetch`)
 - CDN SSRF allowlist `*.userapi.com` (+ no IP literals) ✅; media download → volume = `phase6-vk-media`
 - Failure: no token → stub skip; rate-limit / token invalid / closed → soft error codes; no secret leak in logs/messages
+- Capture: `IVkResearchCapture` — wall fetch → snapshot+plan+marketing episode; soft-fail persist; inject via existing `IResearchPackInjector` (source= shown); no GenerateImage/media in this slice
 - Non-goals: Apify, HTML/`m.vk.com`, user VK ID OAuth, separate `vk-research-api`
-- Status: **client ✅** (`phase6-vk-client`); artifacts/settings/media not wired yet
+- Status: **artifacts ✅** (`phase6-vk-artifacts`); settings/media/hardening not wired yet
 
 ## File Contract Template
 

@@ -20,7 +20,7 @@
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
-| **6 VK Public Research** | **open** (docs ✅; next=`phase6-vk-client`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
+| **6 VK Public Research** | **open** (docs/client/artifacts ✅; next=`phase6-vk-settings`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
@@ -64,7 +64,7 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 | Источник стены | Официальный VK API открытых сообществ. **Не scrape.** |
 | Auth | `VK__SERVICETOKEN` только env/secret store + AES-GCM (`EncryptedVkTokenStore`). Не из чата / Mini App. |
 | Scope | Allowlist `screen_name` / `owner_id` в settings (settings slice later); closed/Donut → soft skip |
-| Артефакты | Те же snapshot+plan+episodes в Postgres; additive `source=vk`; **не RAG** (artifacts slice later) |
+| Артефакты | Те же snapshot+plan+episodes в Postgres; additive `source=vk` ✅; **не RAG** |
 | Картинки | CDN SSRF allowlist `*.userapi.com` ✅; download→volume = `phase6-vk-media` |
 | UI | Mini App settings + `/research` аддитивно (не ломать IG) — later slices |
 
@@ -75,7 +75,7 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 - Apify / HTML / user VK ID OAuth / комментарии авторов / закрытые группы
 - Отдельный `vk-research-api`
 
-Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → next `phase6-vk-artifacts`.
+Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → next `phase6-vk-settings`.
 ## Требования
 
 - Docker + Docker Compose v2
