@@ -20,11 +20,15 @@ public sealed class VkResearchCaptureResult
     public int SkippedDonutCount { get; init; }
     public int TargetsAttempted { get; init; }
     public int TargetsOk { get; init; }
+    /// <summary>Photos written under ImageVolumePath (relative MediaPath on plan). Soft.</summary>
+    public int PhotosDownloaded { get; init; }
+    public string? PhotoSkipReason { get; init; }
+    public IReadOnlyList<string> PhotoPaths { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>
-/// VK wall → snapshot (source=vk) + 14-day plan + marketing episode.
-/// Soft-fail persist; no media download (phase6-vk-media).
+/// VK wall → snapshot (source=vk) + 14-day plan + CDN photos → volume + marketing episode.
+/// Soft-fail persist/download; CDN URLs never stored as durable refs (phase6-vk-media).
 /// Settings allowlist targets via <see cref="CaptureAllowlistAsync"/>.
 /// </summary>
 public interface IVkResearchCapture
@@ -51,17 +55,20 @@ public sealed class VkResearchCapture : IVkResearchCapture
     private readonly IVkWallClient _vk;
     private readonly IResearchArtifactStore _artifacts;
     private readonly IHarnessMemoryStore _memory;
+    private readonly IVkPhotoStore _photos;
     private readonly ILogger<VkResearchCapture> _logger;
 
     public VkResearchCapture(
         IVkWallClient vk,
         IResearchArtifactStore artifacts,
         IHarnessMemoryStore memory,
+        IVkPhotoStore photos,
         ILogger<VkResearchCapture> logger)
     {
         _vk = vk;
         _artifacts = artifacts;
         _memory = memory;
+        _photos = photos;
         _logger = logger;
     }
 
@@ -206,6 +213,42 @@ public sealed class VkResearchCapture : IVkResearchCapture
             ? ResearchPlanBuilder.FromSnapshot(userId, snapshot)
             : ResearchPlanBuilder.EmptyDraft(userId, aggregateFetch.Status.ToString());
 
+        var photosDownloaded = 0;
+        string? photoSkip = null;
+        IReadOnlyList<string> photoPaths = Array.Empty<string>();
+        try
+        {
+            var runId = string.IsNullOrWhiteSpace(traceId)
+                ? $"cap-{DateTime.UtcNow:yyyyMMddHHmmss}"
+                : traceId!;
+            var photoResult = await _photos.DownloadWallPhotosAsync(
+                runId,
+                aggregateFetch.Posts,
+                cancellationToken);
+            if (photoResult.Skipped)
+            {
+                photoSkip = photoResult.SkipReason;
+            }
+            else if (photoResult.Downloaded > 0)
+            {
+                plan = ResearchGeneratedImageCollector.ApplyMediaPaths(
+                    plan,
+                    photoResult.RelativeFiles,
+                    photoResult.RelativeRoot);
+                photosDownloaded = photoResult.Downloaded;
+                photoPaths = photoResult.MediaPaths;
+            }
+            else
+            {
+                photoSkip = photoResult.Attempted == 0 ? "no-photos" : "download-empty";
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "VK photo download soft-fail userId={UserId}", userId);
+            photoSkip = "photo-download-failed";
+        }
+
         long? snapshotId = null;
         var snapshotSaved = false;
         try
@@ -248,7 +291,7 @@ public sealed class VkResearchCapture : IVkResearchCapture
             var task = $"VK research {targetLabel}: {snapshot.PostCount} posts → план {ResearchArtifactLimits.PlanDays}д";
             var result =
                 $"source=vk snapshot={(snapshotSaved ? "ok" : "fail")} plan={(planSaved ? "ok" : "fail")} " +
-                $"status={aggregateFetch.Status} targets={targetsOk}/{allowlist.Count} " +
+                $"photos={photosDownloaded} status={aggregateFetch.Status} targets={targetsOk}/{allowlist.Count} " +
                 $"donutSkipped={skippedDonut} summary={Trim(snapshot.Summary, 100)}";
             await _memory.AddEpisodeAsync(new HarnessEpisode
             {
@@ -281,7 +324,10 @@ public sealed class VkResearchCapture : IVkResearchCapture
             Plan = plan,
             SkippedDonutCount = skippedDonut,
             TargetsAttempted = allowlist.Count,
-            TargetsOk = targetsOk
+            TargetsOk = targetsOk,
+            PhotosDownloaded = photosDownloaded,
+            PhotoSkipReason = photoSkip,
+            PhotoPaths = photoPaths
         };
     }
 

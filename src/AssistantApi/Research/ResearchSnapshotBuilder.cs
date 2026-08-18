@@ -32,7 +32,7 @@ public static class ResearchSnapshotBuilder
 
     /// <summary>
     /// Maps VK wall posts → snapshot with additive <c>source=vk</c>.
-    /// Does not store CDN photo URLs (media download = later slice).
+    /// Does not store CDN photo URLs (durable paths come from <c>IVkPhotoStore</c> → plan MediaPath).
     /// </summary>
     public static ResearchSnapshot FromVkFetch(
         string userId,
@@ -89,7 +89,7 @@ public static class ResearchSnapshotBuilder
             Timestamp = post.Date,
             Permalink = $"https://vk.com/wall{post.OwnerId}_{post.Id}",
             VisualNotes = BuildVkVisualNotes(photoCount)
-            // No CDN URLs — phase6-vk-media downloads later.
+            // No CDN URLs in snapshot — volume MediaPath lives on plan items after download.
         };
     }
 

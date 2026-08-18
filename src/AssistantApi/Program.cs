@@ -123,8 +123,15 @@ builder.Services.AddTransient<IInstagramGraphClient>(sp => sp.GetRequiredService
 
 builder.Services.AddSingleton<StubVkWallClient>();
 builder.Services.AddHttpClient<HttpVkWallClient>();
+builder.Services.AddHttpClient<IVkMediaDownloader, VkMediaDownloader>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        // SSRF: never auto-follow; caller re-checks allowlist if following manually.
+        AllowAutoRedirect = false
+    });
 builder.Services.AddTransient<FallbackVkWallClient>();
 builder.Services.AddTransient<IVkWallClient>(sp => sp.GetRequiredService<FallbackVkWallClient>());
+builder.Services.AddSingleton<IVkPhotoStore, VkPhotoStore>();
 
 builder.Services
     .AddOptions<AgentPacksOptions>()

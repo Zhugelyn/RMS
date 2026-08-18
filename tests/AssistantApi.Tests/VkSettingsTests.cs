@@ -241,7 +241,7 @@ public sealed class VkSettingsTests
         var artifacts = new InMemoryResearchArtifactStore();
         var memory = new InMemoryHarnessMemoryStore();
         var capture = new VkResearchCapture(
-            vk, artifacts, memory, NullLogger<VkResearchCapture>.Instance);
+            vk, artifacts, memory, new NoOpVkPhotoStore(), NullLogger<VkResearchCapture>.Instance);
 
         var result = await capture.CaptureAllowlistAsync(
             "u-merge",
