@@ -1,6 +1,6 @@
-# Telegram AI — Phase 7 Knowledge/RAG (docs) + Phase 6 VK + Phase 5 Studio
+# Telegram AI — Phase 7 Knowledge/RAG (ES compose) + Phase 6 VK + Phase 5 Studio
 
-Compose stack + domain packs на диске + Postgres (ES/`rag-service` — later Phase 7 slices):
+Compose stack + domain packs на диске + Postgres + Elasticsearch (rag-service — next Phase 7 slice):
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
@@ -8,6 +8,7 @@ Compose stack + domain packs на диске + Postgres (ES/`rag-service` — la
 | `telegram-gateway` | `5081` | Telegram bot + Mini App Research Studio |
 | `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume + local pack cwd |
 | `postgres` | internal | durable harness + research settings/artifacts |
+| `elasticsearch` | internal `:9200` | KB indexes for future `rag-service` (ADR-014); no app wiring yet |
 
 Без `CURSOR__APIKEY` chat идёт в **stub fallback**.
 
@@ -21,7 +22,7 @@ Compose stack + domain packs на диске + Postgres (ES/`rag-service` — la
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
-| **7 Knowledge** | **open** (`phase7-docs` ✅; next=`phase7-es-compose`) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
+| **7 Knowledge** | **open** (`phase7-docs` ✅; `phase7-es-compose` ✅; next=`phase7-rag-api`) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
 
@@ -85,6 +86,7 @@ Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts
 | Тема | Решение |
 | --- | --- |
 | Owner индекса | Отдельный **`rag-service`** + Elasticsearch. assistant-api **не** ходит в ES напрямую |
+| ES (compose) | `elasticsearch` 8.15.3 single-node, internal `:9200`, health `_cluster/health` ✅ (`phase7-es-compose`); xpack.security off до rag-api/hardening |
 | Индексы | `kb-salon` / `kb-marketing` раздельно; cross-domain search запрещён |
 | Retriever | MCP/skill в packs `salon` и `marketing`; `_router` / `tasks` без RAG |
 | Soft-fail | Пустой/failed retrieval не валит `/v1/chat` |
@@ -98,9 +100,9 @@ Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts
 - Смешивать salon+marketing в один индекс
 - Подменять harness episodes / research snapshots RAG-ом
 - Apify, scrape, OpenAI Images
-- ES контейнер / `rag-service` код в slice `phase7-docs` (→ `phase7-es-compose` / `phase7-rag-api`)
+- `rag-service` код в slice `phase7-es-compose` (→ `phase7-rag-api`)
 
-Slices: `phase7-docs` ✅ → `phase7-es-compose` → `phase7-rag-api` → `phase7-pack-retriever` → `phase7-hardening`.
+Slices: `phase7-docs` ✅ → `phase7-es-compose` ✅ → `phase7-rag-api` → `phase7-pack-retriever` → `phase7-hardening`.
 
 ## Требования
 
@@ -368,7 +370,7 @@ memory/                    # phase-plan, contracts, ADR
 | `INSTAGRAM__ACCESSTOKEN` (+ master) | assistant-api | Meta/Graph long-lived refresh → env; encrypt-at-rest на старте. Не из Mini App/chat. |
 | `VK__SERVICETOKEN` (+ `VK__MASTERKEY` or shared `CURSOR__`/`INSTAGRAM__` master) | assistant-api | VK Developers → приложение → сервисный ключ → обновить env (`VK__SERVICETOKEN`) → restart `assistant-api` (seal AES-GCM at startup). Старый ключ revoke в кабинете VK. **Не** user OAuth / community token. Не из Mini App/chat/query. |
 | `VK__APIBASEURL` (optional) | assistant-api | Только `https://api.vk.com/method/` (startup validate + runtime `VkApiHostGuard`). Не `m.vk.com` / oauth. |
-| `RAG__SERVICEKEY` / `RAG__BASEURL` (Phase 7, planned) | assistant-api ↔ rag-service | Placeholder в `.env.example` до `phase7-rag-api`. Не из чата. ES creds — только rag-service. |
+| `RAG__SERVICEKEY` / `RAG__BASEURL` (Phase 7, planned) | assistant-api ↔ rag-service | Placeholder до `phase7-rag-api`. Не из чата. ES в compose ✅; creds — только rag-service. |
 
 Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 

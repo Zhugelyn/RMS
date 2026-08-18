@@ -189,4 +189,5 @@ ADR-журнал для решений, которые должны пережи
 - Alternatives considered: ES внутри assistant-api; один shared index; embeddings-as-a-service сразу; подмешивать research posts в kb-*.
 - Security impact: service key rag↔assistant; secrets не из чата; PII не в ES query logs; index isolation; no MinIO/Direct/Apify in this phase.
 - Docs 2026-08-18 (`phase7-docs`): ADR + README/catalog/contracts/security/.env.example placeholders. **No service code / no ES container in this slice.**
+- Compose 2026-08-18 (`phase7-es-compose`): Elasticsearch `8.15.3` single-node in `docker-compose.yml`, internal `:9200`, health `_cluster/health`, volume `elasticsearch-data`. **No rag-service / no assistant-api wiring.** xpack.security off until rag-api/hardening.
 - Links: `memory/phase-plan.md` Phase 7, ADR-008, ADR-010, `memory/security-baseline.md`
