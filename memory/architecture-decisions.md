@@ -155,3 +155,14 @@ ADR-журнал для решений, которые должны пережи
 - Impl 2026-08-18 (`phase5-research-ui`): studio wwwroot; media endpoint; web_app keyboard + MenuButton hosted service; latest DTO enrichment.
 - Links: `memory/phase-plan.md` Phase 5, `memory/integration-contracts.md`
 
+## ADR-013: VK feed source = official API open communities only (no scrape)
+
+- Status: accepted
+- Date: 2026-08-18
+- Context: Phase 6 Marketing VK Public Research нужен источник чужих открытых пабликов. Instagram Graph (ADR-009) чужие аккаунты не отдаёт. HTML/`m.vk.com`/Apify = scrape, ToS и хрупкость. У VK есть официальный `wall.get` + service token приложения для открытых стен.
+- Decision: Единственный источник стены — **официальный VK API** (`utils.resolveScreenName` + `wall.get`) открытых сообществ из **allowlist** (screen_name / owner_id) в research settings. Auth = `VK__SERVICETOKEN` (service key приложения) из env/secret store / AES-GCM. Посты: `text` + photo attachments; closed/Donut → soft skip. Картинки CDN (`*.userapi.com`) → существующий research volume + media proxy (не MinIO). Additive `source=vk` в snapshot; `schemaVersion` не ломаем. Не отдельный `vk-research-api`.
+- Consequences: Research расширяется на открытые паблики без scrape. IG path (ADR-009) остаётся. User VK ID OAuth / community token чужих пабликов — non-goals, пока service token достаточен. Impl клиента — slices `phase6-vk-client`+.
+- Alternatives considered: HTML scrape / Apify / неофициальный mobile API; сразу user OAuth; отдельный `vk-research-api`.
+- Security impact: service token не из chat / Mini App / query; encrypt-at-rest / env; не в logs/git/response; CDN download SSRF allowlist (`*.userapi.com`) — **reserved for client slice**; cap постов как у IG (≤50); комментарии/профили авторов не тянем (PII / 152-ФЗ).
+- Docs 2026-08-18 (`phase6-vk-docs`): ADR + README/catalog/contracts/security/.env.example. No service code in this slice.
+- Links: `memory/phase-plan.md` Phase 6, `memory/security-baseline.md`, ADR-009, ADR-010
