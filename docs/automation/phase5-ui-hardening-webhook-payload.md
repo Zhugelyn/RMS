@@ -1,8 +1,6 @@
 # phase5-ui-hardening webhook payload
 
-Automation берёт **один** slice. Если payload пустой — `next_slice` из `memory/current-project.md` (`phase5-ui-hardening`).
-
-Phase 6 closed. **Не** открывать Phase 7 RAG / ES / embeddings.
+**Closed** 2026-08-18 (`phase5-ui-hardening` ✅, Phase 5 closed). Empty webhook → no open Phase 5/6 slice; do not start Phase 7 RAG without explicit slice.
 
 ```json
 {
