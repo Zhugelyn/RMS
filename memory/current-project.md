@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `4-instagram-research` **closed** (hardening ✅; next_slice=none — Phase 5 Knowledge/RAG не стартовать без явного запроса)
+- Phase: `5-research-ui` (Phase 4 closed; next = `phase5-research-ui`; Knowledge/RAG сдвинут на Phase 6)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -17,7 +17,7 @@
 - **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; **Phase 4** — Instagram Research своего аккаунта;
 - **tasks**: расписание работ и напоминания.
 
-Позже: RAG + Elasticsearch (Phase 5); MinIO / фото-видео (Phase 6); Яндекс Директ (Phase 7).
+Позже: Research Client UI (Phase 5); RAG + Elasticsearch (Phase 6); MinIO / фото-видео (Phase 7); Яндекс Директ (Phase 8).
 
 ## Goal Phase 4 (closed)
 
