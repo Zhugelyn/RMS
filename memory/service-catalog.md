@@ -74,10 +74,11 @@
 ## Phase 6 — VK Public Research (open)
 
 - Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token (ADR-013)
-- Docs ✅ (`phase6-vk-docs`); Client ✅ (`phase6-vk-client`): `IVkWallClient` / `HttpVkWallClient` / `EncryptedVkTokenStore` / `VkCdnUrlGuard`
-- Next slice: `phase6-vk-artifacts` (snapshot `source=vk` + inject; no settings/media yet)
+- Docs ✅; Client ✅; Artifacts ✅ (`IVkResearchCapture` / `FromVkFetch` → snapshot `source=vk` + plan + marketing episode + inject; cap ≤50; soft-fail)
+- Next slice: `phase6-vk-settings` (allowlist пабликов; Mini App + `/research` аддитивно; no token from UI)
 - Owner: assistant-api adapter (alongside Instagram Graph); do not add separate `vk-research-api`
 - Secrets: `VK__SERVICETOKEN` env/secret store + AES-GCM; not from chat/Mini App
+- Not yet: media download to volume (`phase6-vk-media`)
 
 ## Reserved (do not implement in Phase 6)
 

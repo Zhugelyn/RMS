@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18f
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-artifacts`
+- Slice: phase6-vk-artifacts
+- Status: passed
+- Checks: `IVkResearchCapture` / `FromVkFetch` → snapshot `source=vk` + plan + marketing episode; inject marketing / salon isolation; cap ≤50; soft-fail persist; no CDN URLs in payload; no settings/Mini App/media download; `dotnet test` 135/135 (103 api + 32 gateway); no RAG/Apify/MinIO/Direct/user-OAuth
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-013 note, README, run-log
+- Next slice: phase6-vk-settings
+- Blocker: none
+
 ## Run 2026-08-18e
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-client`

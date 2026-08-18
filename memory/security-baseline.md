@@ -87,7 +87,7 @@
 - Official VK API only (`wall.get` / `utils.resolveScreenName`); Apify / HTML / `m.vk.com` forbidden.
 - CDN SSRF allowlist `*.userapi.com` ✅ (`VkCdnUrlGuard`); download to volume = `phase6-vk-media`.
 - Allowlist communities in settings — **settings slice**; closed/Donut soft skip in client mapper; no comments / author profile scrape (PII).
-- Snapshot additive `source=vk` — **artifacts slice**; no raw token in Postgres dumps/logs; cap ≤50 posts.
+- Snapshot additive `source=vk` ✅ (`phase6-vk-artifacts`); no raw token / CDN URLs in Postgres dumps/logs; cap ≤50 posts.
 - Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
 
 ## Open Risks
@@ -95,7 +95,7 @@
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK: client ✅; next=`phase6-vk-artifacts`. Graph/VK token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
+- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK: artifacts ✅; next=`phase6-vk-settings`. Graph/VK token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 
