@@ -68,11 +68,11 @@
 - SecretScanner + `/v1/chat` reject IG token patterns (`INSTAGRAM__ACCESSTOKEN`, `IGQVJ`, `access_token=`, EAA…).
 - Research artifacts in Postgres (snapshot/plan + settings) — не логировать raw dumps/tokens (ADR-010); persist/inject ✅; soft-fail; marketing-only inject.
 - Scheduler: `lastError` sanitized (no token fragments); idempotent period keys; tick exceptions swallowed by BackgroundService; Graph fail не валит host. ✅ (`phase4-scheduler`)
-- GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) — later slice.
+- GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) ✅ (`phase4-generate-image`)
 - Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте ✅ (`phase4-miniapp-research`)
 - Research mutations: userId `tg-*` only (no anonymous); SecretScanner on handle/settings; gateway `/internal/notify` requires `X-Service-Key`
-- Notify: `GatewayResearchNotifyHook` soft-fail; bot token never leaves gateway
-- Volume path: no path traversal; size limits on generated images before Telegram send.
+- Notify: `GatewayResearchNotifyHook` soft-fail; bot token never leaves gateway; sendPhoto from shared volume with path traversal guard; text always sent even if photos=0
+- Volume path: `Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`; no path traversal; size limits on generated images before Telegram send; without Cursor key — skip images, stack alive
 - Postgres: credentials только env (`POSTGRES__PASSWORD` / `ConnectionStrings__AssistantDb`); migrations без secrets in git; database-per-service owner=assistant-api; ready fails if CS set but DB down; without CS → in-process fallback.
 
 
@@ -82,6 +82,6 @@
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Mini App initData auth ещё не enforced.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage availability; Mini App `/research` not wired yet (`phase4-miniapp-research`).
+- Phase 4: Graph token expiry / rate limits (soft-handled); GenerateImage soft-fail (`image-tool-missing`); hardening slice next.
 
 

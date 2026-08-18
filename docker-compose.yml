@@ -26,6 +26,9 @@ services:
       PORT: "8090"
       CURSOR_BRIDGE_MODEL: ${CURSOR__MODEL:-composer-2.5}
       AGENT_PACKS_ROOT: /packs
+      RESEARCH_IMAGE_VOLUME: /data/marketing-images
+    volumes:
+      - research-images:/data/marketing-images
     # Internal only — assistant-api calls this over compose network.
     expose:
       - "8090"
@@ -56,9 +59,14 @@ services:
       Instagram__MasterKey: ${INSTAGRAM__MASTERKEY:-}
       Instagram__IgUserId: ${INSTAGRAM__IGUSERID:-}
       Instagram__BusinessAccountId: ${INSTAGRAM__BUSINESSACCOUNTID:-}
+      # ADR-011 GenerateImage volume (Cursor local marketing-pack). Empty Cursor key → skip images.
+      Research__ImageVolumePath: ${RESEARCH__IMAGEVOLUMEPATH:-/data/marketing-images}
+      Research__ImageCap: "14"
       # Research notify → gateway /internal/notify (bot token stays in gateway).
       Gateway__BaseUrl: http://telegram-gateway:8080
       Gateway__ServiceKey: ${ASSISTANT__SERVICEKEY}
+    volumes:
+      - research-images:/data/marketing-images
     ports:
       - "5080:8080"
     depends_on:
@@ -85,6 +93,11 @@ services:
       Telegram__UsePolling: ${TELEGRAM__USEPOLLING:-true}
       Assistant__BaseUrl: http://assistant-api:8080
       Assistant__ServiceKey: ${ASSISTANT__SERVICEKEY}
+      # Shared volume with assistant-api for research sendPhoto (ADR-011).
+      Research__ImageVolumePath: ${RESEARCH__IMAGEVOLUMEPATH:-/data/marketing-images}
+      Research__MaxImageBytes: "8388608"
+    volumes:
+      - research-images:/data/marketing-images:ro
     ports:
       - "5081:8080"
     depends_on:
@@ -100,3 +113,4 @@ services:
 
 volumes:
   assistant-pgdata:
+  research-images:

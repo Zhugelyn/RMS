@@ -130,6 +130,9 @@ public sealed class MiniAppEndpointTests
     {
         public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken) => Task.CompletedTask;
 
+        public Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
         public Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken)
             => Task.FromResult<IReadOnlyList<TelegramUpdate>>([]);
     }

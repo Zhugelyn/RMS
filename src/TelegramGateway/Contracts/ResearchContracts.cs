@@ -56,4 +56,8 @@ public sealed class InternalNotifyRequest
 {
     public long ChatId { get; set; }
     public string Text { get; set; } = string.Empty;
+    /// <summary>Relative paths under image volume (research-media/...).</summary>
+    public List<string>? PhotoPaths { get; set; }
+    /// <summary>Optional override; defaults to Research:ImageVolumePath on gateway.</summary>
+    public string? ImageVolumePath { get; set; }
 }

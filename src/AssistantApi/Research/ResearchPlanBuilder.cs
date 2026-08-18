@@ -5,7 +5,7 @@ namespace AssistantApi.Research;
 
 /// <summary>
 /// Builds a fixed 14-day content plan from the latest snapshot (heuristic, no LLM/RAG).
-/// Scheduler/GenerateImage wiring is later slices.
+/// GenerateImage fills mediaPath in phase4-generate-image (soft-fail OK).
 /// </summary>
 public static class ResearchPlanBuilder
 {

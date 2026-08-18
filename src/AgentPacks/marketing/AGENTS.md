@@ -14,7 +14,8 @@
 
 ## Non-goals
 
-- CRM/записи салона, Яндекс Директ API wiring, RAG/ES, файлы.
+- CRM/записи салона, Яндекс Директ API wiring, RAG/ES.
+- OpenAI Images / DALL·E — картинки только через Cursor GenerateImage (skill `generate-research-images`).
 - Classify — `_router`.
 
 ## Failure mode

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-17g
+
+- Trigger: webhook slice=phase4-generate-image
+- Slice: phase4-generate-image
+- Status: passed
+- Checks: local marketing-pack GenerateImage + volume `research-media/<runId>`; bridge `/v1/run` collectImages→images[] cap 14; soft-fail `image-tool-missing`; mediaPath on plan; gateway sendPhoto (text survives 0 photos); compose volume RESEARCH__IMAGEVOLUMEPATH; no Cursor key → skip images; `dotnet test` 86/86 (68 api + 18 gateway); no OpenAI Images/RAG/Apify
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, run-log, .env.example
+- Next slice: `phase4-hardening` (не стартовать в этом run)
+- Blocker: none
+
 ## Run 2026-08-17f
 
 - Trigger: webhook slice=phase4-miniapp-research

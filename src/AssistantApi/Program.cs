@@ -120,8 +120,14 @@ builder.Services
     .AddOptions<ResearchSchedulerOptions>()
     .Bind(builder.Configuration.GetSection(ResearchSchedulerOptions.SectionName));
 builder.Services
+    .AddOptions<ResearchOptions>()
+    .Bind(builder.Configuration.GetSection(ResearchOptions.SectionName));
+builder.Services
     .AddOptions<GatewayNotifyOptions>()
     .Bind(builder.Configuration.GetSection(GatewayNotifyOptions.SectionName));
+
+builder.Services.AddSingleton<IResearchImageWorkspace, ResearchImageWorkspace>();
+builder.Services.AddSingleton<IResearchImageGenerator, ResearchImageGenerator>();
 
 var gatewayNotifyBase = builder.Configuration.GetSection(GatewayNotifyOptions.SectionName)["BaseUrl"];
 if (!string.IsNullOrWhiteSpace(gatewayNotifyBase))

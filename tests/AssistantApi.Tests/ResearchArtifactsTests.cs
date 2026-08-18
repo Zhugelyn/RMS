@@ -237,6 +237,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             graph,
             artifacts,
             memory,
+            new NoOpResearchImageGenerator(),
             NullLogger<InstagramResearchCapture>.Instance);
 
         var result = await capture.CaptureAsync("u-research", "c1", "t1");
@@ -280,6 +281,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             graph,
             new ThrowingArtifactStore(),
             memory,
+            new NoOpResearchImageGenerator(),
             NullLogger<InstagramResearchCapture>.Instance);
 
         var result = await capture.CaptureAsync("u-soft");

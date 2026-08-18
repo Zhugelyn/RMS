@@ -14,18 +14,25 @@ public sealed class ResearchGatewayTests
 {
     private static WebApplicationFactory<Program> CreateFactory(
         IAssistantApiClient assistant,
-        ITelegramBotClient? telegram = null) =>
+        ITelegramBotClient? telegram = null,
+        string? imageVolumePath = null) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
+                var values = new Dictionary<string, string?>
                 {
                     ["Telegram:BotToken"] = "000000000:TESTTOKEN_FOR_UNIT_TESTS",
                     ["Telegram:UsePolling"] = "false",
                     ["Assistant:BaseUrl"] = "http://assistant-api:8080",
                     ["Assistant:ServiceKey"] = "test-service-key-32chars-min!"
-                });
+                };
+                if (!string.IsNullOrWhiteSpace(imageVolumePath))
+                {
+                    values["Research:ImageVolumePath"] = imageVolumePath;
+                }
+
+                config.AddInMemoryCollection(values);
             });
             builder.ConfigureTestServices(services =>
             {
@@ -127,6 +134,38 @@ public sealed class ResearchGatewayTests
         Assert.Single(telegram.Sent);
         Assert.Equal(5, telegram.Sent[0].ChatId);
         Assert.Equal("Research OK", telegram.Sent[0].Text);
+    }
+
+    [Fact]
+    public async Task Internal_notify_sendPhoto_keeps_text_when_photos_missing()
+    {
+        var telegram = new CapturingTelegram();
+        var volume = Path.Combine(Path.GetTempPath(), "gw-vol-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(volume, "research-media", "r1", "out"));
+        var photoPath = Path.Combine(volume, "research-media", "r1", "out", "day-01.png");
+        await File.WriteAllBytesAsync(photoPath, [0x89, 0x50, 0x4E, 0x47]);
+
+        await using var factory = CreateFactory(new FakeResearchAssistant(), telegram, volume);
+        var client = factory.CreateClient();
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "/internal/notify")
+        {
+            Content = JsonContent.Create(new
+            {
+                chatId = 9L,
+                text = "Plan text must survive",
+                photoPaths = new[] { "research-media/r1/out/day-01.png", "research-media/missing.png" }
+            })
+        };
+        req.Headers.Add("X-Service-Key", "test-service-key-32chars-min!");
+        var ok = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.Single(telegram.Sent);
+        Assert.Equal("Plan text must survive", telegram.Sent[0].Text);
+        Assert.Single(telegram.Photos);
+        Assert.Equal("day-01.png", telegram.Photos[0].FileName);
+
+        try { Directory.Delete(volume, true); } catch { /* ignore */ }
     }
 
     [Fact]
@@ -245,10 +284,17 @@ public sealed class ResearchGatewayTests
     private sealed class CapturingTelegram : ITelegramBotClient
     {
         public List<(long ChatId, string Text)> Sent { get; } = [];
+        public List<(long ChatId, string FileName)> Photos { get; } = [];
 
         public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken)
         {
             Sent.Add((chatId, text));
+            return Task.CompletedTask;
+        }
+
+        public Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken)
+        {
+            Photos.Add((chatId, fileName));
             return Task.CompletedTask;
         }
 

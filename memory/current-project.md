@@ -3,9 +3,9 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `4-instagram-research` (slice `phase4-miniapp-research` done → next `phase4-generate-image`)
+- Phase: `4-instagram-research` (slice `phase4-generate-image` done → next `phase4-hardening`)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres`)
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
 ## Product North Star
 
@@ -28,8 +28,8 @@ Marketing Instagram Research:
 3. Instagram Graph API своего аккаунта (без Apify) ✅
 4. Research artifacts (snapshot+plan+episodes) + marketing inject ✅
 5. 14-дневный scheduler ✅; Mini App + `/research` ✅
-6. GenerateImage через local marketing-pack + volume (не OpenAI Images) ← next
-7. Hardening
+6. GenerateImage через local marketing-pack + volume (не OpenAI Images) ✅
+7. Hardening ← next
 
 ## Phase 4 non-goals
 
@@ -49,4 +49,4 @@ Marketing Instagram Research:
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: только `phase4-miniapp-research`; следующий = `phase4-generate-image` (не стартовать здесь).
+- Этот run: только `phase4-generate-image`; следующий = `phase4-hardening` (не стартовать здесь).

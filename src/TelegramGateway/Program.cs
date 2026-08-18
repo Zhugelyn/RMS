@@ -24,6 +24,10 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<ResearchImageOptions>()
+    .Bind(builder.Configuration.GetSection(ResearchImageOptions.SectionName));
+
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddSingleton<IUpdateProcessingService, UpdateProcessingService>();
@@ -207,12 +211,14 @@ app.MapGet("/api/miniapp/research/latest", async (
     return Results.Ok(latest);
 });
 
-// Internal: assistant-api research notify → Telegram sendMessage (service key required).
+// Internal: assistant-api research notify → Telegram sendMessage (+ optional sendPhoto).
 app.MapPost("/internal/notify", async (
     HttpRequest httpRequest,
     [FromBody] InternalNotifyRequest request,
     ITelegramBotClient telegram,
     IOptions<AssistantClientOptions> assistantOptions,
+    IOptions<ResearchImageOptions> researchOptions,
+    ILoggerFactory loggerFactory,
     CancellationToken cancellationToken) =>
 {
     if (!ServiceKeyMatches(httpRequest, assistantOptions.Value.ServiceKey))
@@ -234,7 +240,50 @@ app.MapPost("/internal/notify", async (
     }
 
     var text = request.Text.Length <= 3500 ? request.Text : request.Text[..3500] + "…";
+    // Always send plan/status text first — fail images ≠ fail notify text.
     await telegram.SendMessageAsync(request.ChatId, text, cancellationToken);
+
+    var volume = !string.IsNullOrWhiteSpace(request.ImageVolumePath)
+        ? request.ImageVolumePath!
+        : researchOptions.Value.ImageVolumePath;
+    var maxBytes = Math.Clamp(researchOptions.Value.MaxImageBytes, 1024, 20 * 1024 * 1024);
+    var maxPhotos = Math.Clamp(researchOptions.Value.MaxPhotosPerNotify, 0, 14);
+    var log = loggerFactory.CreateLogger("InternalNotify");
+
+    if (request.PhotoPaths is { Count: > 0 } && !string.IsNullOrWhiteSpace(volume) && maxPhotos > 0)
+    {
+        var sent = 0;
+        foreach (var rel in request.PhotoPaths)
+        {
+            if (sent >= maxPhotos)
+            {
+                break;
+            }
+
+            if (!ResearchPhotoPathGuard.TryResolve(volume, rel, maxBytes, out var abs, out var err))
+            {
+                log.LogWarning("Research photo skipped reason={Reason}", err);
+                continue;
+            }
+
+            try
+            {
+                await using var stream = File.OpenRead(abs);
+                await telegram.SendPhotoAsync(
+                    request.ChatId,
+                    stream,
+                    Path.GetFileName(abs),
+                    caption: null,
+                    cancellationToken);
+                sent++;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                log.LogWarning(ex, "Research sendPhoto soft-fail");
+            }
+        }
+    }
+
     return Results.Ok(new { ok = true });
 });
 

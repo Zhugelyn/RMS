@@ -1,5 +1,6 @@
 using AssistantApi.Instagram;
 using AssistantApi.Memory;
+using AssistantApi.Options;
 using AssistantApi.Packs;
 using Microsoft.Extensions.Logging;
 
@@ -17,12 +18,15 @@ public sealed class ResearchCaptureResult
     public long? PlanId { get; init; }
     public ResearchSnapshot? Snapshot { get; init; }
     public ResearchPlan? Plan { get; init; }
+    /// <summary>Soft image failure code (image-tool-missing) — does not fail capture.</summary>
+    public string? ImageErrorCode { get; init; }
+    public int ImageCount { get; init; }
+    public IReadOnlyList<string> ImagePaths { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>
-/// After Graph fetch: persist snapshot + 14-day plan + marketing episode.
-/// Persist failures are soft (logged) — never throw to HTTP chat callers.
-/// Scheduler calls this from BackgroundService; Mini App / GenerateImage = later slices.
+/// After Graph fetch: persist snapshot + 14-day plan + optional GenerateImage + marketing episode.
+/// Persist / image failures are soft (logged) — never throw to HTTP chat callers.
 /// </summary>
 public interface IInstagramResearchCapture
 {
@@ -38,17 +42,20 @@ public sealed class InstagramResearchCapture : IInstagramResearchCapture
     private readonly IInstagramGraphClient _graph;
     private readonly IResearchArtifactStore _artifacts;
     private readonly IHarnessMemoryStore _memory;
+    private readonly IResearchImageGenerator _images;
     private readonly ILogger<InstagramResearchCapture> _logger;
 
     public InstagramResearchCapture(
         IInstagramGraphClient graph,
         IResearchArtifactStore artifacts,
         IHarnessMemoryStore memory,
+        IResearchImageGenerator images,
         ILogger<InstagramResearchCapture> logger)
     {
         _graph = graph;
         _artifacts = artifacts;
         _memory = memory;
+        _images = images;
         _logger = logger;
     }
 
@@ -107,10 +114,49 @@ public sealed class InstagramResearchCapture : IInstagramResearchCapture
         {
             planId = await _artifacts.SavePlanAsync(plan, cancellationToken);
             planSaved = true;
+            plan = new ResearchPlan
+            {
+                Id = planId.Value,
+                UserId = plan.UserId,
+                CreatedAt = plan.CreatedAt,
+                WindowStart = plan.WindowStart,
+                WindowEnd = plan.WindowEnd,
+                Items = plan.Items
+            };
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "Research plan persist failed userId={UserId}", userId);
+        }
+
+        string? imageError = null;
+        var imageCount = 0;
+        IReadOnlyList<string> imagePaths = Array.Empty<string>();
+        if (planSaved)
+        {
+            try
+            {
+                var runId = string.IsNullOrWhiteSpace(traceId)
+                    ? $"cap-{DateTime.UtcNow:yyyyMMddHHmmss}"
+                    : traceId!;
+                var img = await _images.GenerateAsync(userId, runId, plan, fetch.Items, cancellationToken);
+                if (img.SoftFailed)
+                {
+                    imageError = img.ErrorCode ?? ResearchImageLimits.SoftFailErrorCode;
+                }
+                else if (!img.Skipped && img.Plan is not null)
+                {
+                    plan = img.Plan;
+                    planId = plan.Id != 0 ? plan.Id : planId;
+                    imageCount = img.ImageCount;
+                    imagePaths = img.ImagePaths;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Research GenerateImage soft-fail userId={UserId}", userId);
+                imageError = ResearchImageLimits.SoftFailErrorCode;
+            }
         }
 
         var episodeSaved = false;
@@ -119,7 +165,7 @@ public sealed class InstagramResearchCapture : IInstagramResearchCapture
             var task = $"Research {snapshot.PostCount} posts → план {ResearchArtifactLimits.PlanDays}д";
             var result =
                 $"snapshot={(snapshotSaved ? "ok" : "fail")} plan={(planSaved ? "ok" : "fail")} " +
-                $"status={fetch.Status} summary={Trim(snapshot.Summary, 140)}";
+                $"images={imageCount} status={fetch.Status} summary={Trim(snapshot.Summary, 120)}";
             await _memory.AddEpisodeAsync(new HarnessEpisode
             {
                 UserId = userId,
@@ -148,7 +194,10 @@ public sealed class InstagramResearchCapture : IInstagramResearchCapture
             SnapshotId = snapshotId,
             PlanId = planId,
             Snapshot = snapshot,
-            Plan = plan
+            Plan = plan,
+            ImageErrorCode = imageError,
+            ImageCount = imageCount,
+            ImagePaths = imagePaths
         };
     }
 
