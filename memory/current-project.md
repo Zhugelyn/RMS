@@ -3,9 +3,10 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `7-knowledge-rag` (Phase 5/6 closed; next=`phase7-docs`)
+- Phase: `7-knowledge-rag` (`phase7-docs` ✅; next=`phase7-es-compose`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
+  - Phase 7 later: + Elasticsearch + `rag-service` (not in `phase7-docs`)
 
 ## Product North Star
 
@@ -42,7 +43,7 @@
 
 ## Goal Phase 7 (Knowledge / RAG)
 
-Документный RAG: `rag-service` + Elasticsearch; индексы salon/marketing раздельно; retriever только в pack MCP. Первый slice: `phase7-docs` (ADR-014, без кода).
+Документный RAG: `rag-service` + Elasticsearch; индексы salon/marketing раздельно; retriever только в pack MCP. `phase7-docs` ✅ (ADR-014). Next: `phase7-es-compose`.
 
 ## Phase 4 closed
 
@@ -54,4 +55,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: plan Phase 7 open; **next_slice=`phase7-docs`**.
+- Этот run: `phase7-docs` ✅; **next_slice=`phase7-es-compose`**.

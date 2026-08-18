@@ -242,7 +242,7 @@ Non-goals Phase 6:
 
 ## Phase 7 — Knowledge (RAG)
 
-Status: **open** — next=`phase7-docs`.
+Status: **open** — `phase7-docs` ✅; next=`phase7-es-compose`.
 
 Суть: документная база знаний с retrieval. **Не** harness memory (Phase 3), **не** research snapshot/plan (Phase 4–6). Источник — явно загруженные документы, не лента IG/VK.
 
@@ -257,7 +257,7 @@ Service boundary:
 
 Acceptance (фаза целиком; закрывать по slices):
 
-- [ ] ADR-014: RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP.
+- [x] ADR-014: RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP. (`phase7-docs`)
 - [ ] ES в compose; rag-service владеет индексом.
 - [ ] Ingest+search contract; salon pack не читает marketing index (тест).
 - [ ] Secrets не из чата; `schemaVersion` не ломаем.
@@ -265,7 +265,7 @@ Acceptance (фаза целиком; закрывать по slices):
 
 Slices (один run = один):
 
-1. [ ] `phase7-docs` — ADR-014 + README Phase 7 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без ES контейнера.
+1. [x] `phase7-docs` — ADR-014 + README Phase 7 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без ES контейнера.
 2. [ ] `phase7-es-compose` — Elasticsearch в Docker Compose; health; без app wiring.
 3. [ ] `phase7-rag-api` — `rag-service` ingest/search; domain isolation; stub или выбранный embedder из ADR; auth `X-Service-Key`.
 4. [ ] `phase7-pack-retriever` — MCP/skill в `salon` и `marketing` packs; inject hits в specialist; router/tasks без RAG.

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18m
+
+- Trigger: webhook (empty payload) → first open slice `phase7-docs`
+- Slice: phase7-docs
+- Status: passed
+- Checks: ADR-014 accepted (RAG ≠ harness ≠ research; kb-salon/kb-marketing; pack MCP retriever; soft-fail); README Phase 7 + non-goals; catalog/contracts/security/.env.example placeholders (`RAG__*`, ES comments); no service code / no ES container; `dotnet test` 171/171 (132 api + 39 gateway); next=`phase7-es-compose`
+- Memory updated: architecture-decisions ADR-014, phase-plan checkbox, current-project, catalog, contracts, security-baseline, README, .env.example, telegram-ai rule, run-log
+- Next slice: phase7-es-compose
+- Blocker: none
+
 ## Run 2026-08-18l
 
 - Trigger: chat — explicit next phase after Phase 5/6 closed → open Phase 7
