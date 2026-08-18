@@ -51,6 +51,45 @@ public sealed class ResearchLatestResponse
     public int? PlanItemCount { get; init; }
     public DateOnly? PlanWindowStart { get; init; }
     public DateOnly? PlanWindowEnd { get; init; }
+    /// <summary>Aggregated Graph insights; null metrics → UI shows «нет данных Graph insights».</summary>
+    public ResearchAnalyticsDto? Analytics { get; init; }
+    /// <summary>Short per-post metrics from latest snapshot (not full media blobs).</summary>
+    public IReadOnlyList<ResearchPostMetricDto> Posts { get; init; } = Array.Empty<ResearchPostMetricDto>();
+    /// <summary>14-day plan items. imageUrl is gateway-only (media proxy); assistant leaves it null.</summary>
+    public IReadOnlyList<ResearchPlanItemDto> Items { get; init; } = Array.Empty<ResearchPlanItemDto>();
+}
+
+public sealed class ResearchAnalyticsDto
+{
+    public long? Impressions { get; init; }
+    public long? Reach { get; init; }
+    public long? Engagement { get; init; }
+    public long? Saved { get; init; }
+    public int PostCount { get; init; }
+    public DateTimeOffset? CapturedAt { get; init; }
+}
+
+public sealed class ResearchPostMetricDto
+{
+    public string? MediaId { get; init; }
+    public string? Caption { get; init; }
+    public DateTimeOffset? Timestamp { get; init; }
+    public long? Impressions { get; init; }
+    public long? Reach { get; init; }
+    public long? Engagement { get; init; }
+    public long? Saved { get; init; }
+}
+
+public sealed class ResearchPlanItemDto
+{
+    public DateOnly Date { get; init; }
+    public string Caption { get; init; } = string.Empty;
+    public IReadOnlyList<string> Hashtags { get; init; } = Array.Empty<string>();
+    public string ImagePrompt { get; init; } = string.Empty;
+    public string Status { get; init; } = "draft";
+    public string? MediaPath { get; init; }
+    /// <summary>Gateway media proxy URL; never a direct volume path. Assistant-api leaves null.</summary>
+    public string? ImageUrl { get; init; }
 }
 
 public static class ResearchPlanPreview

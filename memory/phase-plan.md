@@ -115,7 +115,7 @@ Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный 
 
 ## Phase 4 — Marketing Instagram Research
 
-Status: **closed** (2026-08-18). Hardening ✅. Следующее = Phase 5 Research Client UI (не RAG).
+Status: **closed** (2026-08-18). Hardening ✅; Phase 5 = Research Client UI (не Knowledge/RAG).
 
 Суть: маркетинговый research по ленте **своего** Instagram-аккаунта. Источник — только бесплатный **Instagram Graph API**. Счедулер **14 дней**. Настройки в Mini App и команда бота `/research`. Картинки — **Cursor GenerateImage** через local `marketing` pack + volume (не отдельный OpenAI Images). Артефакты research (`snapshot` + `plan` + `episodes`) в **Postgres assistant-api** — это **не RAG**.
 
@@ -150,48 +150,43 @@ Slices (один run = один):
 
 Non-goals Phase 4:
 
-- RAG / embeddings / Elasticsearch (→ Phase 6)
+- RAG / embeddings / Elasticsearch (→ Phase 6; Phase 5 = Research UI)
 - Apify, scrapers чужих аккаунтов, платные crawl
 - Отдельный OpenAI Images / DALL·E
 - MinIO как object store (→ Phase 7), Яндекс Директ (→ Phase 8)
 - Closing Phase 3 packs целиком «задним числом» — packs остаются; Postgres leftover закрывается здесь
-- Полированный клиентский UI (карточки/галерея) — Phase 5
 
 ## Phase 5 — Research Client UI
 
-Status: **open** (next impl = `phase5-research-ui`).
+Status: **open** — slice `phase5-research-ui` ✅; next `phase5-ui-hardening`.
 
-Суть: тот же Phase 4 функционал (settings, snapshot analytics, 14-дневный план, GenerateImage, prompts) должен **красиво смотреться** в Mini App и в боте. Сейчас Mini App — форма + `<pre>` превью; бот — текст. Нужна студия контента.
+Суть: клиентский UI поверх уже существующего research API. **Не RAG.** UI = Telegram Mini App + bot `web_app` (ADR-012), не отдельный сайт.
 
-Service boundary:
+Acceptance (slice=`phase5-research-ui`):
 
-- Owner данных без изменений: `assistant-api` (Postgres artifacts). Gateway — BFF + static Mini App + Telegram UX.
-- `/v1/research/latest` аддитивно: structured `items[]` (date, caption, hashtags, imagePrompt, mediaUrl via gateway proxy), `analytics` (totals + per-post reach/engagement из snapshot). `schemaVersion` не ломать. `planPreview` оставить для старых клиентов.
-- Картинки: authenticated media proxy на gateway (initData + path guard), не публичная раздача volume, не MinIO.
-- Бот: `MenuButtonWebApp` + inline «Открыть студию»; не дублировать 14 полноразмерных фото в один чат (альбом ≤10 + кнопка Mini App).
-- Тема Mini App: `Telegram.WebApp.themeParams` / `colorScheme` + существующая leaf-палитра. Без React/SPA-бандлера, если не нужен — vanilla HTML/CSS/JS как сейчас.
+- [x] `GET /v1/research/latest` (+ gateway proxy) отдаёт additive: `settings`, `snapshotSummary`, `analytics`, `posts[]`, `items[]` (+ `planPreview` сохранён); `schemaVersion` не ломаем.
+- [x] Mini App вкладка Маркетинг = Research Studio (шапка / аналитика / галерея 14 дней / компактные настройки); не `pre`-dump.
+- [x] Media proxy `GET /api/miniapp/research/media` — initData HMAC + `ResearchPhotoPathGuard`; `imageUrl` = proxy, не volume; IG token не в клиенте/URL.
+- [x] Bot: `TELEGRAM__WEBAPPURL` → InlineKeyboard `web_app` «Открыть студию» на `/start` и `/research`; `setChatMenuButton` MenuButtonWebApp если URL задан.
+- [x] `/research plan` — короткое резюме + ≤3 фото + кнопка Mini App (не 14 sendPhoto).
+- [x] `dotnet test` зелёный; no RAG/Apify/OpenAI Images/MinIO.
+- [x] ADR-012, catalog, contracts, README, run-log.
 
-Acceptance (фаза):
+Slices:
 
-- [ ] Mini App: галерея 14 дней — изображение, caption, hashtags, imagePrompt (copy), статус.
-- [ ] Mini App: блок аналитики ленты (snapshot: reach/impressions/engagement/saved; пустые метрики честно «нет insights»).
-- [ ] Mini App: настройки research остаются, не ломают initData HMAC.
-- [ ] Бот: `/start` и `/research` ведут в Mini App (web_app button); `/research plan` — карточки/фото + CTA в студию.
-- [ ] Media proxy без traversal и без IG token в клиенте.
-- [ ] `dotnet test` зелёный; RAG/Apify/OpenAI Images/MinIO не появляются.
+1. [x] `phase5-research-ui` — studio Mini App + latest DTO + media proxy + bot web_app.
+2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio (follow-up).
 
-Slices (один run = один):
+Non-goals Phase 5 UI:
 
-1. [ ] `phase5-research-ui` — phase-plan/README/ADR-012 client UI; additive latest DTO; Mini App studio (cards+analytics+prompts+images); media proxy; bot MenuButton + inline web_app; themeParams.
-2. [ ] `phase5-bot-rich-plan` — если не влезло в (1): rich `/research plan` (album/caption per item, лимиты Telegram), deep-link `startapp=research`.
-3. [ ] `phase5-ui-hardening` — a11y, empty/error/loading states, tests на proxy/initData, не регрессировать Phase 4.
-
-Non-goals Phase 5: RAG/ES, MinIO, публикация в Instagram, отдельный web frontend вне Telegram.
+- RAG / embeddings / Elasticsearch (→ Phase 6)
+- Apify / OpenAI Images / MinIO
+- Отдельный marketing website вне Telegram
 
 ## Phase 6 — Knowledge (RAG)
 
 - RAG service + embeddings + Elasticsearch. Можно готовые фреймворки.
-- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4).
+- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4) и не research UI (Phase 5).
 - Отдельный ownership данных и retriever contract.
 - Не смешивать индекс салона и маркетинга без явного решения.
 - Retriever подключается **в pack** домена (MCP/skill), не в общий промпт.

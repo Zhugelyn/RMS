@@ -195,9 +195,107 @@ public sealed class ResearchApiService : IResearchApiService
             PlanCreatedAt = plan?.CreatedAt,
             PlanItemCount = plan?.Items.Count,
             PlanWindowStart = plan?.WindowStart,
-            PlanWindowEnd = plan?.WindowEnd
+            PlanWindowEnd = plan?.WindowEnd,
+            Analytics = BuildAnalytics(snapshot),
+            Posts = BuildPosts(snapshot),
+            Items = BuildItems(plan)
         };
     }
+
+    private static ResearchAnalyticsDto? BuildAnalytics(ResearchSnapshot? snapshot)
+    {
+        if (snapshot is null)
+        {
+            return null;
+        }
+
+        long? impressions = null;
+        long? reach = null;
+        long? engagement = null;
+        long? saved = null;
+
+        foreach (var post in snapshot.Posts)
+        {
+            if (post.Impressions is { } i)
+            {
+                impressions = (impressions ?? 0) + i;
+            }
+
+            if (post.Reach is { } r)
+            {
+                reach = (reach ?? 0) + r;
+            }
+
+            if (post.Engagement is { } e)
+            {
+                engagement = (engagement ?? 0) + e;
+            }
+
+            if (post.Saved is { } s)
+            {
+                saved = (saved ?? 0) + s;
+            }
+        }
+
+        return new ResearchAnalyticsDto
+        {
+            Impressions = impressions,
+            Reach = reach,
+            Engagement = engagement,
+            Saved = saved,
+            PostCount = snapshot.PostCount > 0 ? snapshot.PostCount : snapshot.Posts.Count,
+            CapturedAt = snapshot.CapturedAt
+        };
+    }
+
+    private static IReadOnlyList<ResearchPostMetricDto> BuildPosts(ResearchSnapshot? snapshot)
+    {
+        if (snapshot is null || snapshot.Posts.Count == 0)
+        {
+            return Array.Empty<ResearchPostMetricDto>();
+        }
+
+        return snapshot.Posts
+            .Take(ResearchArtifactLimits.MaxPostsPerSnapshot)
+            .Select(p => new ResearchPostMetricDto
+            {
+                MediaId = p.MediaId,
+                Caption = Truncate(p.Caption, 160),
+                Timestamp = p.Timestamp,
+                Impressions = p.Impressions,
+                Reach = p.Reach,
+                Engagement = p.Engagement,
+                Saved = p.Saved
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<ResearchPlanItemDto> BuildItems(ResearchPlan? plan)
+    {
+        if (plan is null || plan.Items.Count == 0)
+        {
+            return Array.Empty<ResearchPlanItemDto>();
+        }
+
+        return plan.Items
+            .Take(ResearchArtifactLimits.PlanDays)
+            .Select(i => new ResearchPlanItemDto
+            {
+                Date = i.Date,
+                Caption = i.Caption,
+                Hashtags = i.Hashtags,
+                ImagePrompt = i.ImagePrompt,
+                Status = i.Status.ToString().ToLowerInvariant(),
+                MediaPath = i.MediaPath,
+                ImageUrl = null
+            })
+            .ToList();
+    }
+
+    private static string? Truncate(string? value, int max) =>
+        string.IsNullOrEmpty(value) ? value
+        : value.Length <= max ? value
+        : value[..max] + "…";
 
     private static ResearchSettings DefaultSettings(string userId) => new()
     {

@@ -71,9 +71,10 @@
 - GenerateImage через Cursor + local marketing-pack volume; без отдельного OpenAI Images secret (ADR-011) ✅ (`phase4-generate-image`)
 - Mini App research settings без IG token в браузере; `/research` не принимает токены в тексте ✅ (`phase4-miniapp-research`)
 - Research mutations: Mini App = Telegram **initData HMAC** (`TelegramInitDataValidator`, header `X-Telegram-Init-Data`) + userId must match; still require `tg-*`; bot `/research` = Telegram update path (no initData). SecretScanner on handle/settings; gateway `/internal/notify` requires `X-Service-Key` ✅ (`phase4-hardening`)
+- Media proxy: `GET /api/miniapp/research/media` requires initData; `ResearchPhotoPathGuard` deny traversal; imageUrl = proxy only (ADR-012) ✅ (`phase5-research-ui`)
 - Notify: `GatewayResearchNotifyHook` soft-fail; bot token never leaves gateway; sendPhoto from shared volume with path traversal guard; text always sent even if photos=0
-- Volume path: `Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`; no path traversal (workspace + notify guards); size limits on generated images before Telegram send; without Cursor key — skip images, stack alive
-- Limits: Graph fetch ≤50 (`InstagramFetchLimits`); image cap 14; snapshot/plan PayloadJson ≤256KB; posts/snapshot ≤50; retention last K snapshots=5 / plans=3
+- Volume path: `Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`; no path traversal (workspace + notify + media proxy guards); size limits on generated images before Telegram send; without Cursor key — skip images, stack alive
+- Limits: Graph fetch ≤50 (`InstagramFetchLimits`); image cap 14; snapshot/plan PayloadJson ≤256KB; posts/snapshot ≤50; retention last K snapshots=5 / plans=3; bot plan photos ≤3
 - Token rotation notes in README (bot / webhook secret / service key / Cursor / IG); never log secret values
 - Non-goals guard tests: no Apify / OpenAI Images / ES / embeddings / MinIO / Yandex Direct package wiring
 - Postgres: credentials только env (`POSTGRES__PASSWORD` / `ConnectionStrings__AssistantDb`); migrations без secrets in git; database-per-service owner=assistant-api; ready fails if CS set but DB down; without CS → in-process fallback.
@@ -84,6 +85,7 @@
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4 closed; Graph token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
+- Phase 4 closed; Phase 5 UI open (hardening follow-up). Graph token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
+- Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 

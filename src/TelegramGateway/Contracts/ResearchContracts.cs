@@ -50,6 +50,42 @@ public sealed class ResearchLatestResponse
     public int? PlanItemCount { get; set; }
     public DateOnly? PlanWindowStart { get; set; }
     public DateOnly? PlanWindowEnd { get; set; }
+    public ResearchAnalyticsDto? Analytics { get; set; }
+    public List<ResearchPostMetricDto> Posts { get; set; } = [];
+    public List<ResearchPlanItemDto> Items { get; set; } = [];
+}
+
+public sealed class ResearchAnalyticsDto
+{
+    public long? Impressions { get; set; }
+    public long? Reach { get; set; }
+    public long? Engagement { get; set; }
+    public long? Saved { get; set; }
+    public int PostCount { get; set; }
+    public DateTimeOffset? CapturedAt { get; set; }
+}
+
+public sealed class ResearchPostMetricDto
+{
+    public string? MediaId { get; set; }
+    public string? Caption { get; set; }
+    public DateTimeOffset? Timestamp { get; set; }
+    public long? Impressions { get; set; }
+    public long? Reach { get; set; }
+    public long? Engagement { get; set; }
+    public long? Saved { get; set; }
+}
+
+public sealed class ResearchPlanItemDto
+{
+    public DateOnly Date { get; set; }
+    public string Caption { get; set; } = string.Empty;
+    public List<string> Hashtags { get; set; } = [];
+    public string ImagePrompt { get; set; } = string.Empty;
+    public string Status { get; set; } = "draft";
+    public string? MediaPath { get; set; }
+    /// <summary>Gateway media proxy path — never a raw volume file URL.</summary>
+    public string? ImageUrl { get; set; }
 }
 
 public sealed class InternalNotifyRequest

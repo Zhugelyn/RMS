@@ -9,8 +9,21 @@ namespace TelegramGateway.Services;
 
 public interface ITelegramBotClient
 {
-    Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken);
-    Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken);
+    Task SendMessageAsync(
+        long chatId,
+        string text,
+        CancellationToken cancellationToken,
+        object? replyMarkup = null);
+
+    Task SendPhotoAsync(
+        long chatId,
+        Stream photo,
+        string fileName,
+        string? caption,
+        CancellationToken cancellationToken);
+
+    Task SetChatMenuButtonWebAppAsync(string text, string url, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken);
 }
 
@@ -34,12 +47,20 @@ public sealed class TelegramBotClient : ITelegramBotClient
         _httpClient.BaseAddress = new Uri("https://api.telegram.org/");
     }
 
-    public async Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken)
+    public async Task SendMessageAsync(
+        long chatId,
+        string text,
+        CancellationToken cancellationToken,
+        object? replyMarkup = null)
     {
         // Leading '/' required: token contains ':' and would otherwise be parsed as a URI scheme.
+        object body = replyMarkup is null
+            ? new { chat_id = chatId, text }
+            : new { chat_id = chatId, text, reply_markup = replyMarkup };
+
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/bot{_botToken}/sendMessage")
         {
-            Content = JsonContent.Create(new { chat_id = chatId, text }, options: JsonOptions)
+            Content = JsonContent.Create(body, options: JsonOptions)
         };
 
         try
@@ -95,6 +116,37 @@ public sealed class TelegramBotClient : ITelegramBotClient
         }
     }
 
+    public async Task SetChatMenuButtonWebAppAsync(string text, string url, CancellationToken cancellationToken)
+    {
+        var body = new
+        {
+            menu_button = new
+            {
+                type = "web_app",
+                text,
+                web_app = new { url }
+            }
+        };
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"/bot{_botToken}/setChatMenuButton")
+        {
+            Content = JsonContent.Create(body, options: JsonOptions)
+        };
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Telegram setChatMenuButton failed status={StatusCode}", (int)response.StatusCode);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Telegram setChatMenuButton failed");
+        }
+    }
+
     public async Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/bot{_botToken}/getUpdates?timeout=25&offset={offset}");
@@ -118,6 +170,38 @@ public sealed class TelegramBotClient : ITelegramBotClient
             ".webp" => "image/webp",
             ".jpg" or ".jpeg" => "image/jpeg",
             _ => "application/octet-stream"
+        };
+    }
+}
+
+/// <summary>Builds Telegram InlineKeyboardMarkup with a single web_app button.</summary>
+public static class TelegramWebAppKeyboard
+{
+    public const string OpenStudioLabel = "Открыть студию";
+
+    public static object? TryCreate(string? webAppUrl)
+    {
+        if (string.IsNullOrWhiteSpace(webAppUrl))
+        {
+            return null;
+        }
+
+        var url = webAppUrl.Trim();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp))
+        {
+            return null;
+        }
+
+        return new
+        {
+            inline_keyboard = new[]
+            {
+                new[]
+                {
+                    new { text = OpenStudioLabel, web_app = new { url } }
+                }
+            }
         };
     }
 }

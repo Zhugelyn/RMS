@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18b
+
+- Trigger: webhook slice=phase5-research-ui
+- Slice: phase5-research-ui
+- Status: passed
+- Checks: latest DTO analytics+posts+items (planPreview kept); Mini App Research Studio (not pre); media proxy 401 without initData + traversal deny; imageUrl=gateway proxy; bot web_app «Открыть студию» + MenuButton when TELEGRAM__WEBAPPURL; /research plan ≤3 photos; ADR-012; `dotnet test` 105/105 (75 api + 30 gateway); no RAG/Apify/OpenAI Images/MinIO
+- Memory updated: phase-plan Phase 5 UI + RAG→6/Files→7/Direct→8; current-project; ADR-012; catalog; contracts; security; README; run-log; .env.example
+- Next slice: phase5-ui-hardening
+- Blocker: none
+
 ## Run 2026-08-18
 
 - Trigger: webhook slice=phase4-hardening

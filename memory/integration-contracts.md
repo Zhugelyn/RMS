@@ -135,18 +135,21 @@
   - `GET /v1/research/settings?userId=tg-*`
   - `PUT /v1/research/settings` body `{ userId, enabled?, instagramHandle?, cadenceDays?, timezone?, notifyChatId? }`
   - `POST /v1/research/run` body `{ userId, notifyChatId? }` — force capture (period `manual-…`)
-  - `GET /v1/research/latest?userId=tg-*` — settings + snapshot summary + plan preview
+  - `GET /v1/research/latest?userId=tg-*` — settings + snapshot summary + plan preview + **additive** `analytics` + `posts[]` + `items[]` (Phase 5; schemaVersion unchanged)
 - Auth: `X-Service-Key`
 - Validation: userId must be `tg-<digits>`; reject secret-like handle/token fields; no IG token in request/response
 - Errors: ProblemDetails 400/401
+- latest.items[].imageUrl: null from assistant-api; gateway fills media proxy URL
 
 ## API: telegram-gateway.research-proxy
 
 - Owner: telegram-gateway
-- Methods: `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`
+- Methods: `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`, `GET /api/miniapp/research/media?path=`
 - Auth: browser → gateway (service key server-side); **mutations** require Telegram Mini App `initData` HMAC (`X-Telegram-Init-Data` or body `initData`) + `tg-*` userId matching initData user (not prefix alone)
-- Reads (`GET`): `tg-*` userId validation (no anonymous)
+- Reads (`GET` settings/latest): `tg-*` userId validation (no anonymous)
+- Media (`GET /media`): initData HMAC (header preferred; query `initData` fallback for img) + `ResearchPhotoPathGuard`; no IG token in URL; deny traversal
 - `POST /internal/notify` `{ chatId, text, photoPaths?, imageVolumePath? }` — `X-Service-Key`; sendMessage always; sendPhoto from shared volume (path guard); fail photos ≠ fail text
+- Bot UX (ADR-012): `TELEGRAM__WEBAPPURL` → InlineKeyboard web_app + MenuButtonWebApp; `/research plan` ≤3 photos + studio button
 
 ## External: instagram-graph (Phase 4)
 
