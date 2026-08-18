@@ -8,6 +8,7 @@ using AssistantApi.Providers;
 using AssistantApi.Research;
 using AssistantApi.Security;
 using AssistantApi.Services;
+using AssistantApi.Vk;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -43,29 +44,41 @@ builder.Services
         "Instagram:MasterKey must be at least 16 characters when set.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<VkOptions>()
+    .Bind(builder.Configuration.GetSection(VkOptions.SectionName))
+    .Validate(o => string.IsNullOrWhiteSpace(o.MasterKey) || o.MasterKey.Length >= 16,
+        "Vk:MasterKey must be at least 16 characters when set.")
+    .ValidateOnStart();
+
 var cursorSection = builder.Configuration.GetSection(CursorOptions.SectionName);
 var instagramSection = builder.Configuration.GetSection(InstagramOptions.SectionName);
+var vkSection = builder.Configuration.GetSection(VkOptions.SectionName);
 var hasCursorKeyMaterial =
     !string.IsNullOrWhiteSpace(cursorSection["ApiKey"]) ||
     !string.IsNullOrWhiteSpace(cursorSection["EncryptedApiKey"]);
 var hasInstagramTokenMaterial =
     !string.IsNullOrWhiteSpace(instagramSection["AccessToken"]) ||
     !string.IsNullOrWhiteSpace(instagramSection["EncryptedAccessToken"]);
+var hasVkTokenMaterial =
+    !string.IsNullOrWhiteSpace(vkSection["ServiceToken"]) ||
+    !string.IsNullOrWhiteSpace(vkSection["EncryptedServiceToken"]);
 
 var resolvedMasterKey =
-    !string.IsNullOrWhiteSpace(instagramSection["MasterKey"]) ? instagramSection["MasterKey"]!
+    !string.IsNullOrWhiteSpace(vkSection["MasterKey"]) ? vkSection["MasterKey"]!
+    : !string.IsNullOrWhiteSpace(instagramSection["MasterKey"]) ? instagramSection["MasterKey"]!
     : !string.IsNullOrWhiteSpace(cursorSection["MasterKey"]) ? cursorSection["MasterKey"]!
     : string.Empty;
 
-if ((hasCursorKeyMaterial || hasInstagramTokenMaterial) &&
+if ((hasCursorKeyMaterial || hasInstagramTokenMaterial || hasVkTokenMaterial) &&
     (string.IsNullOrWhiteSpace(resolvedMasterKey) || resolvedMasterKey.Length < 16))
 {
     throw new InvalidOperationException(
-        "A master key (≥16 chars) is required when Cursor or Instagram secrets are set " +
-        "(Cursor:MasterKey and/or Instagram:MasterKey).");
+        "A master key (≥16 chars) is required when Cursor, Instagram, or VK secrets are set " +
+        "(Cursor:MasterKey and/or Instagram:MasterKey and/or Vk:MasterKey).");
 }
 
-if (hasCursorKeyMaterial || hasInstagramTokenMaterial)
+if (hasCursorKeyMaterial || hasInstagramTokenMaterial || hasVkTokenMaterial)
 {
     builder.Services.AddSingleton<ISecretProtector>(_ => new AesGcmSecretProtector(resolvedMasterKey));
 }
@@ -88,6 +101,15 @@ else
     builder.Services.AddSingleton<IInstagramTokenStore, EmptyInstagramTokenStore>();
 }
 
+if (hasVkTokenMaterial)
+{
+    builder.Services.AddSingleton<IVkTokenStore, EncryptedVkTokenStore>();
+}
+else
+{
+    builder.Services.AddSingleton<IVkTokenStore, EmptyVkTokenStore>();
+}
+
 builder.Services.AddSingleton<StubInstagramGraphClient>();
 builder.Services.AddHttpClient<HttpInstagramGraphClient>();
 builder.Services.AddHttpClient<IInstagramMediaDownloader, InstagramMediaDownloader>()
@@ -98,6 +120,11 @@ builder.Services.AddHttpClient<IInstagramMediaDownloader, InstagramMediaDownload
     });
 builder.Services.AddTransient<FallbackInstagramGraphClient>();
 builder.Services.AddTransient<IInstagramGraphClient>(sp => sp.GetRequiredService<FallbackInstagramGraphClient>());
+
+builder.Services.AddSingleton<StubVkWallClient>();
+builder.Services.AddHttpClient<HttpVkWallClient>();
+builder.Services.AddTransient<FallbackVkWallClient>();
+builder.Services.AddTransient<IVkWallClient>(sp => sp.GetRequiredService<FallbackVkWallClient>());
 
 builder.Services
     .AddOptions<AgentPacksOptions>()
@@ -332,6 +359,9 @@ static bool LooksLikeSecret(string text)
         text.Contains("INSTAGRAM__ACCESSTOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("INSTAGRAM_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("IG_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("VK_SERVICE_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("VK_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
         (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20))
     {
         return true;
@@ -347,7 +377,8 @@ static bool LooksLikeSecret(string text)
 
     return text.Contains("api_key=", StringComparison.OrdinalIgnoreCase)
            || text.Contains("apikey=", StringComparison.OrdinalIgnoreCase)
-           || text.Contains("access_token=", StringComparison.OrdinalIgnoreCase);
+           || text.Contains("access_token=", StringComparison.OrdinalIgnoreCase)
+           || text.Contains("service_token=", StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class Program;

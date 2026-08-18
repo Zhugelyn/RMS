@@ -1,0 +1,69 @@
+{
+  "response": {
+    "count": 3,
+    "items": [
+      {
+        "id": 101,
+        "owner_id": -123456789,
+        "from_id": -123456789,
+        "date": 1724000000,
+        "text": "Осенний уход Babor — локальный тренд",
+        "attachments": [
+          {
+            "type": "photo",
+            "photo": {
+              "id": 555,
+              "owner_id": -123456789,
+              "sizes": [
+                {
+                  "type": "m",
+                  "url": "https://sun9-12.userapi.com/impg/small.jpg",
+                  "width": 130,
+                  "height": 130
+                },
+                {
+                  "type": "z",
+                  "url": "https://sun9-12.userapi.com/impg/large.jpg",
+                  "width": 1280,
+                  "height": 960
+                },
+                {
+                  "type": "w",
+                  "url": "https://evil.example.com/steal.jpg",
+                  "width": 2560,
+                  "height": 1920
+                }
+              ]
+            }
+          },
+          {
+            "type": "link",
+            "link": {
+              "url": "https://example.com",
+              "title": "ignored"
+            }
+          }
+        ]
+      },
+      {
+        "id": 102,
+        "owner_id": -123456789,
+        "from_id": -123456789,
+        "date": 1724086400,
+        "text": "Donut-only teaser",
+        "donut": {
+          "is_donut": true
+        },
+        "attachments": []
+      },
+      {
+        "id": 103,
+        "owner_id": -123456789,
+        "from_id": -123456789,
+        "date": 1724172800,
+        "text": "Второй пост без фото",
+        "attachments": []
+      }
+    ]
+  }
+}

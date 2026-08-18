@@ -10,7 +10,9 @@ public sealed class SecretScannerTests
     [InlineData("my key sk-abcdefghijklmnopqrstuv", true)]
     [InlineData("api_key=secret", true)]
     [InlineData("INSTAGRAM__ACCESSTOKEN=xyz", true)]
+    [InlineData("VK__SERVICETOKEN=xyz", true)]
     [InlineData("access_token=IGQVJxxxx", true)]
+    [InlineData("service_token=vk-secret", true)]
     [InlineData("token EAAabcdefghijklmnopqrstuvwxyz012345", true)]
     public void Detects_forbidden_secrets(string text, bool expected)
     {
