@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using RagService.Contracts;
+using RagService.Domain;
 using RagService.Embedding;
 
 namespace RagService.Indexing;
@@ -50,25 +51,15 @@ public sealed class InMemoryDocumentIndex : IDocumentIndex
                     DocumentId = doc.DocumentId,
                     Domain = domain.ToString().ToLowerInvariant(),
                     Title = doc.Title,
-                    Snippet = Snippet(doc.Text, 240),
+                    Snippet = RagLimits.Snippet(doc.Text),
                     Score = score
                 };
             })
             .Where(h => h.Score > 0)
             .OrderByDescending(h => h.Score)
-            .Take(Math.Clamp(topK, 1, 20))
+            .Take(RagLimits.ClampTopK(topK))
             .ToList();
 
         return Task.FromResult<IReadOnlyList<SearchHit>>(hits);
-    }
-
-    private static string Snippet(string text, int max)
-    {
-        if (string.IsNullOrEmpty(text) || text.Length <= max)
-        {
-            return text;
-        }
-
-        return text[..max] + "…";
     }
 }

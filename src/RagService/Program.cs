@@ -120,21 +120,35 @@ app.MapPost("/v1/search", async Task<IResult> (
     }
 
     var indexName = RagIndexNames.For(request.Domain);
+    var topK = RagLimits.ClampTopK(request.TopK);
     var queryEmbedding = embedder.Embed(request.Query);
     var hits = await index.SearchAsync(
         request.Domain,
         indexName,
         queryEmbedding,
         request.Query,
-        request.TopK <= 0 ? 5 : request.TopK,
+        topK,
         ct);
+
+    // Defense: never return another domain's docs even if the index layer misbehaves.
+    var expectedDomain = request.Domain.ToString().ToLowerInvariant();
+    var isolated = hits
+        .Where(h => string.Equals(h.Domain, expectedDomain, StringComparison.OrdinalIgnoreCase))
+        .Select(h =>
+        {
+            h.Domain = expectedDomain;
+            h.Snippet = RagLimits.Snippet(h.Snippet ?? string.Empty);
+            return h;
+        })
+        .Take(topK)
+        .ToList();
 
     return Results.Ok(new SearchResponse
     {
         SchemaVersion = 1,
-        Domain = request.Domain.ToString().ToLowerInvariant(),
+        Domain = expectedDomain,
         Index = indexName,
-        Hits = hits
+        Hits = isolated
     });
 });
 
@@ -166,9 +180,12 @@ static Dictionary<string, string>? SanitizeMetadata(Dictionary<string, string>? 
 
     // Cap keys/values; drop suspicious secret-looking keys.
     var clean = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-    foreach (var (key, value) in metadata.Take(20))
+    foreach (var (key, value) in metadata.Take(RagLimits.MaxMetadataEntries))
     {
-        if (string.IsNullOrWhiteSpace(key) || key.Length > 64 || value is null || value.Length > 512)
+        if (string.IsNullOrWhiteSpace(key)
+            || key.Length > RagLimits.MaxMetadataKeyLength
+            || value is null
+            || value.Length > RagLimits.MaxMetadataValueLength)
         {
             continue;
         }
@@ -177,7 +194,9 @@ static Dictionary<string, string>? SanitizeMetadata(Dictionary<string, string>? 
             || key.Contains("secret", StringComparison.OrdinalIgnoreCase)
             || key.Contains("password", StringComparison.OrdinalIgnoreCase)
             || key.Contains("apikey", StringComparison.OrdinalIgnoreCase)
-            || key.Contains("api_key", StringComparison.OrdinalIgnoreCase))
+            || key.Contains("api_key", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("servicekey", StringComparison.OrdinalIgnoreCase)
+            || key.Contains("service_key", StringComparison.OrdinalIgnoreCase))
         {
             continue;
         }

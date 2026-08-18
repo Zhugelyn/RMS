@@ -12,5 +12,14 @@ public sealed class ElasticsearchOptions
 
     public int RequestTimeoutSeconds { get; set; } = 10;
 
+    /// <summary>Basic auth user (compose: elastic). Empty → no Authorization header.</summary>
+    public string Username { get; set; } = string.Empty;
+
+    /// <summary>Basic auth password (ELASTICSEARCH__PASSWORD). Never log.</summary>
+    public string Password { get; set; } = string.Empty;
+
     public bool UseInMemory => string.IsNullOrWhiteSpace(Uris);
+
+    public bool HasBasicAuth =>
+        !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password);
 }

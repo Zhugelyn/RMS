@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AssistantApi.Rag;
 
 namespace AssistantApi.Options;
 
@@ -16,9 +17,9 @@ public sealed class RagOptions
     [Range(1, 120)]
     public int RequestTimeoutSeconds { get; set; } = 10;
 
-    [Range(1, 20)]
-    public int TopK { get; set; } = 5;
+    [Range(1, RagClientLimits.MaxTopK)]
+    public int TopK { get; set; } = RagClientLimits.DefaultTopK;
 
-    [Range(200, 8000)]
-    public int InjectMaxChars { get; set; } = 2400;
+    [Range(RagClientLimits.MinInjectMaxChars, RagClientLimits.MaxInjectMaxChars)]
+    public int InjectMaxChars { get; set; } = RagClientLimits.DefaultInjectMaxChars;
 }
