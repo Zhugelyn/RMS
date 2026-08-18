@@ -169,4 +169,5 @@ ADR-журнал для решений, которые должны пережи
 - Artifacts 2026-08-18 (`phase6-vk-artifacts`): `IVkResearchCapture` + `FromVkFetch` → snapshot `source=vk` + plan + marketing episode; inject; cap ≤50; soft-fail; no CDN URLs in payload; no settings/media.
 - Settings 2026-08-18 (`phase6-vk-settings`): allowlist `vkCommunities` (screen_name/owner_id) in research_settings; Mini App + `/research vk`; `source=vk` run → CaptureAllowlist; token not from UI/chat.
 - Media 2026-08-18 (`phase6-vk-media`): `IVkMediaDownloader` + `VkPhotoStore` → `research-media/*/vk/`; plan MediaPath; gateway media proxy; soft-skip without volume; no durable CDN URLs.
+- Hardening 2026-08-18 (`phase6-vk-hardening`): `VkApiHostGuard` (api.vk.com only); `ResearchMediaPathGuard`; caps + non-goals tests; Phase 6 closed.
 - Links: `memory/phase-plan.md` Phase 6, `memory/security-baseline.md`, ADR-009, ADR-010

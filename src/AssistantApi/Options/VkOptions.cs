@@ -18,6 +18,7 @@ public sealed class VkOptions
     /// </summary>
     public string MasterKey { get; set; } = string.Empty;
 
+    /// <summary>Official VK method base only (<c>https://api.vk.com/method/</c>). Validated at startup.</summary>
     public string ApiBaseUrl { get; set; } = "https://api.vk.com/method/";
 
     /// <summary>VK API version (official method params).</summary>

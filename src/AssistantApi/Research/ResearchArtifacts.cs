@@ -122,7 +122,19 @@ public static class ResearchArtifactJson
 
     public static string SerializePlan(ResearchPlan plan)
     {
-        var items = plan.Items.Take(ResearchArtifactLimits.PlanDays).ToList();
+        var items = plan.Items
+            .Take(ResearchArtifactLimits.PlanDays)
+            .Select(i => new ResearchPlanItem
+            {
+                Date = i.Date,
+                Caption = i.Caption,
+                Hashtags = i.Hashtags,
+                ImagePrompt = i.ImagePrompt,
+                MediaPath = ResearchMediaPathGuard.SanitizeOrNull(i.MediaPath),
+                TelegramFileId = i.TelegramFileId,
+                Status = i.Status
+            })
+            .ToList();
         var json = JsonSerializer.Serialize(new PlanPayload { Items = items }, Options);
         EnsurePayloadSize(json, "plan");
         return json;

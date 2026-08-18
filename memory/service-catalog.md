@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 = VK Public Research (next=`phase6-vk-artifacts`). RAG = Phase 7.
+Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK Public Research **closed** (hardening ✅). RAG = Phase 7.
 
 ## Service: telegram-gateway
 
@@ -71,16 +71,16 @@
 - latest DTO: analytics + posts[] + items[] (+ planPreview); imageUrl = media proxy
 - leftover: `phase5-ui-hardening` deferred
 
-## Phase 6 — VK Public Research (open)
+## Phase 6 — VK Public Research (closed)
 
 - Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token (ADR-013)
-- Docs ✅; Client ✅; Artifacts ✅; Settings ✅; Media ✅ (`IVkMediaDownloader` / `VkPhotoStore` → volume + plan MediaPath / gateway media proxy)
-- Next slice: `phase6-vk-hardening`
+- Docs ✅; Client ✅; Artifacts ✅; Settings ✅; Media ✅; Hardening ✅ (`VkApiHostGuard`, `ResearchMediaPathGuard`, caps, non-goals tests, token rotation)
 - Owner: assistant-api adapter (alongside Instagram Graph); do not add separate `vk-research-api`
 - Secrets: `VK__SERVICETOKEN` env/secret store + AES-GCM; not from chat/Mini App
 - Photos: CDN `*.userapi.com` download to `Research:ImageVolumePath`; relative MediaPath only (no durable CDN URLs)
+- ApiBaseUrl: `api.vk.com` only; allowlist ≤10; wall ≤50; photos ≤14
 
-## Reserved (do not implement in Phase 6)
+## Reserved (do not implement until Phase 7+)
 
 - rag-service / embedding-service / search-elasticsearch (Phase 7)
 - files-minio (Phase 8)

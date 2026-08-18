@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18i
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-hardening`
+- Slice: phase6-vk-hardening
+- Status: passed
+- Checks: `VkApiHostGuard` (api.vk.com only); `ResearchMediaPathGuard` + plan serialize/ApplyMediaPaths strip CDN/absolute URLs; caps (communities≤10, wall≤50, photos≤14); README token rotation VK; `Phase6HardeningTests` non-goals (no scrape/Apify/user-OAuth/RAG/MinIO/Direct); `dotnet test` 167/167 (132 api + 35 gateway); Phase 6 closed
+- Memory updated: phase-plan checkbox + closed, current-project, catalog, contracts, security-baseline, ADR-013 note, README, run-log
+- Next slice: none (Phase 7 RAG / deferred `phase5-ui-hardening` — только по явному запросу)
+- Blocker: none
+
 ## Run 2026-08-18h
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-media`

@@ -49,6 +49,9 @@ builder.Services
     .Bind(builder.Configuration.GetSection(VkOptions.SectionName))
     .Validate(o => string.IsNullOrWhiteSpace(o.MasterKey) || o.MasterKey.Length >= 16,
         "Vk:MasterKey must be at least 16 characters when set.")
+    .Validate(o => string.IsNullOrWhiteSpace(o.ApiBaseUrl)
+                   || VkApiHostGuard.IsAllowedApiBaseUrl(o.ApiBaseUrl, out _, out _),
+        "Vk:ApiBaseUrl must be https://api.vk.com/... (no m.vk.com / scrape / OAuth hosts).")
     .ValidateOnStart();
 
 var cursorSection = builder.Configuration.GetSection(CursorOptions.SectionName);

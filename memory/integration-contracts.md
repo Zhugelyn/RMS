@@ -169,11 +169,14 @@
 - Payload: post `text` + photo attachments; Donut posts soft-skipped in mapper; closed wall → `vk-wall-closed`; no comments / author profiles
 - Cap: ≤50 posts (`VkFetchLimits`, align with IG); additive snapshot field `source=vk` ✅ (`IVkResearchCapture` / `ResearchSnapshotBuilder.FromVkFetch`)
 - CDN SSRF allowlist `*.userapi.com` (+ no IP literals) ✅; media download → volume ✅ (`IVkMediaDownloader` / `VkPhotoStore`; plan MediaPath; gateway proxy)
+- ApiBaseUrl: only `https://api.vk.com/...` (`VkApiHostGuard` + options ValidateOnStart) ✅
+- MediaPath: relative volume paths only (`ResearchMediaPathGuard`; serialize/ApplyMediaPaths strip CDN/absolute) ✅
 - Failure: no token → stub skip; rate-limit / token invalid / closed → soft error codes; no secret leak in logs/messages
 - Capture: `IVkResearchCapture` — wall fetch → snapshot+plan+marketing episode; soft-fail persist; inject via existing `IResearchPackInjector` (source= shown); photos → volume soft-skip without `Research:ImageVolumePath`
 - Settings: additive `vkCommunities[]` (screen_name / owner_id) on research settings DTO; `POST /v1/research/run` optional `source=vk` → CaptureAllowlist; Mini App + `/research vk add|remove|list|now`; never accept service token from UI/chat ✅
+- Caps: allowlist ≤10 communities; photos/capture ≤14; retention SnapshotCap=5 PlanCap=3
 - Non-goals: Apify, HTML/`m.vk.com`, user VK ID OAuth, separate `vk-research-api`
-- Status: **media ✅** (`phase6-vk-media`); hardening not wired yet
+- Status: **closed** (`phase6-vk-hardening` ✅)
 
 ## File Contract Template
 

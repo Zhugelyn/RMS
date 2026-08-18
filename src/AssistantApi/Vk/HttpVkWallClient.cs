@@ -30,10 +30,8 @@ public sealed class HttpVkWallClient : IVkWallClient
         _options = options.Value;
         _logger = logger;
 
-        var baseUrl = string.IsNullOrWhiteSpace(_options.ApiBaseUrl)
-            ? "https://api.vk.com/method/"
-            : _options.ApiBaseUrl.TrimEnd('/') + "/";
-        _http.BaseAddress = new Uri(baseUrl);
+        // Hardening: only official api.vk.com (never m.vk.com / oauth / scrape hosts).
+        _http.BaseAddress = new Uri(VkApiHostGuard.NormalizeOrDefault(_options.ApiBaseUrl));
         _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(_options.RequestTimeoutSeconds, 5, 120));
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }

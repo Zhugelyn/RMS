@@ -20,7 +20,7 @@
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
-| **6 VK Public Research** | **open** (docs/client/artifacts/settings/media ✅; next=`phase6-vk-hardening`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
+| **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
@@ -65,8 +65,9 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 | Auth | `VK__SERVICETOKEN` только env/secret store + AES-GCM (`EncryptedVkTokenStore`). Не из чата / Mini App. |
 | Scope | Allowlist `screen_name` / `owner_id` в settings ✅; closed/Donut → soft skip |
 | Артефакты | Те же snapshot+plan+episodes в Postgres; additive `source=vk` ✅; **не RAG** |
-| Картинки | CDN SSRF allowlist `*.userapi.com` ✅; download→volume + media proxy ✅ (`phase6-vk-media`) |
+| Картинки | CDN SSRF allowlist `*.userapi.com` ✅; download→volume + media proxy ✅; MediaPath relative-only ✅ |
 | UI | Mini App VK allowlist + `/research vk add\|remove\|list\|now` ✅ (IG path intact) |
+| Hardening | Caps (≤10 communities, wall≤50, photos≤14); `ApiBaseUrl`=`api.vk.com` only; non-goals guard tests ✅ |
 
 ### Non-goals Phase 6
 
@@ -75,7 +76,7 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 - Apify / HTML / user VK ID OAuth / комментарии авторов / закрытые группы
 - Отдельный `vk-research-api`
 
-Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → `phase6-vk-settings` ✅ → `phase6-vk-media` ✅ → next `phase6-vk-hardening`.
+Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → `phase6-vk-settings` ✅ → `phase6-vk-media` ✅ → `phase6-vk-hardening` ✅. Phase 6 **closed**.
 ## Требования
 
 - Docker + Docker Compose v2
@@ -328,7 +329,7 @@ memory/                    # phase-plan, contracts, ADR
 - Health без auth; `/v1/chat` только с service key
 - Mini App research mutations: Telegram `initData` HMAC (`X-Telegram-Init-Data`); не полагаться только на `tg-*` prefix
 - Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens; retention last K snapshots/plans
-- Phase 6: `VK__SERVICETOKEN` env/secret store + AES-GCM (`EncryptedVkTokenStore`); CDN SSRF allowlist `*.userapi.com` + download to research volume (`VkPhotoStore`); media proxy via gateway
+- Phase 6: `VK__SERVICETOKEN` env/secret store + AES-GCM (`EncryptedVkTokenStore`); `Vk:ApiBaseUrl` только `api.vk.com`; CDN SSRF `*.userapi.com` + volume (`VkPhotoStore`); MediaPath relative-only (no durable CDN URLs); media proxy via gateway; caps ≤10 communities / wall≤50 / photos≤14
 
 ### Token rotation (не логировать значения)
 
@@ -339,7 +340,8 @@ memory/                    # phase-plan, contracts, ADR
 | `ASSISTANT__SERVICEKEY` | gateway ↔ assistant-api (`X-Service-Key` / Bearer-like inter-service) | Новое значение ≥16 в обоих сервисах одновременно → restart. Не логировать header. |
 | `CURSOR__APIKEY` (+ `CURSOR__MASTERKEY`) | assistant-api (+ bridge) | Новый Cursor key → env; master key только для AES-GCM seal. Без ApiKey = stub. Не из чата. |
 | `INSTAGRAM__ACCESSTOKEN` (+ master) | assistant-api | Meta/Graph long-lived refresh → env; encrypt-at-rest на старте. Не из Mini App/chat. |
-| `VK__SERVICETOKEN` (+ `VK__MASTERKEY` or shared master) | assistant-api | VK app service key → env; AES-GCM seal at startup (`EncryptedVkTokenStore`). Не из Mini App/chat. |
+| `VK__SERVICETOKEN` (+ `VK__MASTERKEY` or shared `CURSOR__`/`INSTAGRAM__` master) | assistant-api | VK Developers → приложение → сервисный ключ → обновить env (`VK__SERVICETOKEN`) → restart `assistant-api` (seal AES-GCM at startup). Старый ключ revoke в кабинете VK. **Не** user OAuth / community token. Не из Mini App/chat/query. |
+| `VK__APIBASEURL` (optional) | assistant-api | Только `https://api.vk.com/method/` (startup validate + runtime `VkApiHostGuard`). Не `m.vk.com` / oauth. |
 
 Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 
