@@ -18,21 +18,20 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # Phase 7 Knowledge/RAG (ADR-014): Elasticsearch only.
-  # Owner of indexes = future rag-service. assistant-api must NOT connect here.
-  # This slice: container + health; no rag-service / no app wiring.
+  # Phase 7 Knowledge/RAG (ADR-014): Elasticsearch data plane for rag-service.
+  # assistant-api must NOT connect here (HTTP to rag-service only — pack slice later).
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     environment:
       discovery.type: single-node
       cluster.name: telegram-ai-kb
-      # Local compose: security off until rag-service wires creds (phase7-rag-api / hardening).
+      # Local compose: security off until hardening; rag-service uses internal network.
       xpack.security.enabled: "false"
       xpack.security.http.ssl.enabled: "false"
       ES_JAVA_OPTS: ${ELASTICSEARCH__JAVA_OPTS:--Xms512m -Xmx512m}
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
-    # Internal only — not published; reserved for rag-service.
+    # Internal only — not published; owned by rag-service.
     expose:
       - "9200"
     healthcheck:
@@ -45,6 +44,29 @@ services:
       timeout: 10s
       retries: 12
       start_period: 60s
+    restart: unless-stopped
+
+  rag-service:
+    build:
+      context: ./src
+      dockerfile: RagService/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Rag__ServiceKey: ${RAG__SERVICEKEY:-dev-only-rag-service-key}
+      Elasticsearch__Uris: http://elasticsearch:9200
+      Elasticsearch__RequestTimeoutSeconds: "10"
+    # Internal only — assistant-api will call over compose network (phase7-pack-retriever).
+    expose:
+      - "8080"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
     restart: unless-stopped
 
   cursor-sdk-bridge:
