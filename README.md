@@ -1,11 +1,11 @@
-# Telegram AI — Phase 3 packs + Phase 4 Instagram Research
+# Telegram AI — Phase 5 Research Studio + Phase 4 Instagram Research
 
 Три контейнера (Compose) + domain packs на диске + Postgres:
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
 | `assistant-api` | `5080` | `POST /v1/chat`, research APIs, harness, packs, Postgres |
-| `telegram-gateway` | `5081` | Telegram bot + Mini App (research settings) |
+| `telegram-gateway` | `5081` | Telegram bot + Mini App Research Studio |
 | `cursor-sdk-bridge` | internal `:8090` | `@cursor/sdk` Agent.create/resume + local pack cwd |
 | `postgres` | internal | durable harness + research settings/artifacts |
 
@@ -18,10 +18,11 @@
 | 1 Shell | closed | gateway + assistant stub + Mini App |
 | 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
-| **4 Marketing Instagram Research** | **open** (miniapp-research ✅ → next generate-image) | Graph API своего аккаунта, 14d scheduler, Mini App + `/research` |
-| 5 Knowledge | later | RAG + embeddings + Elasticsearch |
-| 6 Files / media | later | MinIO, фото/видео adapters |
-| 7 External tools | later | Яндекс Директ и др. |
+| 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
+| **5 Research Client UI** | **open** (research-ui ✅ → next ui-hardening) | Mini App studio + bot web_app (ADR-012); не RAG |
+| 6 Knowledge | later | RAG + embeddings + Elasticsearch |
+| 7 Files / media | later | MinIO, фото/видео adapters |
+| 8 External tools | later | Яндекс Директ и др. |
 
 ## Phase 4 — Marketing Instagram Research (план)
 
@@ -37,12 +38,20 @@
 
 ### Non-goals Phase 4
 
-- RAG / embeddings / Elasticsearch (→ Phase 5)
+- RAG / embeddings / Elasticsearch (→ Phase 6; Phase 5 = Research UI)
 - Apify / scrapers чужих аккаунтов / платные crawl-сервисы
 - Отдельный OpenAI Images / DALL·E API
 - MinIO, Яндекс Директ, Kubernetes prod
 
 См. `memory/phase-plan.md` (slices `phase4-docs` … `phase4-hardening`), ADR-009/010/011.
+
+## Phase 5 — Research Client UI
+
+Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/research/latest`: `analytics`, `posts[]`, `items[]` (+ `planPreview`). Media: `GET /api/miniapp/research/media` (initData + path guard). Env: `TELEGRAM__WEBAPPURL=https://…` для MenuButton / inline «Открыть студию».
+
+### Non-goals Phase 5
+
+- RAG / ES (→ 6), MinIO (→ 7), Директ (→ 8), Apify, OpenAI Images, отдельный сайт
 
 ## Требования
 
@@ -228,8 +237,8 @@ dotnet test
 
 Покрытие:
 
-- assistant-api: health, chat, research settings/run/latest, packs/harness/scheduler
-- gateway: SecretScanner, `/research` bot, Mini App research proxy + internal notify
+- assistant-api: health, chat, research settings/run/latest (items+analytics), packs/harness/scheduler
+- gateway: SecretScanner, `/research` bot web_app, Mini App studio + media proxy + internal notify
 
 ## Локальный `dotnet run` (без Docker)
 

@@ -230,12 +230,11 @@ app.MapGet("/api/miniapp/research/latest", async (
 });
 
 // Mini App media proxy — initData HMAC + ResearchPhotoPathGuard; no IG token / no direct volume.
-app.MapGet("/api/miniapp/research/media", async (
+app.MapGet("/api/miniapp/research/media", (
     HttpRequest httpRequest,
     [FromQuery] string? path,
     IOptions<TelegramOptions> telegramOptions,
-    IOptions<ResearchImageOptions> researchOptions,
-    CancellationToken cancellationToken) =>
+    IOptions<ResearchImageOptions> researchOptions) =>
 {
     var auth = RequireInitData(httpRequest, telegramOptions.Value);
     if (auth is not null)

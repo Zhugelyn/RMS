@@ -405,9 +405,14 @@ public sealed class ResearchGatewayTests
 
         Assert.Single(telegram.Sent);
         Assert.NotNull(telegram.Sent[0].ReplyMarkup);
-        var json = System.Text.Json.JsonSerializer.Serialize(telegram.Sent[0].ReplyMarkup);
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            telegram.Sent[0].ReplyMarkup,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
         Assert.Contains("web_app", json, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Открыть студию", json);
+        Assert.Contains(TelegramWebAppKeyboard.OpenStudioLabel, json);
     }
 
     [Fact]

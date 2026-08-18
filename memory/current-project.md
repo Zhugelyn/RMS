@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `4-instagram-research` **closed** (hardening ✅; next_slice=none — Phase 5 Knowledge/RAG не стартовать без явного запроса)
+- Phase: `5-research-ui` (slice `phase5-research-ui` ✅; next=`phase5-ui-hardening`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -14,34 +14,30 @@
 Домены:
 
 - **salon / Babor (Брянск)**: развивать салон — идеи, удержание, локальный маркетинг ради салона; harness memory фактов о салоне;
-- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; **Phase 4** — Instagram Research своего аккаунта;
+- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; Instagram Research своего аккаунта + **Research Studio** Mini App;
 - **tasks**: расписание работ и напоминания.
 
-Позже: RAG + Elasticsearch (Phase 5); MinIO / фото-видео (Phase 6); Яндекс Директ (Phase 7).
+Позже: RAG + Elasticsearch (Phase 6); MinIO / фото-видео (Phase 7); Яндекс Директ (Phase 8).
 
-## Goal Phase 4 (closed)
+## Goal Phase 5 (Research Client UI)
 
-Marketing Instagram Research — all slices done:
+Клиентский UI поверх research API (ADR-012):
 
-1. Docs + ADR ✅
-2. Postgres durable settings + harness/research memory ✅
-3. Instagram Graph API своего аккаунта (без Apify) ✅
-4. Research artifacts (snapshot+plan+episodes) + marketing inject ✅
-5. 14-дневный scheduler ✅; Mini App + `/research` ✅
-6. GenerateImage через local marketing-pack + volume (не OpenAI Images) ✅
-7. Hardening ✅ (`phase4-hardening`)
+1. Additive `latest` DTO: analytics + posts[] + items[] (+ planPreview) ✅
+2. Mini App Marketing = Research Studio (не pre-dump) ✅
+3. Media proxy initData + path guard; imageUrl = gateway proxy ✅
+4. Bot web_app «Открыть студию» + MenuButtonWebApp (`TELEGRAM__WEBAPPURL`) ✅
+5. Follow-up: `phase5-ui-hardening`
 
-## Phase 4 non-goals
+## Phase 5 non-goals
 
-- RAG / embeddings / Elasticsearch
-- Apify / чужие crawl-сервисы
-- Отдельный OpenAI Images API
-- MinIO, Яндекс Директ, Kubernetes / Nginx prod
+- RAG / embeddings / Elasticsearch (→ Phase 6)
+- Apify / OpenAI Images / MinIO
+- Отдельный сайт вне Telegram Mini App
 
-## Phase 3 leftover
+## Phase 4 closed
 
-- Packs runtime ✅
-- Postgres durable harness memory ✅ (`phase4-postgres-settings`)
+Marketing Instagram Research — all slices done including hardening.
 
 ## Token Budget Rules
 
@@ -49,4 +45,4 @@ Marketing Instagram Research — all slices done:
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase4-hardening` closed; **next_slice=none** (не стартовать Phase 5).
+- Этот run: `phase5-research-ui`; **next_slice=`phase5-ui-hardening`**.

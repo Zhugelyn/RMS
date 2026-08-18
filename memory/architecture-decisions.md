@@ -143,3 +143,15 @@ ADR-журнал для решений, которые должны пережи
 - Impl 2026-08-17 (`phase4-generate-image`): bridge `collectImages`+`localCwd`; `ResearchImageGenerator` + marketing skill; compose volume; gateway sendPhoto.
 - Links: `memory/phase-plan.md` Phase 4 slice `phase4-generate-image`
 
+## ADR-012: Research UI = Telegram Mini App + bot web_app (not a separate site)
+
+- Status: accepted
+- Date: 2026-08-18
+- Context: Phase 4 закрыла research API/artifacts/scheduler/images. Нужен клиентский UX для плана/аналитики/галереи. Отдельный marketing website = ещё один deploy/auth/surface вне продукта «Telegram AI».
+- Decision: Research Client UI живёт в **Telegram Mini App** (вкладка Маркетинг = студия) + bot **InlineKeyboard web_app** / **MenuButtonWebApp** (`TELEGRAM__WEBAPPURL`). Не отдельный публичный сайт. Картинки — только gateway media proxy (`initData` + path guard), не прямой volume и не IG CDN token в клиенте.
+- Consequences: Один клиентский surface (bot + Mini App). Additive `GET /v1/research/latest` fields (`analytics`, `posts[]`, `items[]`); `planPreview` остаётся. RAG/ES остаются Phase 6.
+- Alternatives considered: отдельный SPA/landing; deep-link только без Mini App; отдавать volume paths в браузер.
+- Security impact: media proxy требует initData HMAC; path traversal deny; IG token не в URL/Mini App; bot token остаётся в gateway.
+- Impl 2026-08-18 (`phase5-research-ui`): studio wwwroot; media endpoint; web_app keyboard + MenuButton hosted service; latest DTO enrichment.
+- Links: `memory/phase-plan.md` Phase 5, `memory/integration-contracts.md`
+
