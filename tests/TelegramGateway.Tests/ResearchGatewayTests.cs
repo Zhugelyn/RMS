@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using TelegramGateway.Contracts;
+using TelegramGateway.Security;
 using TelegramGateway.Services;
 
 namespace TelegramGateway.Tests;
@@ -61,7 +62,7 @@ public sealed class ResearchGatewayTests
     }
 
     [Fact]
-    public async Task MiniApp_research_settings_and_run_proxy_to_assistant()
+    public async Task MiniApp_research_mutation_requires_initData()
     {
         var assistant = new FakeResearchAssistant();
         await using var factory = CreateFactory(assistant);
@@ -71,12 +72,66 @@ public sealed class ResearchGatewayTests
         {
             userId = "tg-42",
             enabled = true,
-            instagramHandle = "@babor",
-            cadenceDays = 14,
-            timezone = "Europe/Moscow",
-            notifyChatId = "42"
+            instagramHandle = "@babor"
         });
-        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, put.StatusCode);
+        Assert.Null(assistant.LastPut);
+
+        var run = await client.PostAsJsonAsync("/api/miniapp/research/run", new
+        {
+            userId = "tg-42"
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, run.StatusCode);
+        Assert.Null(assistant.LastRun);
+    }
+
+    [Fact]
+    public async Task MiniApp_research_mutation_rejects_userId_mismatch()
+    {
+        var assistant = new FakeResearchAssistant();
+        await using var factory = CreateFactory(assistant);
+        var client = factory.CreateClient();
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 42);
+
+        using var req = new HttpRequestMessage(HttpMethod.Put, "/api/miniapp/research/settings");
+        req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+        req.Content = JsonContent.Create(new
+        {
+            userId = "tg-99",
+            enabled = true,
+            instagramHandle = "@x"
+        });
+        var put = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.Forbidden, put.StatusCode);
+        Assert.Null(assistant.LastPut);
+    }
+
+    [Fact]
+    public async Task MiniApp_research_settings_and_run_proxy_to_assistant()
+    {
+        var assistant = new FakeResearchAssistant();
+        await using var factory = CreateFactory(assistant);
+        var client = factory.CreateClient();
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 42);
+
+        using (var req = new HttpRequestMessage(HttpMethod.Put, "/api/miniapp/research/settings"))
+        {
+            req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+            req.Content = JsonContent.Create(new
+            {
+                userId = "tg-42",
+                enabled = true,
+                instagramHandle = "@babor",
+                cadenceDays = 14,
+                timezone = "Europe/Moscow",
+                notifyChatId = "42"
+            });
+            var put = await client.SendAsync(req);
+            Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        }
+
         Assert.NotNull(assistant.LastPut);
         Assert.Equal("tg-42", assistant.LastPut!.UserId);
         Assert.True(assistant.LastPut.Enabled);
@@ -85,12 +140,18 @@ public sealed class ResearchGatewayTests
         var get = await client.GetAsync("/api/miniapp/research/settings?userId=tg-42");
         Assert.Equal(HttpStatusCode.OK, get.StatusCode);
 
-        var run = await client.PostAsJsonAsync("/api/miniapp/research/run", new
+        using (var req = new HttpRequestMessage(HttpMethod.Post, "/api/miniapp/research/run"))
         {
-            userId = "tg-42",
-            notifyChatId = "42"
-        });
-        Assert.Equal(HttpStatusCode.OK, run.StatusCode);
+            req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+            req.Content = JsonContent.Create(new
+            {
+                userId = "tg-42",
+                notifyChatId = "42"
+            });
+            var run = await client.SendAsync(req);
+            Assert.Equal(HttpStatusCode.OK, run.StatusCode);
+        }
+
         Assert.NotNull(assistant.LastRun);
 
         var latest = await client.GetAsync("/api/miniapp/research/latest?userId=tg-42");
@@ -103,12 +164,17 @@ public sealed class ResearchGatewayTests
         var assistant = new FakeResearchAssistant();
         await using var factory = CreateFactory(assistant);
         var client = factory.CreateClient();
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 1);
 
-        var put = await client.PutAsJsonAsync("/api/miniapp/research/settings", new
+        using var req = new HttpRequestMessage(HttpMethod.Put, "/api/miniapp/research/settings");
+        req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+        req.Content = JsonContent.Create(new
         {
             userId = "tg-1",
             instagramHandle = "IGQVJxxxxxxxxxxxxxxxxxxxxxxxx"
         });
+        var put = await client.SendAsync(req);
         Assert.Equal(HttpStatusCode.BadRequest, put.StatusCode);
         Assert.Null(assistant.LastPut);
     }

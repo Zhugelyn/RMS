@@ -26,8 +26,9 @@ public sealed class InstagramOptions
 
     public string GraphBaseUrl { get; set; } = "https://graph.facebook.com/v21.0/";
 
-    [Range(1, 100)]
-    public int DefaultMediaLimit { get; set; } = 25;
+    /// <summary>Graph media page size (clamped to <see cref="InstagramFetchLimits.MaxMediaFetch"/>).</summary>
+    [Range(1, InstagramFetchLimits.MaxMediaFetch)]
+    public int DefaultMediaLimit { get; set; } = InstagramFetchLimits.DefaultMediaFetch;
 
     [Range(5, 120)]
     public int RequestTimeoutSeconds { get; set; } = 30;
@@ -41,4 +42,11 @@ public sealed class InstagramOptions
         !string.IsNullOrWhiteSpace(IgUserId) ? IgUserId.Trim()
         : !string.IsNullOrWhiteSpace(BusinessAccountId) ? BusinessAccountId.Trim()
         : string.Empty;
+}
+
+/// <summary>Hard limits for Instagram Graph fetch (Phase 4 hardening).</summary>
+public static class InstagramFetchLimits
+{
+    public const int DefaultMediaFetch = 25;
+    public const int MaxMediaFetch = 50;
 }

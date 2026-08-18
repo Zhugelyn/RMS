@@ -115,16 +115,16 @@
 - Source: Instagram Graph API own account only (ADR-009). No Apify. Client: `IInstagramGraphClient` / `HttpInstagramGraphClient` ✅
 - Settings table `research_settings`: `userId`, `instagramHandle`, `enabled`, `cadenceDays` (default 14), `timezone`, `notifyChatId`, `nextRunAt`, `lastRunAt`, `lastError?` — **no raw IG token in row**
 - Artifacts (Postgres, ADR-010 — **not RAG**):
-  - `research_snapshots`: normalized posts + visual notes + summary JSON; cap last K; no raw token ✅
-  - `research_plans`: 14 items `{date, caption, hashtags, imagePrompt, mediaPath?, telegramFileId?, status}` ✅
+  - `research_snapshots`: normalized posts + visual notes + summary JSON; retention **last K=5** per user; payload ≤256KB; posts ≤50; no raw token ✅
+  - `research_plans`: 14 items `{date, caption, hashtags, imagePrompt, mediaPath?, telegramFileId?, status}`; retention **last K=3** ✅
   - harness `harness_episodes` domain=`marketing` after capture («Research … → план») ✅
   - `research_schedule_runs`: unique `(userId, periodKey)` successful windows ✅
-- Capture: `IInstagramResearchCapture` — Graph fetch → snapshot → plan → episode; soft-fail persist
+- Capture: `IInstagramResearchCapture` — Graph fetch (≤50 media) → snapshot → plan → episode; soft-fail persist
 - Scheduler: `IResearchSchedulerJob` / `ResearchSchedulerHostedService` — due `enabled && nextRunAt≤now`; cadenceDays default 14; success → nextRunAt+=cadence, lastRunAt, clear lastError, mark period; Graph fail → lastError, keep snapshot, no period mark; no token/disabled → no-op; notify = `IResearchNotifyHook` (`GatewayResearchNotifyHook` when `Gateway:BaseUrl` set) ✅
 - Inject: `IResearchPackInjector` — latest snapshot summary + last plan **only** into marketing pack (salon isolation)
 - Bot: `/research` on|off|account|now|plan|status ✅
-- Mini App: research settings (no IG token) ✅
-- Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011) ✅ (`phase4-generate-image`); cap 14; soft-fail `image-tool-missing`; mediaPath on plan items; notify may include `photoPaths`
+- Mini App: research settings (no IG token) ✅; mutations require initData HMAC ✅
+- Images: Cursor GenerateImage via local marketing-pack + volume (ADR-011) ✅; cap 14; soft-fail `image-tool-missing`; mediaPath on plan items; notify may include `photoPaths`
 - Backward compatibility: additive `/v1/chat` fields only if needed; `schemaVersion` unchanged
 
 ## API: assistant-api.research
@@ -144,7 +144,8 @@
 
 - Owner: telegram-gateway
 - Methods: `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`
-- Auth: browser → gateway (service key server-side); mutations require `tg-*` (no anonymous)
+- Auth: browser → gateway (service key server-side); **mutations** require Telegram Mini App `initData` HMAC (`X-Telegram-Init-Data` or body `initData`) + `tg-*` userId matching initData user (not prefix alone)
+- Reads (`GET`): `tg-*` userId validation (no anonymous)
 - `POST /internal/notify` `{ chatId, text, photoPaths?, imageVolumePath? }` — `X-Service-Key`; sendMessage always; sendPhoto from shared volume (path guard); fail photos ≠ fail text
 
 ## External: instagram-graph (Phase 4)
@@ -152,6 +153,7 @@
 - Owner: assistant-api adapter (`AssistantApi.Instagram`)
 - Auth: `INSTAGRAM__ACCESSTOKEN` (+ `INSTAGRAM__IGUSERID` / `BUSINESSACCOUNTID`) from env/secret store; AES-GCM encrypt-at-rest (`EncryptedInstagramTokenStore`); master = `Instagram:MasterKey` or shared `Cursor:MasterKey`
 - Scope: own account media (`caption,media_url,timestamp,permalink,media_type`) + optional insights when scope allows
+- Fetch limit: default 25, hard cap **50** (`InstagramFetchLimits`)
 - Media download: SSRF allowlist `*.cdninstagram.com` / `*.fbcdn.net` + size limit
 - Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
 - Non-goals: foreign profiles, Apify, unofficial mobile API

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18
+
+- Trigger: webhook slice=phase4-hardening
+- Slice: phase4-hardening
+- Status: passed
+- Checks: Mini App research mutations require Telegram initData HMAC (`X-Telegram-Init-Data` / body); userId must match initData; Graph fetch hard cap 50; image cap 14; volume path traversal guards + tests; snapshot/plan payload size + posts cap; retention SnapshotCap=5 PlanCap=3 explicit; README token rotation (IG+Cursor+webhook+service key); non-goals guard test (no Apify/OpenAI Images/ES/embeddings/MinIO/Direct wiring); `dotnet test` 99/99 (73 api + 26 gateway); compose YAML OK (docker CLI absent); Phase 4 closed; Phase 5 not started
+- Memory updated: current-project, phase-plan, catalog, contracts, security-baseline, run-log, README, .env.example
+- Next slice: none (Phase 5 Knowledge/RAG — только по явному запросу)
+- Blocker: none
+
 ## Run 2026-08-17g
 
 - Trigger: webhook slice=phase4-generate-image

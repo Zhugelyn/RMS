@@ -13,6 +13,7 @@ public static class ResearchSnapshotBuilder
     {
         var at = capturedAt ?? DateTimeOffset.UtcNow;
         var posts = fetch.Items
+            .Take(ResearchArtifactLimits.MaxPostsPerSnapshot)
             .Select(ToPost)
             .ToList();
 

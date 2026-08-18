@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `4-instagram-research` (slice `phase4-generate-image` done → next `phase4-hardening`)
+- Phase: `4-instagram-research` **closed** (hardening ✅; next_slice=none — Phase 5 Knowledge/RAG не стартовать без явного запроса)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -19,9 +19,9 @@
 
 Позже: RAG + Elasticsearch (Phase 5); MinIO / фото-видео (Phase 6); Яндекс Директ (Phase 7).
 
-## Goal Phase 4 (current)
+## Goal Phase 4 (closed)
 
-Marketing Instagram Research:
+Marketing Instagram Research — all slices done:
 
 1. Docs + ADR ✅
 2. Postgres durable settings + harness/research memory ✅
@@ -29,7 +29,7 @@ Marketing Instagram Research:
 4. Research artifacts (snapshot+plan+episodes) + marketing inject ✅
 5. 14-дневный scheduler ✅; Mini App + `/research` ✅
 6. GenerateImage через local marketing-pack + volume (не OpenAI Images) ✅
-7. Hardening ← next
+7. Hardening ✅ (`phase4-hardening`)
 
 ## Phase 4 non-goals
 
@@ -49,4 +49,4 @@ Marketing Instagram Research:
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: только `phase4-generate-image`; следующий = `phase4-hardening` (не стартовать здесь).
+- Этот run: `phase4-hardening` closed; **next_slice=none** (не стартовать Phase 5).

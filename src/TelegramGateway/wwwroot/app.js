@@ -43,6 +43,14 @@
   let activeIntent = null;
   let conversationId = `mini-${crypto.randomUUID()}`;
 
+  function initDataHeaders() {
+    const headers = { "Content-Type": "application/json" };
+    if (tg?.initData) {
+      headers["X-Telegram-Init-Data"] = tg.initData;
+    }
+    return headers;
+  }
+
   function resolveUserId() {
     const id = tg?.initDataUnsafe?.user?.id;
     return id ? `tg-${id}` : null;
@@ -180,6 +188,10 @@
       researchStatus.textContent = "Нужен Telegram userId (не аноним).";
       return;
     }
+    if (!tg?.initData) {
+      researchStatus.textContent = "Нужен Telegram initData (открой Mini App из Telegram).";
+      return;
+    }
 
     const handle = researchHandle.value.trim();
     if (/access_token|IGQVJ|EAA|sk-/i.test(handle)) {
@@ -192,7 +204,7 @@
     try {
       const response = await fetch("/api/miniapp/research/settings", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: initDataHeaders(),
         body: JSON.stringify({
           userId,
           enabled: researchEnabled.checked,
@@ -222,13 +234,17 @@
       researchStatus.textContent = "Нужен Telegram userId (не аноним).";
       return;
     }
+    if (!tg?.initData) {
+      researchStatus.textContent = "Нужен Telegram initData (открой Mini App из Telegram).";
+      return;
+    }
 
     researchStatus.textContent = "Запускаю research…";
     researchRunBtn.disabled = true;
     try {
       const response = await fetch("/api/miniapp/research/run", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: initDataHeaders(),
         body: JSON.stringify({
           userId,
           notifyChatId: resolveNotifyChatId()

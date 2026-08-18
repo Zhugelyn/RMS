@@ -290,8 +290,21 @@ memory/                    # phase-plan, contracts, ADR
 
 - Не коммить `.env`
 - Не слать API keys в чат / Mini App
-- Bot token ≠ service key ≠ Instagram token
+- Bot token ≠ service key ≠ Instagram token ≠ Cursor API key
 - Health без auth; `/v1/chat` только с service key
-- Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens
+- Mini App research mutations: Telegram `initData` HMAC (`X-Telegram-Init-Data`); не полагаться только на `tg-*` prefix
+- Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens; retention last K snapshots/plans
+
+### Token rotation (не логировать значения)
+
+| Secret | Где | Ротация |
+| --- | --- | --- |
+| `TELEGRAM__BOTTOKEN` | только gateway | BotFather → новый token → обновить `.env` / secret store → restart `telegram-gateway`. Старый invalidates. |
+| `TELEGRAM__WEBHOOKSECRETTOKEN` | gateway webhook header | Сгенерировать новую строку → `setWebhook` secret_token + env → restart. Не путать с bot token. |
+| `ASSISTANT__SERVICEKEY` | gateway ↔ assistant-api (`X-Service-Key` / Bearer-like inter-service) | Новое значение ≥16 в обоих сервисах одновременно → restart. Не логировать header. |
+| `CURSOR__APIKEY` (+ `CURSOR__MASTERKEY`) | assistant-api (+ bridge) | Новый Cursor key → env; master key только для AES-GCM seal. Без ApiKey = stub. Не из чата. |
+| `INSTAGRAM__ACCESSTOKEN` (+ master) | assistant-api | Meta/Graph long-lived refresh → env; encrypt-at-rest на старте. Не из Mini App/chat. |
+
+Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/Telegram.
 
 Подробности: `memory/security-baseline.md`, `memory/phase-plan.md`.

@@ -60,7 +60,10 @@ public sealed class HttpInstagramGraphClient : IInstagramGraphClient
             return InstagramMediaFetchResult.SkipNoAccountId();
         }
 
-        var pageLimit = Math.Clamp(limit ?? _options.DefaultMediaLimit, 1, 100);
+        var pageLimit = Math.Clamp(
+            limit ?? _options.DefaultMediaLimit,
+            1,
+            InstagramFetchLimits.MaxMediaFetch);
         var path =
             $"{Uri.EscapeDataString(accountId)}/media" +
             $"?fields={MediaFields}&limit={pageLimit}&access_token={Uri.EscapeDataString(token)}";

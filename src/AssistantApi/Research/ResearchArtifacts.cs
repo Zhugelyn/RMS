@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -65,13 +66,24 @@ public sealed class ResearchPlan
 
 public static class ResearchArtifactLimits
 {
+    /// <summary>Retention: keep last K snapshots per user (TTL-style cap).</summary>
     public const int SnapshotCapPerUser = 5;
+
     public const int PlanDays = 14;
+
+    /// <summary>Retention: keep last K plans per user.</summary>
     public const int PlanCapPerUser = 3;
+
     public const int InjectMaxChars = 1600;
     public const int SummaryMaxChars = 480;
     public const int CaptionMaxChars = 280;
     public const int VisualNotesMaxChars = 160;
+
+    /// <summary>Hard cap posts stored in one snapshot payload.</summary>
+    public const int MaxPostsPerSnapshot = 50;
+
+    /// <summary>Max UTF-8 bytes for snapshot/plan PayloadJson before reject.</summary>
+    public const int MaxPayloadBytes = 256 * 1024;
 }
 
 public static class ResearchArtifactJson
@@ -84,23 +96,54 @@ public static class ResearchArtifactJson
         WriteIndented = false
     };
 
-    public static string SerializeSnapshot(ResearchSnapshot snapshot) =>
-        JsonSerializer.Serialize(new SnapshotPayload
+    public static string SerializeSnapshot(ResearchSnapshot snapshot)
+    {
+        var posts = snapshot.Posts.Take(ResearchArtifactLimits.MaxPostsPerSnapshot).ToList();
+        var json = JsonSerializer.Serialize(new SnapshotPayload
         {
-            Posts = snapshot.Posts,
-            Summary = snapshot.Summary,
-            PostCount = snapshot.PostCount,
+            Posts = posts,
+            Summary = Truncate(snapshot.Summary, ResearchArtifactLimits.SummaryMaxChars),
+            PostCount = snapshot.PostCount > 0 ? Math.Min(snapshot.PostCount, posts.Count) : posts.Count,
             SourceStatus = snapshot.SourceStatus
         }, Options);
+        EnsurePayloadSize(json, "snapshot");
+        return json;
+    }
 
-    public static string SerializePlan(ResearchPlan plan) =>
-        JsonSerializer.Serialize(new PlanPayload { Items = plan.Items }, Options);
+    public static string SerializePlan(ResearchPlan plan)
+    {
+        var items = plan.Items.Take(ResearchArtifactLimits.PlanDays).ToList();
+        var json = JsonSerializer.Serialize(new PlanPayload { Items = items }, Options);
+        EnsurePayloadSize(json, "plan");
+        return json;
+    }
 
-    public static SnapshotPayload DeserializeSnapshot(string json) =>
-        JsonSerializer.Deserialize<SnapshotPayload>(json, Options) ?? new SnapshotPayload();
+    public static SnapshotPayload DeserializeSnapshot(string json)
+    {
+        EnsurePayloadSize(json, "snapshot");
+        return JsonSerializer.Deserialize<SnapshotPayload>(json, Options) ?? new SnapshotPayload();
+    }
 
-    public static PlanPayload DeserializePlan(string json) =>
-        JsonSerializer.Deserialize<PlanPayload>(json, Options) ?? new PlanPayload();
+    public static PlanPayload DeserializePlan(string json)
+    {
+        EnsurePayloadSize(json, "plan");
+        return JsonSerializer.Deserialize<PlanPayload>(json, Options) ?? new PlanPayload();
+    }
+
+    private static void EnsurePayloadSize(string json, string kind)
+    {
+        var bytes = Encoding.UTF8.GetByteCount(json);
+        if (bytes > ResearchArtifactLimits.MaxPayloadBytes)
+        {
+            throw new InvalidOperationException(
+                $"research {kind} payload exceeds {ResearchArtifactLimits.MaxPayloadBytes} bytes");
+        }
+    }
+
+    private static string Truncate(string? value, int max) =>
+        string.IsNullOrEmpty(value) ? string.Empty
+        : value.Length <= max ? value
+        : value[..max];
 
     public sealed class SnapshotPayload
     {
