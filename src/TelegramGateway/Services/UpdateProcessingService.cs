@@ -1,5 +1,7 @@
 using System.Text;
+using Microsoft.Extensions.Options;
 using TelegramGateway.Contracts;
+using TelegramGateway.Options;
 using TelegramGateway.Security;
 
 namespace TelegramGateway.Services;
@@ -13,15 +15,21 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
 {
     private readonly IAssistantApiClient _assistantApiClient;
     private readonly ITelegramBotClient _telegramBotClient;
+    private readonly IOptions<TelegramOptions> _telegramOptions;
+    private readonly IOptions<ResearchImageOptions> _researchImageOptions;
     private readonly ILogger<UpdateProcessingService> _logger;
 
     public UpdateProcessingService(
         IAssistantApiClient assistantApiClient,
         ITelegramBotClient telegramBotClient,
+        IOptions<TelegramOptions> telegramOptions,
+        IOptions<ResearchImageOptions> researchImageOptions,
         ILogger<UpdateProcessingService> logger)
     {
         _assistantApiClient = assistantApiClient;
         _telegramBotClient = telegramBotClient;
+        _telegramOptions = telegramOptions;
+        _researchImageOptions = researchImageOptions;
         _logger = logger;
     }
 
@@ -37,6 +45,7 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         var userId = message.From?.Id.ToString() ?? chatId.ToString();
         var text = message.Text.Trim();
         var traceId = Guid.NewGuid().ToString("N");
+        var studioKeyboard = TelegramWebAppKeyboard.TryCreate(_telegramOptions.Value.WebAppUrl);
 
         if (SecretScanner.ContainsForbiddenSecret(text))
         {
@@ -52,14 +61,15 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         {
             await _telegramBotClient.SendMessageAsync(
                 chatId,
-                "Telegram AI.\nКоманды: /salon /marketing /tasks\n/research — Instagram research (on|off|account|now|plan)\nИли открой Mini App → Маркетинг.",
-                cancellationToken);
+                "Telegram AI.\nКоманды: /salon /marketing /tasks\n/research — Instagram research (on|off|account|now|plan)\nКнопка «Открыть студию» → Mini App (Маркетинг).",
+                cancellationToken,
+                studioKeyboard);
             return;
         }
 
         if (text.StartsWith("/research", StringComparison.OrdinalIgnoreCase))
         {
-            await HandleResearchAsync(chatId, userId, text, cancellationToken);
+            await HandleResearchAsync(chatId, userId, text, studioKeyboard, cancellationToken);
             return;
         }
 
@@ -100,6 +110,7 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         long chatId,
         string telegramUserId,
         string text,
+        object? studioKeyboard,
         CancellationToken cancellationToken)
     {
         var userId = $"tg-{telegramUserId}";
@@ -111,7 +122,11 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
             if (args.Length == 0 || args[0].Equals("status", StringComparison.OrdinalIgnoreCase))
             {
                 var latest = await _assistantApiClient.GetResearchLatestAsync(userId, cancellationToken);
-                await _telegramBotClient.SendMessageAsync(chatId, FormatStatus(latest), cancellationToken);
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    FormatStatus(latest),
+                    cancellationToken,
+                    studioKeyboard);
                 return;
             }
 
@@ -129,7 +144,8 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                     await _telegramBotClient.SendMessageAsync(
                         chatId,
                         FormatSettingsLine(settings, "Research включён. Уведомления → этот чат."),
-                        cancellationToken);
+                        cancellationToken,
+                        studioKeyboard);
                     return;
                 }
                 case "off":
@@ -143,7 +159,8 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                     await _telegramBotClient.SendMessageAsync(
                         chatId,
                         FormatSettingsLine(settings, "Research выключен."),
-                        cancellationToken);
+                        cancellationToken,
+                        studioKeyboard);
                     return;
                 }
                 case "account":
@@ -153,7 +170,8 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                         await _telegramBotClient.SendMessageAsync(
                             chatId,
                             "Использование: /research account @handle",
-                            cancellationToken);
+                            cancellationToken,
+                            studioKeyboard);
                         return;
                     }
 
@@ -176,7 +194,8 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                     await _telegramBotClient.SendMessageAsync(
                         chatId,
                         FormatSettingsLine(settings, $"Аккаунт: @{settings.InstagramHandle}"),
-                        cancellationToken);
+                        cancellationToken,
+                        studioKeyboard);
                     return;
                 }
                 case "now":
@@ -203,23 +222,31 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                         sb.AppendLine(FormatSettingsLine(run.Settings, null));
                     }
 
-                    await _telegramBotClient.SendMessageAsync(chatId, sb.ToString().Trim(), cancellationToken);
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        sb.ToString().Trim(),
+                        cancellationToken,
+                        studioKeyboard);
                     return;
                 }
                 case "plan":
                 {
                     var latest = await _assistantApiClient.GetResearchLatestAsync(userId, cancellationToken);
-                    var planText = string.IsNullOrWhiteSpace(latest.PlanPreview)
-                        ? "Плана пока нет. Запусти /research now или дождись scheduler."
-                        : latest.PlanPreview!;
-                    await _telegramBotClient.SendMessageAsync(chatId, planText, cancellationToken);
+                    var planText = FormatPlanSummary(latest);
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        planText,
+                        cancellationToken,
+                        studioKeyboard);
+                    await SendPlanPhotosAsync(chatId, latest, cancellationToken);
                     return;
                 }
                 default:
                     await _telegramBotClient.SendMessageAsync(
                         chatId,
-                        "Команды: /research | on | off | account @handle | now | plan",
-                        cancellationToken);
+                        "Команды: /research | on | off | account @handle | now | plan\nСтудия — кнопка Mini App.",
+                        cancellationToken,
+                        studioKeyboard);
                     return;
             }
         }
@@ -233,17 +260,100 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         }
     }
 
+    private async Task SendPlanPhotosAsync(
+        long chatId,
+        ResearchLatestResponse latest,
+        CancellationToken cancellationToken)
+    {
+        var volume = _researchImageOptions.Value.ImageVolumePath;
+        if (string.IsNullOrWhiteSpace(volume) || latest.Items.Count == 0)
+        {
+            return;
+        }
+
+        var maxBytes = Math.Clamp(_researchImageOptions.Value.MaxImageBytes, 1024, 20 * 1024 * 1024);
+        var sent = 0;
+        foreach (var item in latest.Items)
+        {
+            if (sent >= 3)
+            {
+                break;
+            }
+
+            if (string.IsNullOrWhiteSpace(item.MediaPath))
+            {
+                continue;
+            }
+
+            if (!ResearchPhotoPathGuard.TryResolve(volume, item.MediaPath, maxBytes, out var abs, out _))
+            {
+                continue;
+            }
+
+            try
+            {
+                await using var stream = File.OpenRead(abs);
+                await _telegramBotClient.SendPhotoAsync(
+                    chatId,
+                    stream,
+                    Path.GetFileName(abs),
+                    caption: item.Date.ToString("yyyy-MM-dd"),
+                    cancellationToken);
+                sent++;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Research plan sendPhoto soft-fail");
+            }
+        }
+    }
+
+    private static string FormatPlanSummary(ResearchLatestResponse latest)
+    {
+        if (latest.Items.Count == 0 && string.IsNullOrWhiteSpace(latest.PlanPreview))
+        {
+            return "Плана пока нет. Запусти /research now или дождись scheduler.\nОткрой студию в Mini App для галереи.";
+        }
+
+        var sb = new StringBuilder();
+        if (latest.PlanWindowStart is { } start && latest.PlanWindowEnd is { } end)
+        {
+            sb.AppendLine($"План {start:yyyy-MM-dd}…{end:yyyy-MM-dd} ({latest.PlanItemCount ?? latest.Items.Count} дн.)");
+        }
+        else if (!string.IsNullOrWhiteSpace(latest.PlanPreview))
+        {
+            // Keep preview short for bot — first ~3 lines.
+            var lines = latest.PlanPreview!.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines.Take(4))
+            {
+                sb.AppendLine(line);
+            }
+        }
+
+        foreach (var item in latest.Items.Take(3))
+        {
+            var cap = item.Caption.Length <= 60 ? item.Caption : item.Caption[..60] + "…";
+            sb.AppendLine($"• {item.Date:MM-dd}: {cap} [{item.Status}]");
+        }
+
+        if (latest.Items.Count > 3)
+        {
+            sb.AppendLine($"…ещё {latest.Items.Count - 3} — в студии Mini App");
+        }
+
+        return sb.ToString().Trim();
+    }
+
     private static string[] SplitArgs(string text)
     {
         // "/research@bot on" or "/research on"
-        var withoutCmd = text;
         var space = text.IndexOf(' ');
         if (space < 0)
         {
             return [];
         }
 
-        withoutCmd = text[(space + 1)..].Trim();
+        var withoutCmd = text[(space + 1)..].Trim();
         if (string.IsNullOrWhiteSpace(withoutCmd))
         {
             return [];

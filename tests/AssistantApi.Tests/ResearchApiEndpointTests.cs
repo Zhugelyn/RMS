@@ -117,6 +117,110 @@ public sealed class ResearchApiEndpointTests
     }
 
     [Fact]
+    public async Task Latest_returns_items_and_analytics_from_artifacts()
+    {
+        await using var factory = CreateFactory();
+        var artifacts = factory.Services.GetRequiredService<IResearchArtifactStore>();
+        var userId = "tg-88";
+        var day = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        await artifacts.SaveSnapshotAsync(new ResearchSnapshot
+        {
+            UserId = userId,
+            CapturedAt = DateTimeOffset.UtcNow,
+            Summary = "Feed summary",
+            PostCount = 2,
+            Posts =
+            [
+                new ResearchSnapshotPost
+                {
+                    MediaId = "m1",
+                    Caption = "Post one",
+                    Impressions = 100,
+                    Reach = 80,
+                    Engagement = 10,
+                    Saved = 2
+                },
+                new ResearchSnapshotPost
+                {
+                    MediaId = "m2",
+                    Caption = "Post two",
+                    Impressions = 50,
+                    Reach = 40,
+                    Engagement = 5,
+                    Saved = 1
+                }
+            ]
+        }, CancellationToken.None);
+
+        await artifacts.SavePlanAsync(new ResearchPlan
+        {
+            UserId = userId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            WindowStart = day,
+            WindowEnd = day.AddDays(13),
+            Items =
+            [
+                new ResearchPlanItem
+                {
+                    Date = day,
+                    Caption = "Day caption",
+                    Hashtags = ["#beauty", "#babor"],
+                    ImagePrompt = "soft studio light",
+                    MediaPath = "research-media/run1/out/day-01.png",
+                    Status = ResearchPlanItemStatus.Ready
+                }
+            ]
+        }, CancellationToken.None);
+
+        var client = Authed(factory);
+        var latest = await client.GetAsync($"/v1/research/latest?userId={userId}");
+        Assert.Equal(HttpStatusCode.OK, latest.StatusCode);
+        var body = await latest.Content.ReadFromJsonAsync<ResearchLatestResponse>(JsonOptions);
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrWhiteSpace(body!.PlanPreview));
+        Assert.NotNull(body.Analytics);
+        Assert.Equal(150, body.Analytics!.Impressions);
+        Assert.Equal(120, body.Analytics.Reach);
+        Assert.Equal(15, body.Analytics.Engagement);
+        Assert.Equal(3, body.Analytics.Saved);
+        Assert.Equal(2, body.Analytics.PostCount);
+        Assert.Equal(2, body.Posts.Count);
+        Assert.Single(body.Items);
+        Assert.Equal("Day caption", body.Items[0].Caption);
+        Assert.Equal("soft studio light", body.Items[0].ImagePrompt);
+        Assert.Equal("research-media/run1/out/day-01.png", body.Items[0].MediaPath);
+        Assert.Null(body.Items[0].ImageUrl); // gateway-only
+        Assert.Contains("#beauty", body.Items[0].Hashtags);
+    }
+
+    [Fact]
+    public async Task Latest_analytics_null_metrics_when_no_graph_insights()
+    {
+        await using var factory = CreateFactory();
+        var artifacts = factory.Services.GetRequiredService<IResearchArtifactStore>();
+        await artifacts.SaveSnapshotAsync(new ResearchSnapshot
+        {
+            UserId = "tg-77",
+            CapturedAt = DateTimeOffset.UtcNow,
+            Summary = "no insights",
+            PostCount = 1,
+            Posts =
+            [
+                new ResearchSnapshotPost { MediaId = "x", Caption = "plain" }
+            ]
+        }, CancellationToken.None);
+
+        var client = Authed(factory);
+        var latest = await client.GetAsync("/v1/research/latest?userId=tg-77");
+        var body = await latest.Content.ReadFromJsonAsync<ResearchLatestResponse>(JsonOptions);
+        Assert.NotNull(body!.Analytics);
+        Assert.Null(body.Analytics!.Impressions);
+        Assert.Null(body.Analytics.Reach);
+        Assert.Equal(1, body.Analytics.PostCount);
+    }
+
+    [Fact]
     public async Task Research_endpoints_require_service_key()
     {
         await using var factory = CreateFactory();

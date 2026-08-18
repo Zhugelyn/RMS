@@ -34,6 +34,7 @@ builder.Services.AddSingleton<IUpdateProcessingService, UpdateProcessingService>
 builder.Services.AddHttpClient<ITelegramBotClient, TelegramBotClient>();
 builder.Services.AddHttpClient<IAssistantApiClient, AssistantApiClient>();
 builder.Services.AddHostedService<TelegramPollingHostedService>();
+builder.Services.AddHostedService<TelegramWebAppMenuHostedService>();
 
 var app = builder.Build();
 
@@ -224,7 +225,67 @@ app.MapGet("/api/miniapp/research/latest", async (
     }
 
     var latest = await assistant.GetResearchLatestAsync(userId!, cancellationToken);
+    EnrichPlanImageUrls(latest);
     return Results.Ok(latest);
+});
+
+// Mini App media proxy — initData HMAC + ResearchPhotoPathGuard; no IG token / no direct volume.
+app.MapGet("/api/miniapp/research/media", async (
+    HttpRequest httpRequest,
+    [FromQuery] string? path,
+    IOptions<TelegramOptions> telegramOptions,
+    IOptions<ResearchImageOptions> researchOptions,
+    CancellationToken cancellationToken) =>
+{
+    var auth = RequireInitData(httpRequest, telegramOptions.Value);
+    if (auth is not null)
+    {
+        return auth;
+    }
+
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        return Results.Problem(
+            "path is required",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Validation failed");
+    }
+
+    // Reject secret-looking query fragments (IG token must never appear in URL).
+    if (SecretScanner.ContainsForbiddenSecret(path))
+    {
+        return Results.Problem(
+            "Secrets must not appear in media path.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Secret rejected");
+    }
+
+    var volume = researchOptions.Value.ImageVolumePath;
+    var maxBytes = Math.Clamp(researchOptions.Value.MaxImageBytes, 1024, 20 * 1024 * 1024);
+    if (!ResearchPhotoPathGuard.TryResolve(volume, path, maxBytes, out var abs, out var err))
+    {
+        var code = err switch
+        {
+            "path-traversal" or "path-escape" => StatusCodes.Status403Forbidden,
+            "not-found" => StatusCodes.Status404NotFound,
+            _ => StatusCodes.Status400BadRequest
+        };
+        return Results.Problem(
+            detail: $"Media path rejected ({err}).",
+            statusCode: code,
+            title: "Media denied");
+    }
+
+    var contentType = Path.GetExtension(abs).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        _ => "application/octet-stream"
+    };
+
+    var stream = File.OpenRead(abs);
+    return Results.File(stream, contentType, enableRangeProcessing: false);
 });
 
 // Internal: assistant-api research notify → Telegram sendMessage (+ optional sendPhoto).
@@ -374,6 +435,55 @@ static IResult? RequireInitDataUser(
     }
 
     return null;
+}
+
+/// <summary>Media proxy: valid initData required (header or query <c>initData</c>). No userId match — path guard is the ACL.</summary>
+static IResult? RequireInitData(HttpRequest httpRequest, TelegramOptions options)
+{
+    string? initData = null;
+    if (httpRequest.Headers.TryGetValue("X-Telegram-Init-Data", out var header)
+        && !string.IsNullOrWhiteSpace(header))
+    {
+        initData = header.ToString();
+    }
+    else if (httpRequest.Query.TryGetValue("initData", out var q) && !string.IsNullOrWhiteSpace(q))
+    {
+        // Optional query fallback for img tags — not IG token; prefer header via fetch+blob.
+        initData = q.ToString();
+    }
+
+    var validated = TelegramInitDataValidator.Validate(
+        initData,
+        options.BotToken,
+        options.InitDataMaxAgeSeconds);
+    if (!validated.Ok || validated.UserId is null)
+    {
+        return Results.Problem(
+            detail: $"Telegram initData required for media ({validated.ErrorCode ?? "invalid"}).",
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Unauthorized");
+    }
+
+    return null;
+}
+
+static void EnrichPlanImageUrls(ResearchLatestResponse latest)
+{
+    if (latest.Items is null || latest.Items.Count == 0)
+    {
+        return;
+    }
+
+    foreach (var item in latest.Items)
+    {
+        if (string.IsNullOrWhiteSpace(item.MediaPath))
+        {
+            continue;
+        }
+
+        // Gateway proxy only — never expose volume absolute path or IG CDN.
+        item.ImageUrl = "/api/miniapp/research/media?path=" + Uri.EscapeDataString(item.MediaPath);
+    }
 }
 
 static string? NormalizeIntent(string? intent)
