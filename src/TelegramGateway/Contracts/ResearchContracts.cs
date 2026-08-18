@@ -1,11 +1,12 @@
 namespace TelegramGateway.Contracts;
 
-/// <summary>Research settings DTO mirrored from assistant-api — never includes IG token.</summary>
+/// <summary>Research settings DTO mirrored from assistant-api — never includes IG/VK tokens.</summary>
 public sealed class ResearchSettingsDto
 {
     public string UserId { get; set; } = string.Empty;
     public bool Enabled { get; set; }
     public string? InstagramHandle { get; set; }
+    public List<VkCommunityTargetDto> VkCommunities { get; set; } = [];
     public int CadenceDays { get; set; } = 14;
     public string? Timezone { get; set; }
     public string? NotifyChatId { get; set; }
@@ -14,11 +15,18 @@ public sealed class ResearchSettingsDto
     public string? LastError { get; set; }
 }
 
+public sealed class VkCommunityTargetDto
+{
+    public string? ScreenName { get; set; }
+    public long? OwnerId { get; set; }
+}
+
 public sealed class ResearchSettingsUpdateRequest
 {
     public string UserId { get; set; } = string.Empty;
     public bool? Enabled { get; set; }
     public string? InstagramHandle { get; set; }
+    public List<VkCommunityTargetDto>? VkCommunities { get; set; }
     public int? CadenceDays { get; set; }
     public string? Timezone { get; set; }
     public string? NotifyChatId { get; set; }
@@ -28,6 +36,8 @@ public sealed class ResearchRunRequest
 {
     public string UserId { get; set; } = string.Empty;
     public string? NotifyChatId { get; set; }
+    /// <summary>Additive: null/instagram → IG; <c>vk</c> → VK allowlist capture.</summary>
+    public string? Source { get; set; }
 }
 
 public sealed class ResearchRunResponse

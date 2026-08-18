@@ -8,6 +8,8 @@ public sealed class ResearchSettings
 {
     public string UserId { get; init; } = string.Empty;
     public string? InstagramHandle { get; init; }
+    /// <summary>Open VK communities allowlist (screen_name / owner_id). Never tokens.</summary>
+    public IReadOnlyList<VkCommunityTarget> VkCommunities { get; init; } = Array.Empty<VkCommunityTarget>();
     public bool Enabled { get; init; }
     public int CadenceDays { get; init; } = 14;
     public string? Timezone { get; init; }
@@ -35,6 +37,7 @@ public static class ResearchSettingsDefaults
     {
         UserId = s.UserId,
         InstagramHandle = s.InstagramHandle,
+        VkCommunities = VkCommunityAllowlist.Normalize(s.VkCommunities),
         Enabled = s.Enabled,
         CadenceDays = s.CadenceDays <= 0 ? DefaultCadenceDays : Math.Clamp(s.CadenceDays, 1, 90),
         Timezone = s.Timezone,
@@ -106,6 +109,7 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
             {
                 UserId = normalized.UserId,
                 InstagramHandle = normalized.InstagramHandle,
+                VkCommunitiesJson = VkCommunityAllowlist.Serialize(normalized.VkCommunities),
                 Enabled = normalized.Enabled,
                 CadenceDays = normalized.CadenceDays,
                 Timezone = normalized.Timezone,
@@ -119,6 +123,7 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
         else
         {
             existing.InstagramHandle = normalized.InstagramHandle;
+            existing.VkCommunitiesJson = VkCommunityAllowlist.Serialize(normalized.VkCommunities);
             existing.Enabled = normalized.Enabled;
             existing.CadenceDays = normalized.CadenceDays;
             existing.Timezone = normalized.Timezone;
@@ -153,6 +158,7 @@ public sealed class PostgresResearchSettingsStore : IResearchSettingsStore
     {
         UserId = e.UserId,
         InstagramHandle = e.InstagramHandle,
+        VkCommunities = VkCommunityAllowlist.Deserialize(e.VkCommunitiesJson),
         Enabled = e.Enabled,
         CadenceDays = e.CadenceDays,
         Timezone = e.Timezone,

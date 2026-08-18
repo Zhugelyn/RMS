@@ -198,6 +198,12 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                         studioKeyboard);
                     return;
                 }
+                case "vk":
+                {
+                    await HandleResearchVkAsync(
+                        chatId, userId, notifyChatId, args.Skip(1).ToArray(), studioKeyboard, cancellationToken);
+                    return;
+                }
                 case "now":
                 {
                     var run = await _assistantApiClient.RunResearchAsync(new ResearchRunRequest
@@ -244,7 +250,7 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                 default:
                     await _telegramBotClient.SendMessageAsync(
                         chatId,
-                        "Команды: /research | on | off | account @handle | now | plan\nСтудия — кнопка Mini App.",
+                        "Команды: /research | on | off | account @handle | vk add|remove|list|now | now | plan\nСтудия — кнопка Mini App.",
                         cancellationToken,
                         studioKeyboard);
                     return;
@@ -258,6 +264,276 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
                 "Ошибка research. Попробуй ещё раз.",
                 cancellationToken);
         }
+    }
+
+    private async Task HandleResearchVkAsync(
+        long chatId,
+        string userId,
+        string notifyChatId,
+        string[] vkArgs,
+        object? studioKeyboard,
+        CancellationToken cancellationToken)
+    {
+        var sub = vkArgs.Length == 0 ? "list" : vkArgs[0].ToLowerInvariant();
+        switch (sub)
+        {
+            case "list":
+            case "status":
+            {
+                var settings = await _assistantApiClient.GetResearchSettingsAsync(userId, cancellationToken);
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    FormatVkAllowlist(settings),
+                    cancellationToken,
+                    studioKeyboard);
+                return;
+            }
+            case "add":
+            {
+                if (vkArgs.Length < 2)
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Использование: /research vk add <screen_name|owner_id|club123>",
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                var raw = string.Join(' ', vkArgs.Skip(1));
+                if (SecretScanner.ContainsForbiddenSecret(raw))
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Не принимаю VK token. Только screen_name или owner_id.",
+                        cancellationToken);
+                    return;
+                }
+
+                var target = ParseVkTarget(raw);
+                if (target is null)
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Не распознал паблик. Пример: babor_bryansk или -123456 или club123.",
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                var current = await _assistantApiClient.GetResearchSettingsAsync(userId, cancellationToken);
+                var list = current.VkCommunities?.ToList() ?? [];
+                if (list.Any(c => SameVk(c, target)))
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        FormatVkAllowlist(current, "Уже в allowlist."),
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                if (list.Count >= 10)
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Allowlist полный (max 10). Удали: /research vk remove …",
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                list.Add(target);
+                var settings = await _assistantApiClient.PutResearchSettingsAsync(new ResearchSettingsUpdateRequest
+                {
+                    UserId = userId,
+                    VkCommunities = list,
+                    NotifyChatId = notifyChatId
+                }, cancellationToken);
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    FormatVkAllowlist(settings, "Добавлено в VK allowlist."),
+                    cancellationToken,
+                    studioKeyboard);
+                return;
+            }
+            case "remove":
+            case "rm":
+            case "del":
+            {
+                if (vkArgs.Length < 2)
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Использование: /research vk remove <screen_name|owner_id>",
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                var raw = string.Join(' ', vkArgs.Skip(1));
+                if (SecretScanner.ContainsForbiddenSecret(raw))
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Не принимаю VK token.",
+                        cancellationToken);
+                    return;
+                }
+
+                var target = ParseVkTarget(raw);
+                if (target is null)
+                {
+                    await _telegramBotClient.SendMessageAsync(
+                        chatId,
+                        "Не распознал паблик для удаления.",
+                        cancellationToken,
+                        studioKeyboard);
+                    return;
+                }
+
+                var current = await _assistantApiClient.GetResearchSettingsAsync(userId, cancellationToken);
+                var list = (current.VkCommunities ?? [])
+                    .Where(c => !SameVk(c, target))
+                    .ToList();
+                var settings = await _assistantApiClient.PutResearchSettingsAsync(new ResearchSettingsUpdateRequest
+                {
+                    UserId = userId,
+                    VkCommunities = list,
+                    NotifyChatId = notifyChatId
+                }, cancellationToken);
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    FormatVkAllowlist(settings, "Обновлён VK allowlist."),
+                    cancellationToken,
+                    studioKeyboard);
+                return;
+            }
+            case "now":
+            {
+                var run = await _assistantApiClient.RunResearchAsync(new ResearchRunRequest
+                {
+                    UserId = userId,
+                    NotifyChatId = notifyChatId,
+                    Source = "vk"
+                }, cancellationToken);
+                var sb = new StringBuilder();
+                sb.AppendLine(run.Message ?? run.Outcome);
+                if (!string.IsNullOrWhiteSpace(run.ErrorCode))
+                {
+                    sb.AppendLine($"code={run.ErrorCode}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(run.PlanPreview))
+                {
+                    sb.AppendLine();
+                    sb.AppendLine(run.PlanPreview);
+                }
+                else
+                {
+                    sb.AppendLine(FormatVkAllowlist(run.Settings));
+                }
+
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    sb.ToString().Trim(),
+                    cancellationToken,
+                    studioKeyboard);
+                return;
+            }
+            default:
+                await _telegramBotClient.SendMessageAsync(
+                    chatId,
+                    "VK: /research vk list | add <name|id> | remove <name|id> | now\nToken только в env (VK__SERVICETOKEN).",
+                    cancellationToken,
+                    studioKeyboard);
+                return;
+        }
+    }
+
+    private static VkCommunityTargetDto? ParseVkTarget(string raw)
+    {
+        var text = raw.Trim()
+            .Replace("https://vk.com/", "", StringComparison.OrdinalIgnoreCase)
+            .Replace("http://vk.com/", "", StringComparison.OrdinalIgnoreCase)
+            .Trim()
+            .TrimStart('@')
+            .Trim('/');
+        if (text.Contains('?', StringComparison.Ordinal))
+        {
+            text = text.Split('?', 2)[0];
+        }
+
+        if (text.StartsWith("club", StringComparison.OrdinalIgnoreCase)
+            || text.StartsWith("public", StringComparison.OrdinalIgnoreCase)
+            || text.StartsWith("event", StringComparison.OrdinalIgnoreCase))
+        {
+            var digits = new string(text.SkipWhile(c => !char.IsDigit(c)).ToArray());
+            if (long.TryParse(digits, out var clubId) && clubId > 0)
+            {
+                return new VkCommunityTargetDto { OwnerId = -clubId };
+            }
+        }
+
+        if (long.TryParse(text, out var ownerId) && ownerId != 0)
+        {
+            return new VkCommunityTargetDto { OwnerId = ownerId };
+        }
+
+        if (text.Length is >= 2 and <= 64 && text.All(c => char.IsLetterOrDigit(c) || c is '.' or '_'))
+        {
+            return new VkCommunityTargetDto { ScreenName = text };
+        }
+
+        return null;
+    }
+
+    private static bool SameVk(VkCommunityTargetDto a, VkCommunityTargetDto b)
+    {
+        if (a.OwnerId is long ao && b.OwnerId is long bo && ao == bo)
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(a.ScreenName)
+               && !string.IsNullOrWhiteSpace(b.ScreenName)
+               && string.Equals(a.ScreenName, b.ScreenName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatVkAllowlist(ResearchSettingsDto s, string? head = null)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(head))
+        {
+            sb.AppendLine(head);
+        }
+
+        var list = s.VkCommunities ?? [];
+        sb.AppendLine($"VK allowlist ({list.Count}/10):");
+        if (list.Count == 0)
+        {
+            sb.AppendLine("— пусто. /research vk add <screen_name>");
+        }
+        else
+        {
+            foreach (var c in list)
+            {
+                if (!string.IsNullOrWhiteSpace(c.ScreenName) && c.OwnerId is long oid)
+                {
+                    sb.AppendLine($"• {c.ScreenName} ({oid})");
+                }
+                else if (!string.IsNullOrWhiteSpace(c.ScreenName))
+                {
+                    sb.AppendLine($"• {c.ScreenName}");
+                }
+                else
+                {
+                    sb.AppendLine($"• owner={c.OwnerId}");
+                }
+            }
+        }
+
+        return sb.ToString().Trim();
     }
 
     private async Task SendPlanPhotosAsync(
@@ -368,11 +644,19 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
         var sb = new StringBuilder();
         sb.AppendLine($"Research: {(s.Enabled ? "on" : "off")}");
         sb.AppendLine($"account: {(string.IsNullOrWhiteSpace(s.InstagramHandle) ? "—" : "@" + s.InstagramHandle)}");
+        var vkCount = s.VkCommunities?.Count ?? 0;
+        sb.AppendLine($"vk: {vkCount} public(s)");
         sb.AppendLine($"cadence: {s.CadenceDays}d tz={s.Timezone ?? "—"}");
         sb.AppendLine($"last: {Fmt(s.LastRunAt)} next: {Fmt(s.NextRunAt)}");
         if (!string.IsNullOrWhiteSpace(s.LastError))
         {
             sb.AppendLine($"lastError: {s.LastError}");
+        }
+
+        if (vkCount > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine(FormatVkAllowlist(s));
         }
 
         if (!string.IsNullOrWhiteSpace(latest.SnapshotSummary))
@@ -400,6 +684,7 @@ public sealed class UpdateProcessingService : IUpdateProcessingService
 
         sb.AppendLine($"enabled={s.Enabled} cadence={s.CadenceDays}d");
         sb.AppendLine($"account={(string.IsNullOrWhiteSpace(s.InstagramHandle) ? "—" : "@" + s.InstagramHandle)}");
+        sb.AppendLine($"vk={(s.VkCommunities?.Count ?? 0)}");
         sb.AppendLine($"last={Fmt(s.LastRunAt)} next={Fmt(s.NextRunAt)}");
         if (!string.IsNullOrWhiteSpace(s.LastError))
         {

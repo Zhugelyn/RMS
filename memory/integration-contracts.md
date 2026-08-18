@@ -171,8 +171,9 @@
 - CDN SSRF allowlist `*.userapi.com` (+ no IP literals) ✅; media download → volume = `phase6-vk-media`
 - Failure: no token → stub skip; rate-limit / token invalid / closed → soft error codes; no secret leak in logs/messages
 - Capture: `IVkResearchCapture` — wall fetch → snapshot+plan+marketing episode; soft-fail persist; inject via existing `IResearchPackInjector` (source= shown); no GenerateImage/media in this slice
+- Settings: additive `vkCommunities[]` (screen_name / owner_id) on research settings DTO; `POST /v1/research/run` optional `source=vk` → CaptureAllowlist; Mini App + `/research vk add|remove|list|now`; never accept service token from UI/chat ✅
 - Non-goals: Apify, HTML/`m.vk.com`, user VK ID OAuth, separate `vk-research-api`
-- Status: **artifacts ✅** (`phase6-vk-artifacts`); settings/media/hardening not wired yet
+- Status: **settings ✅** (`phase6-vk-settings`); media/hardening not wired yet
 
 ## File Contract Template
 

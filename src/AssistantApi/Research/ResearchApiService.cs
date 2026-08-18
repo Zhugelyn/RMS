@@ -18,6 +18,7 @@ public sealed class ResearchApiService : IResearchApiService
     private readonly IResearchArtifactStore _artifacts;
     private readonly IResearchSchedulerJob _scheduler;
     private readonly IInstagramTokenStore _tokens;
+    private readonly IVkResearchCapture _vkCapture;
     private readonly ILogger<ResearchApiService> _logger;
 
     public ResearchApiService(
@@ -25,12 +26,14 @@ public sealed class ResearchApiService : IResearchApiService
         IResearchArtifactStore artifacts,
         IResearchSchedulerJob scheduler,
         IInstagramTokenStore tokens,
+        IVkResearchCapture vkCapture,
         ILogger<ResearchApiService> logger)
     {
         _settings = settings;
         _artifacts = artifacts;
         _scheduler = scheduler;
         _tokens = tokens;
+        _vkCapture = vkCapture;
         _logger = logger;
     }
 
@@ -50,6 +53,10 @@ public sealed class ResearchApiService : IResearchApiService
         var handle = request.InstagramHandle is null
             ? existing.InstagramHandle
             : NormalizeHandle(request.InstagramHandle);
+
+        var vkCommunities = request.VkCommunities is null
+            ? existing.VkCommunities
+            : NormalizeVkCommunities(request.VkCommunities);
 
         var timezone = request.Timezone is null
             ? existing.Timezone
@@ -79,6 +86,7 @@ public sealed class ResearchApiService : IResearchApiService
         {
             UserId = userId,
             InstagramHandle = handle,
+            VkCommunities = vkCommunities,
             Enabled = enabled,
             CadenceDays = cadence,
             Timezone = timezone,
@@ -101,19 +109,13 @@ public sealed class ResearchApiService : IResearchApiService
 
         if (!string.IsNullOrWhiteSpace(request.NotifyChatId))
         {
-            existing = new ResearchSettings
-            {
-                UserId = existing.UserId,
-                InstagramHandle = existing.InstagramHandle,
-                Enabled = existing.Enabled,
-                CadenceDays = existing.CadenceDays,
-                Timezone = existing.Timezone,
-                NotifyChatId = NormalizeNotifyChatId(request.NotifyChatId),
-                NextRunAt = existing.NextRunAt,
-                LastRunAt = existing.LastRunAt,
-                LastError = existing.LastError
-            };
+            existing = CloneSettings(existing, notifyChatId: NormalizeNotifyChatId(request.NotifyChatId));
             await _settings.UpsertAsync(existing, cancellationToken);
+        }
+
+        if (IsVkSource(request.Source))
+        {
+            return await RunVkAllowlistAsync(userId, existing, cancellationToken);
         }
 
         if (!_tokens.HasToken)
@@ -129,18 +131,9 @@ public sealed class ResearchApiService : IResearchApiService
 
         var now = DateTimeOffset.UtcNow;
         // Force a due window so ProcessOneAsync captures even if schedule was in the future.
-        var forced = new ResearchSettings
-        {
-            UserId = existing.UserId,
-            InstagramHandle = existing.InstagramHandle,
-            Enabled = existing.Enabled,
-            CadenceDays = ResearchCadence.NormalizeDays(existing.CadenceDays),
-            Timezone = existing.Timezone,
-            NotifyChatId = existing.NotifyChatId,
-            NextRunAt = existing.NextRunAt is { } due && due <= now ? due : now,
-            LastRunAt = existing.LastRunAt,
-            LastError = existing.LastError
-        };
+        var forced = CloneSettings(
+            existing,
+            nextRunAt: existing.NextRunAt is { } due && due <= now ? due : now);
 
         ResearchScheduleTickResult tick;
         try
@@ -179,6 +172,123 @@ public sealed class ResearchApiService : IResearchApiService
             PlanPreview = ResearchPlanPreview.Format(latest)
         };
     }
+
+    private async Task<ResearchRunResponse> RunVkAllowlistAsync(
+        string userId,
+        ResearchSettings existing,
+        CancellationToken cancellationToken)
+    {
+        if (existing.VkCommunities.Count == 0)
+        {
+            return new ResearchRunResponse
+            {
+                Outcome = nameof(ResearchScheduleOutcome.NoOp),
+                ErrorCode = "vk-allowlist-empty",
+                Message = "VK allowlist пуст. Добавь паблики: /research vk add <screen_name|owner_id>.",
+                Settings = ToDto(existing)
+            };
+        }
+
+        VkResearchCaptureResult capture;
+        try
+        {
+            capture = await _vkCapture.CaptureAllowlistAsync(
+                userId,
+                existing.VkCommunities,
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "VK research run failed userId={UserId}", userId);
+            return new ResearchRunResponse
+            {
+                Outcome = nameof(ResearchScheduleOutcome.Failed),
+                ErrorCode = "vk-run-exception",
+                Message = "VK research run failed.",
+                Settings = ToDto(existing)
+            };
+        }
+
+        var outcome = capture.FetchStatus switch
+        {
+            Vk.VkFetchStatus.Ok when capture.SnapshotSaved => ResearchScheduleOutcome.Captured,
+            Vk.VkFetchStatus.SkippedNoToken => ResearchScheduleOutcome.NoOp,
+            _ when !string.IsNullOrWhiteSpace(capture.ErrorCode) &&
+                   capture.ErrorCode is "vk-allowlist-empty" or "vk-target-missing"
+                => ResearchScheduleOutcome.NoOp,
+            _ => capture.SnapshotSaved ? ResearchScheduleOutcome.Captured : ResearchScheduleOutcome.Failed
+        };
+
+        // Soft-update lastError / lastRunAt for VK path (IG scheduler cadence untouched).
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            var updated = CloneSettings(
+                existing,
+                lastRunAt: outcome == ResearchScheduleOutcome.Captured ? now : existing.LastRunAt,
+                lastError: outcome == ResearchScheduleOutcome.Captured
+                    ? null
+                    : TrimError($"{capture.ErrorCode ?? capture.FetchStatus.ToString()}: {capture.Message}"),
+                clearError: outcome == ResearchScheduleOutcome.Captured);
+            await _settings.UpsertAsync(updated, cancellationToken);
+            existing = updated;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "VK research settings soft-update failed userId={UserId}", userId);
+        }
+
+        return new ResearchRunResponse
+        {
+            Outcome = outcome.ToString(),
+            ErrorCode = capture.ErrorCode,
+            Message = outcome switch
+            {
+                ResearchScheduleOutcome.Captured =>
+                    $"VK research: {capture.Snapshot?.PostCount ?? 0} постов из allowlist ({existing.VkCommunities.Count}).",
+                ResearchScheduleOutcome.NoOp =>
+                    capture.Message ?? "VK run пропущен (token/allowlist).",
+                _ => capture.Message ?? "VK research не удался."
+            },
+            Settings = ToDto(existing),
+            PlanPreview = ResearchPlanPreview.Format(capture.Plan)
+        };
+    }
+
+    private static bool IsVkSource(string? source) =>
+        !string.IsNullOrWhiteSpace(source)
+        && source.Equals("vk", StringComparison.OrdinalIgnoreCase);
+
+    private static string? TrimError(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Length <= 512 ? value : value[..512];
+    }
+
+    private static ResearchSettings CloneSettings(
+        ResearchSettings s,
+        string? notifyChatId = null,
+        DateTimeOffset? nextRunAt = null,
+        DateTimeOffset? lastRunAt = null,
+        string? lastError = null,
+        bool clearError = false) =>
+        new()
+        {
+            UserId = s.UserId,
+            InstagramHandle = s.InstagramHandle,
+            VkCommunities = s.VkCommunities,
+            Enabled = s.Enabled,
+            CadenceDays = s.CadenceDays,
+            Timezone = s.Timezone,
+            NotifyChatId = notifyChatId ?? s.NotifyChatId,
+            NextRunAt = nextRunAt ?? s.NextRunAt,
+            LastRunAt = lastRunAt ?? s.LastRunAt,
+            LastError = clearError ? null : (lastError ?? s.LastError)
+        };
 
     public async Task<ResearchLatestResponse> GetLatestAsync(string userId, CancellationToken cancellationToken)
     {
@@ -309,6 +419,9 @@ public sealed class ResearchApiService : IResearchApiService
         UserId = s.UserId,
         Enabled = s.Enabled,
         InstagramHandle = s.InstagramHandle,
+        VkCommunities = s.VkCommunities
+            .Select(c => new VkCommunityTargetDto { ScreenName = c.ScreenName, OwnerId = c.OwnerId })
+            .ToList(),
         CadenceDays = ResearchCadence.NormalizeDays(s.CadenceDays),
         Timezone = s.Timezone,
         NotifyChatId = s.NotifyChatId,
@@ -316,6 +429,14 @@ public sealed class ResearchApiService : IResearchApiService
         LastRunAt = s.LastRunAt,
         LastError = s.LastError
     };
+
+    private static IReadOnlyList<VkCommunityTarget> NormalizeVkCommunities(
+        IReadOnlyList<VkCommunityTargetDto> raw) =>
+        VkCommunityAllowlist.Normalize(raw.Select(c => new VkCommunityTarget
+        {
+            ScreenName = c.ScreenName,
+            OwnerId = c.OwnerId
+        }));
 
     private static string? NormalizeHandle(string? raw)
     {

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18g
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-settings`
+- Slice: phase6-vk-settings
+- Status: passed
+- Checks: research_settings `VkCommunitiesJson` + DTO allowlist screen_name/owner_id; Mini App textarea + Run VK; `/research vk add|remove|list|now`; `POST /v1/research/run` source=vk → CaptureAllowlist; reject VK token from UI/chat; IG path unbroken; `dotnet test` 151/151 (116 api + 35 gateway); no RAG/Apify/MinIO/Direct/user-OAuth/media download
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-013 note, README, run-log
+- Next slice: phase6-vk-media
+- Blocker: none
+
 ## Run 2026-08-18f
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-artifacts`

@@ -69,15 +69,19 @@
             <input type="checkbox" id="research-enabled" />
             Включён
           </label>
-          <label for="research-handle">Handle</label>
+          <label for="research-handle">Instagram handle</label>
           <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" />
+          <label for="research-vk">VK паблики (allowlist)</label>
+          <textarea id="research-vk" rows="3" maxlength="800" placeholder="babor_bryansk&#10;club123&#10;-456789" autocomplete="off"></textarea>
+          <p class="studio-hint">Только screen_name / owner_id. VK token — только в env сервера.</p>
           <label for="research-tz">Timezone</label>
           <input id="research-tz" type="text" maxlength="64" placeholder="Europe/Moscow" autocomplete="off" />
           <label for="research-cadence">Cadence (days)</label>
           <input id="research-cadence" type="number" min="1" max="90" value="14" />
           <div class="research-actions">
             <button type="submit" class="cta" id="research-save">Save</button>
-            <button type="button" class="cta cta-secondary" id="research-run">Run now</button>
+            <button type="button" class="cta cta-secondary" id="research-run">Run IG</button>
+            <button type="button" class="cta cta-secondary" id="research-vk-run">Run VK</button>
           </div>
         </form>
         <p class="studio-error-line" id="research-error-line">last error: —</p>

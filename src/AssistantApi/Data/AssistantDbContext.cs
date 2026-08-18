@@ -52,6 +52,7 @@ public sealed class AssistantDbContext : DbContext
             e.HasKey(x => x.UserId);
             e.Property(x => x.UserId).HasMaxLength(128).IsRequired();
             e.Property(x => x.InstagramHandle).HasMaxLength(128);
+            e.Property(x => x.VkCommunitiesJson).HasMaxLength(4000);
             e.Property(x => x.Enabled).IsRequired();
             e.Property(x => x.CadenceDays).IsRequired().HasDefaultValue(14);
             e.Property(x => x.Timezone).HasMaxLength(64);

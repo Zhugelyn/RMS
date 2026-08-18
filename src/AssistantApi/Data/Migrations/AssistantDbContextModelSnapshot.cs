@@ -172,6 +172,10 @@ namespace AssistantApi.Data.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("VkCommunitiesJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Enabled", "NextRunAt")

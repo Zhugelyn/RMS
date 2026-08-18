@@ -282,10 +282,11 @@ app.MapPut("/v1/research/settings", async (
 
     if (LooksLikeSecret(request.InstagramHandle ?? string.Empty) ||
         LooksLikeSecret(request.Timezone ?? string.Empty) ||
-        LooksLikeSecret(request.NotifyChatId ?? string.Empty))
+        LooksLikeSecret(request.NotifyChatId ?? string.Empty) ||
+        VkCommunitiesLookLikeSecret(request.VkCommunities))
     {
         return Results.Problem(
-            detail: "Secrets and Instagram tokens must not be sent in research settings.",
+            detail: "Secrets and Instagram/VK tokens must not be sent in research settings.",
             statusCode: StatusCodes.Status400BadRequest,
             title: "Secret rejected");
     }
@@ -380,6 +381,24 @@ static bool LooksLikeSecret(string text)
            || text.Contains("apikey=", StringComparison.OrdinalIgnoreCase)
            || text.Contains("access_token=", StringComparison.OrdinalIgnoreCase)
            || text.Contains("service_token=", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool VkCommunitiesLookLikeSecret(IReadOnlyList<AssistantApi.Research.VkCommunityTargetDto>? communities)
+{
+    if (communities is null || communities.Count == 0)
+    {
+        return false;
+    }
+
+    foreach (var c in communities)
+    {
+        if (LooksLikeSecret(c.ScreenName ?? string.Empty))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 public partial class Program;
