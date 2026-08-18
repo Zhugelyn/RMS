@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `5-research-ui` (slice `phase5-research-ui` ✅; next=`phase5-ui-hardening`)
+- Phase: `6-vk-research` (Phase 5 studio ✅; `phase5-ui-hardening` deferred; next=`phase6-vk-docs`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -14,10 +14,10 @@
 Домены:
 
 - **salon / Babor (Брянск)**: развивать салон — идеи, удержание, локальный маркетинг ради салона; harness memory фактов о салоне;
-- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; Instagram Research своего аккаунта + **Research Studio** Mini App;
+- **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; Instagram Research своего аккаунта + **Research Studio** Mini App; Phase 6 = открытые паблики VK (официальный API);
 - **tasks**: расписание работ и напоминания.
 
-Позже: RAG + Elasticsearch (Phase 6); MinIO / фото-видео (Phase 7); Яндекс Директ (Phase 8).
+Позже: RAG + Elasticsearch (Phase 7); MinIO / фото-видео (Phase 8); Яндекс Директ (Phase 9).
 
 ## Goal Phase 5 (Research Client UI)
 
@@ -27,13 +27,18 @@
 2. Mini App Marketing = Research Studio (не pre-dump) ✅
 3. Media proxy initData + path guard; imageUrl = gateway proxy ✅
 4. Bot web_app «Открыть студию» + MenuButtonWebApp (`TELEGRAM__WEBAPPURL`) ✅
-5. Follow-up: `phase5-ui-hardening`
+5. Follow-up: `phase5-ui-hardening` (**deferred**; Phase 6 VK opened)
+
+## Goal Phase 6 (VK Public Research)
+
+Официальный VK API открытых пабликов (`wall.get`, service token). Текст + картинки постов → те же snapshot/plan. Не scrape. Первый slice: `phase6-vk-docs`.
 
 ## Phase 5 non-goals
 
-- RAG / embeddings / Elasticsearch (→ Phase 6)
+- RAG / embeddings / Elasticsearch (→ Phase 7)
 - Apify / OpenAI Images / MinIO
 - Отдельный сайт вне Telegram Mini App
+- VK (→ Phase 6)
 
 ## Phase 4 closed
 
@@ -45,4 +50,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase5-research-ui`; **next_slice=`phase5-ui-hardening`**.
+- Этот run: plan Phase 6 VK; **next_slice=`phase6-vk-docs`**.

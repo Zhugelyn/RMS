@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18c
+
+- Trigger: chat — add Phase 6 VK plan + webhook kick `phase6-vk-docs`
+- Slice: plan-only (no VK client code)
+- Status: passed
+- Checks: Phase 6 inserted (wall.get / service token / open publics / no scrape); RAG→7 Files→8 Direct→9; `phase5-ui-hardening` deferred; next=`phase6-vk-docs`
+- Memory updated: phase-plan, current-project, catalog, README, security open-risks, telegram-ai rule, run-log; ADR-013 left for docs slice
+- Next slice: phase6-vk-docs
+- Blocker: none
+
 ## Run 2026-08-18b
 
 - Trigger: webhook slice=phase5-research-ui

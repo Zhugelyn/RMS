@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 = Research Client UI (`phase5-research-ui` ✅ → next `phase5-ui-hardening`). RAG = Phase 6.
+Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 = VK Public Research (next=`phase6-vk-docs`). RAG = Phase 7.
 
 ## Service: telegram-gateway
 
@@ -25,7 +25,7 @@
 - Events produced: нет
 - Events consumed: нет
 - Database: PostgreSQL (compose `postgres`, owner=assistant-api): `user_profiles`, `harness_episodes`, `research_settings`, `research_snapshots`, `research_plans`, `research_schedule_runs`. Affinity still in-memory. Connection string only env (`ConnectionStrings__AssistantDb`). Without CS → in-process stores.
-- Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); MinIO = Phase 6
+- Object storage: Phase 4 — local volume for GenerateImage artifacts (marketing pack); VK downloads reuse volume in Phase 6; MinIO = Phase 8
 - External dependencies: `ILlmProvider` = `FallbackLlmProvider` (`CursorSdkLlmProvider` → stub); internal `cursor-sdk-bridge`; Instagram Graph API own account (`IInstagramGraphClient`, ADR-009); optional notify → gateway (`Gateway__BaseUrl`)
 - Security notes: inter-service auth `X-Service-Key`; rejects secret-like chat text (incl. IG token patterns); Cursor API key + IG token encrypt-at-rest (AES-GCM); IG token env/secret store only, never in logs/response/Telegram/Mini App; Postgres password env-only; research userId must be `tg-*`
 
@@ -69,14 +69,21 @@
 
 - Capability: Mini App studio + bot web_app over existing research API (ADR-012). Not RAG.
 - latest DTO: analytics + posts[] + items[] (+ planPreview); imageUrl = media proxy
-- next slice: `phase5-ui-hardening`
+- leftover: `phase5-ui-hardening` deferred
 
-## Reserved (do not implement in Phase 5 UI)
+## Phase 6 — VK Public Research (open)
 
-- rag-service / embedding-service / search-elasticsearch (Phase 6)
-- files-minio (Phase 7)
-- yandex-direct-adapter (Phase 8)
-- apify-adapter / foreign-account scrapers
+- Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token
+- Next slice: `phase6-vk-docs` (ADR-013, no service code)
+- Do not add separate `vk-research-api`
+
+## Reserved (do not implement in Phase 6)
+
+- rag-service / embedding-service / search-elasticsearch (Phase 7)
+- files-minio (Phase 8)
+- yandex-direct-adapter (Phase 9)
+- apify-adapter / HTML / `m.vk.com` scrapers
+- vk-id-user-oauth (unless service token insufficient — follow-up, not this phase)
 - openai-images-adapter
 - per-domain public microservices (`salon-api`, …) — только после независимого ownership
 - отдельный marketing website вне Telegram

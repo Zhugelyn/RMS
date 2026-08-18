@@ -150,15 +150,15 @@ Slices (один run = один):
 
 Non-goals Phase 4:
 
-- RAG / embeddings / Elasticsearch (→ Phase 6; Phase 5 = Research UI)
+- RAG / embeddings / Elasticsearch (→ Phase 7; Phase 5 = Research UI; Phase 6 = VK)
 - Apify, scrapers чужих аккаунтов, платные crawl
 - Отдельный OpenAI Images / DALL·E
-- MinIO как object store (→ Phase 7), Яндекс Директ (→ Phase 8)
+- MinIO как object store (→ Phase 8), Яндекс Директ (→ Phase 9)
 - Closing Phase 3 packs целиком «задним числом» — packs остаются; Postgres leftover закрывается здесь
 
 ## Phase 5 — Research Client UI
 
-Status: **open** — slice `phase5-research-ui` ✅; next `phase5-ui-hardening`.
+Status: **open leftover** — slice `phase5-research-ui` ✅; `phase5-ui-hardening` **deferred** (Phase 6 VK opened 2026-08-18).
 
 Суть: клиентский UI поверх уже существующего research API. **Не RAG.** UI = Telegram Mini App + bot `web_app` (ADR-012), не отдельный сайт.
 
@@ -175,30 +175,75 @@ Acceptance (slice=`phase5-research-ui`):
 Slices:
 
 1. [x] `phase5-research-ui` — studio Mini App + latest DTO + media proxy + bot web_app.
-2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio (follow-up).
+2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio. **Deferred** until Phase 6 closes or explicit request.
 
 Non-goals Phase 5 UI:
 
-- RAG / embeddings / Elasticsearch (→ Phase 6)
+- RAG / embeddings / Elasticsearch (→ Phase 7)
 - Apify / OpenAI Images / MinIO
 - Отдельный marketing website вне Telegram
+- VK API (→ Phase 6)
 
-## Phase 6 — Knowledge (RAG)
+## Phase 6 — Marketing VK Public Research
+
+Status: **open** — next=`phase6-vk-docs`.
+
+Суть: маркетинговый research по **открытым пабликам VK** (посты: текст + картинки вложений). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ приложения (`VK__SERVICETOKEN`). HTML-скрейп, Apify, неофициальный mobile API — запрещены.
+
+Отличие от ADR-009 (IG): Graph чужие аккаунты не отдаёт → IG = только свой. VK официально отдаёт открытую стену чужого паблика. Это **не** scrape: allowlist screen_name/group id в settings, cap как у IG.
+
+Service boundary:
+
+- Owner данных research / settings / artifacts = `assistant-api` (Postgres). Additive `source=vk` в snapshot; `schemaVersion` не ломаем.
+- VK API client — adapter внутри assistant-api (рядом с `HttpInstagramGraphClient`). Не отдельный `vk-research-api`.
+- Secrets: service token только env/secret store / AES-GCM; не из чата / Mini App / query.
+- Картинки постов: скачать CDN `*.userapi.com` в существующий volume + media proxy (MinIO → Phase 8).
+- `telegram-gateway`: settings UI + `/research` аддитивно (не ломать IG-команды).
+- `marketing` pack: inject snapshot как для IG. User VK ID OAuth (1h token) — не в этой фазе, пока service token достаточен.
+
+Acceptance (фаза целиком; закрывать по slices):
+
+- [ ] Официальный VK API открытых пабликов; Apify/HTML нет.
+- [ ] Посты: `text` + photo attachments; closed/Donut → soft skip.
+- [ ] Token не из чата; encrypt-at-rest / env.
+- [ ] Snapshot+plan+episodes ≠ RAG; `source=vk` additive.
+- [ ] `dotnet test` + compose зелёные; ADR-013; catalog/contracts/security/run-log.
+
+Slices (один run = один):
+
+1. [ ] `phase6-vk-docs` — ADR-013 + README Phase 6 + catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`). Без кода сервисов.
+2. [ ] `phase6-vk-client` — `IVkWallClient` / `HttpVkWallClient`; service token store; `resolveScreenName` + `wall.get`; stub без токена; SSRF allowlist CDN.
+3. [ ] `phase6-vk-artifacts` — map VK items → snapshot (`source=vk`); inject marketing; cap ≤50; soft-fail.
+4. [ ] `phase6-vk-settings` — settings: allowlist пабликов (screen_name / owner_id); Mini App + `/research` аддитивно; не принимать token из UI.
+5. [ ] `phase6-vk-media` — download photo sizes в volume; media proxy; URL CDN не хранить как долгоживущие.
+6. [ ] `phase6-vk-hardening` — caps, tests, token rotation notes, non-goals guard (no scrape/Apify/user-OAuth/RAG/MinIO/Direct).
+
+Non-goals Phase 6:
+
+- RAG / embeddings / Elasticsearch (→ Phase 7)
+- MinIO (→ Phase 8), Яндекс Директ (→ Phase 9)
+- Apify / HTML scrape / `m.vk.com`
+- VK ID user OAuth / community token чужих пабликов
+- Комментарии и профили авторов (PII / 152-ФЗ)
+- Закрытые группы, Donut-only, stories чужих
+- Отдельный `vk-research-api`
+
+## Phase 7 — Knowledge (RAG)
 
 - RAG service + embeddings + Elasticsearch. Можно готовые фреймворки.
-- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4) и не research UI (Phase 5).
+- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4) и не research UI (Phase 5) и не VK wall snapshot (Phase 6).
 - Отдельный ownership данных и retriever contract.
 - Не смешивать индекс салона и маркетинга без явного решения.
 - Retriever подключается **в pack** домена (MCP/skill), не в общий промпт.
 
-## Phase 7 — Files / Video / Images storage
+## Phase 8 — Files / Video / Images storage
 
 - MinIO, metadata DB, scanning hook, presigned URLs.
-- Работа с фото/видео через отдельные adapters (поверх GenerateImage из Phase 4 при необходимости).
+- Работа с фото/видео через отдельные adapters (поверх GenerateImage из Phase 4 / VK downloads из Phase 6 при необходимости).
 - Большие файлы не проксировать через assistant-api без причины.
 - File tools — MCP/skill конкретного pack, не shared agent.
 
-## Phase 8 — External tools
+## Phase 9 — External tools
 
 - Яндекс Директ и другие ads/CRM integrations.
 - Отдельные tool adapters, секреты per-integration, least privilege.

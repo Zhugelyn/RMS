@@ -136,9 +136,9 @@ ADR-журнал для решений, которые должны пережи
 - Status: accepted
 - Date: 2026-08-17
 - Context: Для research/контент-плана нужны картинки. Отдельный OpenAI Images API = ещё один секрет, биллинг и обход Cursor subscription. Cloud harness уже на Cursor SDK.
-- Decision: Генерация картинок — **Cursor GenerateImage** через local `AgentPacks/marketing` (skill/tool) + Docker **volume** для артефактов. Отдельный OpenAI Images / DALL·E API в Phase 4 запрещён. MinIO как object store — Phase 6.
+- Decision: Генерация картинок — **Cursor GenerateImage** через local `AgentPacks/marketing` (skill/tool) + Docker **volume** для артефактов. Отдельный OpenAI Images / DALL·E API в Phase 4 запрещён. MinIO как object store — Phase 8.
 - Consequences: Картинки живут в volume, доступном marketing pack / bridge / gateway. Нет второго image-provider. Failures GenerateImage = soft fail research path с `lastError=image-tool-missing`, план без картинок, job не падает.
-- Alternatives considered: OpenAI Images API; внешний Stable Diffusion SaaS; отложить картинки до Phase 6 MinIO.
+- Alternatives considered: OpenAI Images API; внешний Stable Diffusion SaaS; отложить картинки до Phase 8 MinIO.
 - Security impact: Cursor key уже в assistant-api; не проксировать image bytes через Telegram without size limits; volume path traversal guard; без Cursor key — skip images.
 - Impl 2026-08-17 (`phase4-generate-image`): bridge `collectImages`+`localCwd`; `ResearchImageGenerator` + marketing skill; compose volume; gateway sendPhoto.
 - Links: `memory/phase-plan.md` Phase 4 slice `phase4-generate-image`
@@ -149,7 +149,7 @@ ADR-журнал для решений, которые должны пережи
 - Date: 2026-08-18
 - Context: Phase 4 закрыла research API/artifacts/scheduler/images. Нужен клиентский UX для плана/аналитики/галереи. Отдельный marketing website = ещё один deploy/auth/surface вне продукта «Telegram AI».
 - Decision: Research Client UI живёт в **Telegram Mini App** (вкладка Маркетинг = студия) + bot **InlineKeyboard web_app** / **MenuButtonWebApp** (`TELEGRAM__WEBAPPURL`). Не отдельный публичный сайт. Картинки — только gateway media proxy (`initData` + path guard), не прямой volume и не IG CDN token в клиенте.
-- Consequences: Один клиентский surface (bot + Mini App). Additive `GET /v1/research/latest` fields (`analytics`, `posts[]`, `items[]`); `planPreview` остаётся. RAG/ES остаются Phase 6.
+- Consequences: Один клиентский surface (bot + Mini App). Additive `GET /v1/research/latest` fields (`analytics`, `posts[]`, `items[]`); `planPreview` остаётся. RAG/ES остаются Phase 7. VK wall — Phase 6.
 - Alternatives considered: отдельный SPA/landing; deep-link только без Mini App; отдавать volume paths в браузер.
 - Security impact: media proxy требует initData HMAC; path traversal deny; IG token не в URL/Mini App; bot token остаётся в gateway.
 - Impl 2026-08-18 (`phase5-research-ui`): studio wwwroot; media endpoint; web_app keyboard + MenuButton hosted service; latest DTO enrichment.

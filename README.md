@@ -1,4 +1,4 @@
-# Telegram AI — Phase 5 Research Studio + Phase 4 Instagram Research
+# Telegram AI — Phase 6 VK Research (plan) + Phase 5 Studio + Phase 4 Instagram
 
 Три контейнера (Compose) + domain packs на диске + Postgres:
 
@@ -19,10 +19,11 @@
 | 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
-| **5 Research Client UI** | **open** (research-ui ✅ → next ui-hardening) | Mini App studio + bot web_app (ADR-012); не RAG |
-| 6 Knowledge | later | RAG + embeddings + Elasticsearch |
-| 7 Files / media | later | MinIO, фото/видео adapters |
-| 8 External tools | later | Яндекс Директ и др. |
+| **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
+| **6 VK Public Research** | **open** (next=`phase6-vk-docs`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
+| 7 Knowledge | later | RAG + embeddings + Elasticsearch |
+| 8 Files / media | later | MinIO, фото/видео adapters |
+| 9 External tools | later | Яндекс Директ и др. |
 
 ## Phase 4 — Marketing Instagram Research (план)
 
@@ -38,7 +39,7 @@
 
 ### Non-goals Phase 4
 
-- RAG / embeddings / Elasticsearch (→ Phase 6; Phase 5 = Research UI)
+- RAG / embeddings / Elasticsearch (→ Phase 7; Phase 5 = Research UI; Phase 6 = VK)
 - Apify / scrapers чужих аккаунтов / платные crawl-сервисы
 - Отдельный OpenAI Images / DALL·E API
 - MinIO, Яндекс Директ, Kubernetes prod
@@ -51,7 +52,12 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 
 ### Non-goals Phase 5
 
-- RAG / ES (→ 6), MinIO (→ 7), Директ (→ 8), Apify, OpenAI Images, отдельный сайт
+- RAG / ES (→ 7), MinIO (→ 8), Директ (→ 9), Apify, OpenAI Images, отдельный сайт
+- VK API (→ Phase 6)
+
+## Phase 6 — VK Public Research
+
+Открытые паблики через официальный **VK API** (`wall.get`, `VK__SERVICETOKEN`). Текст + картинки вложений. Allowlist screen_name. **Не scrape / Apify.** Первый slice: `phase6-vk-docs` (ADR-013, без кода сервисов). См. `memory/phase-plan.md`.
 
 ## Требования
 

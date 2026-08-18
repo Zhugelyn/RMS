@@ -85,7 +85,7 @@
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4 closed; Phase 5 UI open (hardening follow-up). Graph token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
+- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK open (docs first). Graph token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled). VK service token — not from chat (ADR-013 in `phase6-vk-docs`).
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 
