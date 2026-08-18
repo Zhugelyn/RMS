@@ -194,7 +194,7 @@
 - ES data plane: compose `elasticsearch` + `rag-service` depends_on healthy
 - Pack wiring: salon/marketing mcp allowlist `kb-retriever` + skill; router/tasks empty; soft-fail inject does not break `/v1/chat`
 - Not: harness episodes, research snapshots, MinIO blobs, Direct tools, assistant-api ES client
-- Status: rag-api ✅; pack retriever ✅; next=`phase7-hardening`
+- Status: **closed** (`phase7-hardening` ✅) — caps, PII-safe logs, ES basic auth, isolation + non-goals tests
 
 ## File Contract Template
 

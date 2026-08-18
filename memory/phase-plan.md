@@ -242,7 +242,7 @@ Non-goals Phase 6:
 
 ## Phase 7 — Knowledge (RAG)
 
-Status: **open** — `phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅; next=`phase7-hardening`.
+Status: **closed** (2026-08-18). `phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅; `phase7-hardening` ✅.
 
 Суть: документная база знаний с retrieval. **Не** harness memory (Phase 3), **не** research snapshot/plan (Phase 4–6). Источник — явно загруженные документы, не лента IG/VK.
 
@@ -261,7 +261,7 @@ Acceptance (фаза целиком; закрывать по slices):
 - [x] ES в compose (health, internal `:9200`); индекс reserved for rag-service (no assistant-api wiring). (`phase7-es-compose`)
 - [x] Ingest+search contract; salon pack не читает marketing index (тест). (`phase7-rag-api` + pack inject isolation ✅ `phase7-pack-retriever`)
 - [x] Secrets не из чата; `schemaVersion` не ломаем. (`phase7-rag-api`: `X-Service-Key`; ingest/search `schemaVersion=1`)
-- [ ] `dotnet test` + compose зелёные; no MinIO/Direct/Apify. (rag-api + pack-retriever ✅; full phase until hardening)
+- [x] `dotnet test` + compose зелёные; no MinIO/Direct/Apify. (`phase7-hardening` ✅)
 
 Slices (один run = один):
 
@@ -269,7 +269,7 @@ Slices (один run = один):
 2. [x] `phase7-es-compose` — Elasticsearch в Docker Compose; health; без app wiring.
 3. [x] `phase7-rag-api` — `rag-service` ingest/search; domain isolation; stub или выбранный embedder из ADR; auth `X-Service-Key`.
 4. [x] `phase7-pack-retriever` — MCP/skill в `salon` и `marketing` packs; inject hits в specialist; router/tasks без RAG.
-5. [ ] `phase7-hardening` — caps, PII в логах, index isolation tests, token notes, non-goals guard (no MinIO/Direct/Apify; no mixing indexes).
+5. [x] `phase7-hardening` — caps, PII в логах, index isolation tests, token notes, non-goals guard (no MinIO/Direct/Apify; no mixing indexes); ES basic auth.
 
 Non-goals Phase 7:
 

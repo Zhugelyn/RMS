@@ -192,4 +192,5 @@ ADR-журнал для решений, которые должны пережи
 - Compose 2026-08-18 (`phase7-es-compose`): Elasticsearch `8.15.3` single-node in `docker-compose.yml`, internal `:9200`, health `_cluster/health`, volume `elasticsearch-data`. **No rag-service / no assistant-api wiring.** xpack.security off until rag-api/hardening.
 - API 2026-08-18 (`phase7-rag-api`): `rag-service` with `POST /v1/ingest|search`, `X-Service-Key`, stub embedder, `kb-salon`/`kb-marketing`, compose depends_on healthy ES. assistant-api still does not query ES / RAG. Pack MCP → next slice.
 - Pack 2026-08-18 (`phase7-pack-retriever`): salon/marketing MCP `kb-retriever` + skill; assistant-api `HttpRagRetriever` + `RagPackInjector` soft-fail inject; router/tasks without RAG; compose `Rag__BaseUrl`/`Rag__ServiceKey`. Hardening next.
+- Hardening 2026-08-18 (`phase7-hardening`): `RagLimits`/`RagClientLimits`; PII-safe logs; ES xpack basic auth; index isolation + comma-domain reject; SecretScanner RAG/ES keys; non-goals guard; Phase 7 closed.
 - Links: `memory/phase-plan.md` Phase 7, ADR-008, ADR-010, `memory/security-baseline.md`
