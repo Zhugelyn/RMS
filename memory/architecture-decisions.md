@@ -172,3 +172,21 @@ ADR-журнал для решений, которые должны пережи
 - Media 2026-08-18 (`phase6-vk-media`): `IVkMediaDownloader` + `VkPhotoStore` → `research-media/*/vk/`; plan MediaPath; gateway media proxy; soft-skip without volume; no durable CDN URLs.
 - Hardening 2026-08-18 (`phase6-vk-hardening`): `VkApiHostGuard` (api.vk.com only); `ResearchMediaPathGuard`; caps + non-goals tests; Phase 6 closed.
 - Links: `memory/phase-plan.md` Phase 6, `memory/security-baseline.md`, ADR-009, ADR-010
+
+## ADR-014: Document RAG = rag-service + ES; ≠ harness ≠ research
+
+- Status: accepted
+- Date: 2026-08-18
+- Context: Нужна документная база знаний (загруженные docs), retrieval в specialist packs. Легко спутать с harness memory (ADR-008: profile+episodes) и research artifacts (ADR-010: snapshot+plan в Postgres). assistant-api не должен владеть Elasticsearch индексом — иначе database-per-service и domain isolation размываются. Cross-domain search salon↔marketing запрещён продуктом.
+- Decision:
+  1. **RAG ≠ harness ≠ research.** Harness episodes и IG/VK snapshot/plan остаются в Postgres assistant-api. RAG индексирует только явно ingest'нутые документы.
+  2. Owner индекса = отдельный **`rag-service`** + **Elasticsearch**. assistant-api **не** ходит в ES напрямую; только HTTP к rag-service (`X-Service-Key`), timeout/retry, soft-fail: пустой retrieval не валит `/v1/chat`.
+  3. Индексы разделены: `kb-salon` / `kb-marketing`. Cross-domain search запрещён (тест в later slice).
+  4. Retriever — MCP/skill **pack** (`salon` и `marketing`). `_router` и `tasks` RAG не видят.
+  5. Embeddings: предпочтение без нового SaaS-ключа; **stub embedder допустим** до отдельного slice. OpenAI Images / MinIO / Яндекс Директ — out of Phase 7.
+  6. `/v1/chat` `schemaVersion` не ломаем; retrieval — additive optional later.
+- Consequences: Phase 7 slices: docs → ES compose → rag-api → pack retriever → hardening. Mini App ingest — later, не в docs. Историческая пометка ADR-010 «RAG = Phase 5» superseded: RAG = **Phase 7** (Phase 5 = Research UI).
+- Alternatives considered: ES внутри assistant-api; один shared index; embeddings-as-a-service сразу; подмешивать research posts в kb-*.
+- Security impact: service key rag↔assistant; secrets не из чата; PII не в ES query logs; index isolation; no MinIO/Direct/Apify in this phase.
+- Docs 2026-08-18 (`phase7-docs`): ADR + README/catalog/contracts/security/.env.example placeholders. **No service code / no ES container in this slice.**
+- Links: `memory/phase-plan.md` Phase 7, ADR-008, ADR-010, `memory/security-baseline.md`

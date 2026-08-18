@@ -1,6 +1,6 @@
-# Telegram AI — Phase 6 VK Research (plan) + Phase 5 Studio + Phase 4 Instagram
+# Telegram AI — Phase 7 Knowledge/RAG (docs) + Phase 6 VK + Phase 5 Studio
 
-Три контейнера (Compose) + domain packs на диске + Postgres:
+Compose stack + domain packs на диске + Postgres (ES/`rag-service` — later Phase 7 slices):
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
@@ -21,7 +21,7 @@
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
-| **7 Knowledge** | **open** (next=`phase7-docs`) | RAG + Elasticsearch; не harness / не research snapshot |
+| **7 Knowledge** | **open** (`phase7-docs` ✅; next=`phase7-es-compose`) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
 
@@ -77,6 +77,31 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 - Отдельный `vk-research-api`
 
 Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → `phase6-vk-settings` ✅ → `phase6-vk-media` ✅ → `phase6-vk-hardening` ✅. Phase 6 **closed**.
+
+## Phase 7 — Knowledge / RAG
+
+Документный RAG (явно загруженные документы), **не** harness memory и **не** research snapshot/plan (ADR-014).
+
+| Тема | Решение |
+| --- | --- |
+| Owner индекса | Отдельный **`rag-service`** + Elasticsearch. assistant-api **не** ходит в ES напрямую |
+| Индексы | `kb-salon` / `kb-marketing` раздельно; cross-domain search запрещён |
+| Retriever | MCP/skill в packs `salon` и `marketing`; `_router` / `tasks` без RAG |
+| Soft-fail | Пустой/failed retrieval не валит `/v1/chat` |
+| Embeddings | Предпочтение без нового SaaS-ключа; stub допустим до отдельного slice |
+| Auth | `X-Service-Key` assistant-api ↔ rag-service; secrets не из чата |
+
+### Non-goals Phase 7
+
+- MinIO / бинарные файлы (→ Phase 8)
+- Яндекс Директ (→ Phase 9)
+- Смешивать salon+marketing в один индекс
+- Подменять harness episodes / research snapshots RAG-ом
+- Apify, scrape, OpenAI Images
+- ES контейнер / `rag-service` код в slice `phase7-docs` (→ `phase7-es-compose` / `phase7-rag-api`)
+
+Slices: `phase7-docs` ✅ → `phase7-es-compose` → `phase7-rag-api` → `phase7-pack-retriever` → `phase7-hardening`.
+
 ## Требования
 
 - Docker + Docker Compose v2
@@ -146,6 +171,7 @@ Mini App UI     ──► gateway /api/miniapp/chat ─────────�
 - Cursor API key из чата/Mini App **не принимается**.
 - Instagram Graph token (Phase 4) — только в assistant-api / secret store, не в Telegram.
 - VK service token (Phase 6) — только в assistant-api / secret store (`VK__SERVICETOKEN`), не в Telegram.
+- Phase 7 (planned): rag-service key / ES creds — env/secret store only; не из Telegram/Mini App.
 - Mini App не содержит секретов; ключ на сервере gateway.
 
 ## Ручные проверки API
@@ -342,6 +368,7 @@ memory/                    # phase-plan, contracts, ADR
 | `INSTAGRAM__ACCESSTOKEN` (+ master) | assistant-api | Meta/Graph long-lived refresh → env; encrypt-at-rest на старте. Не из Mini App/chat. |
 | `VK__SERVICETOKEN` (+ `VK__MASTERKEY` or shared `CURSOR__`/`INSTAGRAM__` master) | assistant-api | VK Developers → приложение → сервисный ключ → обновить env (`VK__SERVICETOKEN`) → restart `assistant-api` (seal AES-GCM at startup). Старый ключ revoke в кабинете VK. **Не** user OAuth / community token. Не из Mini App/chat/query. |
 | `VK__APIBASEURL` (optional) | assistant-api | Только `https://api.vk.com/method/` (startup validate + runtime `VkApiHostGuard`). Не `m.vk.com` / oauth. |
+| `RAG__SERVICEKEY` / `RAG__BASEURL` (Phase 7, planned) | assistant-api ↔ rag-service | Placeholder в `.env.example` до `phase7-rag-api`. Не из чата. ES creds — только rag-service. |
 
 Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 
