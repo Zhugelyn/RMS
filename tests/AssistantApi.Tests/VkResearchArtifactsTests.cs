@@ -3,6 +3,7 @@ using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Rag;
 using AssistantApi.Research;
 using AssistantApi.Vk;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -171,6 +172,7 @@ public sealed class VkResearchArtifactsTests
             new InMemoryAgentAffinityStore(),
             memory,
             injector,
+            new NoOpRagPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

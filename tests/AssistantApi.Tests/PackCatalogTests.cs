@@ -44,14 +44,22 @@ public sealed class PackCatalogTests
             var pack = catalog.GetRequired(id);
             Assert.True(pack.Manifest.AnswersUser);
             Assert.Equal(PackResumePolicy.PerDomainConversation, pack.Manifest.ResumePolicy);
-            Assert.Empty(pack.Mcp.Allowlist);
-            Assert.Empty(pack.Mcp.Servers);
             Assert.True(File.Exists(pack.AgentsMarkdownPath));
             Assert.True(Directory.Exists(pack.SkillsDirectoryPath));
             Assert.True(Directory.Exists(pack.PromptsDirectoryPath));
             Assert.Equal(1, pack.Manifest.SchemaVersion);
             Assert.False(string.IsNullOrWhiteSpace(pack.Manifest.Model));
         }
+
+        // Phase 7: salon/marketing allowlist kb-retriever; router/tasks empty.
+        Assert.Equal(new[] { "kb-retriever" }, catalog.GetRequired(PackIds.Salon).Mcp.Allowlist);
+        Assert.Equal(new[] { "kb-retriever" }, catalog.GetRequired(PackIds.Marketing).Mcp.Allowlist);
+        Assert.Empty(catalog.GetRequired(PackIds.Tasks).Mcp.Allowlist);
+        Assert.Empty(catalog.GetRequired(PackIds.Router).Mcp.Allowlist);
+        Assert.True(File.Exists(Path.Combine(catalog.GetRequired(PackIds.Salon).SkillsDirectoryPath, "kb-retrieve", "SKILL.md")));
+        Assert.True(File.Exists(Path.Combine(catalog.GetRequired(PackIds.Marketing).SkillsDirectoryPath, "kb-retrieve", "SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(catalog.GetRequired(PackIds.Tasks).SkillsDirectoryPath, "kb-retrieve", "SKILL.md")));
+        Assert.False(File.Exists(Path.Combine(catalog.GetRequired(PackIds.Router).SkillsDirectoryPath, "kb-retrieve", "SKILL.md")));
     }
 
     [Fact]
@@ -73,8 +81,8 @@ public sealed class PackCatalogTests
         File.WriteAllText(Path.Combine(tmp.Root, "salon", "mcp.json"), """
             {
               "schemaVersion": 1,
-              "allowlist": [],
-              "servers": [ { "name": "x", "apiKey": "sk-leak" } ]
+              "allowlist": ["kb-retriever"],
+              "servers": [ { "name": "kb-retriever", "apiKey": "sk-leak" } ]
             }
             """);
 
@@ -83,7 +91,7 @@ public sealed class PackCatalogTests
     }
 
     [Fact]
-    public void Rejects_non_empty_allowlist_in_layout_slice()
+    public void Rejects_foreign_allowlist_on_marketing()
     {
         using var tmp = TempPackRoot.CreateFrom(FindPacksRoot());
         File.WriteAllText(Path.Combine(tmp.Root, "marketing", "mcp.json"), """
@@ -96,6 +104,38 @@ public sealed class PackCatalogTests
 
         var ex = Assert.Throws<InvalidOperationException>(() => new PackCatalog(tmp.Root));
         Assert.Contains("allowlist", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Rejects_rag_allowlist_on_tasks()
+    {
+        using var tmp = TempPackRoot.CreateFrom(FindPacksRoot());
+        File.WriteAllText(Path.Combine(tmp.Root, "tasks", "mcp.json"), """
+            {
+              "schemaVersion": 1,
+              "allowlist": ["kb-retriever"],
+              "servers": [ { "name": "kb-retriever" } ]
+            }
+            """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new PackCatalog(tmp.Root));
+        Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Rejects_salon_without_kb_retriever()
+    {
+        using var tmp = TempPackRoot.CreateFrom(FindPacksRoot());
+        File.WriteAllText(Path.Combine(tmp.Root, "salon", "mcp.json"), """
+            {
+              "schemaVersion": 1,
+              "allowlist": [],
+              "servers": []
+            }
+            """);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new PackCatalog(tmp.Root));
+        Assert.Contains("kb-retriever", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

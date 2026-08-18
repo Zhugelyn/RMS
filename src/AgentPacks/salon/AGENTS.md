@@ -24,7 +24,8 @@
 
 ## Non-goals
 
-- Яндекс Директ API, RAG/Elasticsearch, MinIO, генерация картинок.
+- Яндекс Директ API, MinIO, генерация картинок.
+- Cross-domain RAG (`kb-marketing`) — только `kb-salon` via MCP `kb-retriever`.
 - Classify пользователя (`_router`).
 
 ## Failure mode

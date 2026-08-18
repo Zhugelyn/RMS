@@ -3,10 +3,10 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `7-knowledge-rag` (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; next=`phase7-pack-retriever`)
+- Phase: `7-knowledge-rag` (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅; next=`phase7-hardening`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + `elasticsearch` + `rag-service` + shared `research-images` volume)
-  - Phase 7 next: pack MCP retriever (`phase7-pack-retriever`); rag-service ingest/search ✅
+  - Phase 7 next: hardening (`phase7-hardening`); pack MCP retriever ✅
 
 ## Product North Star
 
@@ -43,7 +43,7 @@
 
 ## Goal Phase 7 (Knowledge / RAG)
 
-Документный RAG: `rag-service` + Elasticsearch; индексы salon/marketing раздельно; retriever только в pack MCP. `phase7-docs` ✅ (ADR-014); `phase7-es-compose` ✅; `phase7-rag-api` ✅. Next: `phase7-pack-retriever`.
+Документный RAG: `rag-service` + Elasticsearch; индексы salon/marketing раздельно; retriever только в pack MCP. `phase7-docs` ✅ (ADR-014); `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅. Next: `phase7-hardening`.
 
 ## Phase 4 closed
 
@@ -55,4 +55,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase7-rag-api` ✅; **next_slice=`phase7-pack-retriever`**.
+- Этот run: `phase7-pack-retriever` ✅; **next_slice=`phase7-hardening`**.
