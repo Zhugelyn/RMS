@@ -115,7 +115,7 @@ Non-goals Phase 3: RAG/ES, MinIO, Яндекс Директ, отдельный 
 
 ## Phase 4 — Marketing Instagram Research
 
-Status: **open** (generate-image ✅ → next impl = `phase4-hardening`).
+Status: **closed** (2026-08-18). Hardening ✅; Phase 5 Knowledge/RAG не стартовать без явного запроса.
 
 Суть: маркетинговый research по ленте **своего** Instagram-аккаунта. Источник — только бесплатный **Instagram Graph API**. Счедулер **14 дней**. Настройки в Mini App и команда бота `/research`. Картинки — **Cursor GenerateImage** через local `marketing` pack + volume (не отдельный OpenAI Images). Артефакты research (`snapshot` + `plan` + `episodes`) в **Postgres assistant-api** — это **не RAG**.
 
@@ -135,7 +135,7 @@ Acceptance (фаза целиком; закрывать по slices):
 - [x] Счедулер research на 14 дней ✅ (`phase4-scheduler`); настройки в Mini App и `/research` в боте ✅ (`phase4-miniapp-research`).
 - [x] GenerateImage через local marketing-pack + volume; не OpenAI Images API.
 - [x] Secrets: IG token не из чата; encrypt-at-rest / env; не в logs/git.
-- [ ] `dotnet test` + compose зелёные; ADR-009/010/011, catalog, contracts, security, run-log.
+- [x] `dotnet test` + compose зелёные; ADR-009/010/011, catalog, contracts, security, run-log.
 
 Slices (один run = один):
 
@@ -146,7 +146,7 @@ Slices (один run = один):
 5. [x] `phase4-scheduler` — scheduler/job на окно 14 дней; idempotent runs; failure modes.
 6. [x] `phase4-miniapp-research` — Mini App research settings + bot `/research` (start/status).
 7. [x] `phase4-generate-image` — Cursor GenerateImage via local marketing-pack + volume mount.
-8. [ ] `phase4-hardening` — security/tests/limits; token rotation notes; non-goals guard (no RAG/Apify/OpenAI Images).
+8. [x] `phase4-hardening` — security/tests/limits; initData HMAC; token rotation notes; non-goals guard (no RAG/Apify/OpenAI Images).
 
 Non-goals Phase 4:
 

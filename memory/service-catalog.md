@@ -52,16 +52,17 @@
 - Loader: `PackCatalog`; runtime: bridge local cwd per packId; affinity + harness memory in assistant-api.
 - Memory: `IHarnessMemoryStore` → Postgres when CS set, else in-process; domain episode isolation.
 
-## Phase 4 — Instagram Research (in progress)
+## Phase 4 — Instagram Research (closed)
 
 - Capability: 14-day marketing research from own Instagram Graph feed; Mini App settings + bot `/research`
 - Feed source: Instagram Graph API only (ADR-009). **Apify — no.** Client: `HttpInstagramGraphClient` + stub/fallback without token ✅
 - Token: `INSTAGRAM__ACCESSTOKEN` (+ `IGUSERID`/`BUSINESSACCOUNTID`) env → AES-GCM seal; reject from chat
 - Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt, lastError) ✅
-- Artifacts: `IResearchArtifactStore` (Postgres/in-mem) — normalized snapshot posts/visual notes (cap last K) + 14-day plan items (`date,caption,hashtags,imagePrompt,mediaPath?,telegramFileId?,status`). Capture: `IInstagramResearchCapture` after Graph fetch. Inject: marketing pack only (`ResearchPackInjector`). Episode domain=`marketing`. Soft-fail persist. **Not RAG.** ✅ (`phase4-research-artifacts`)
-- Images: Cursor GenerateImage via local marketing-pack + Docker volume `research-images` (`Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`) (ADR-011). Bridge `collectImages` → `images[]` cap 14; soft-fail `image-tool-missing`; mediaPath on plan; gateway `sendPhoto`. **Not OpenAI Images.** ✅ (`phase4-generate-image`)
-- UI: gateway Mini App research settings + `/research` command ✅ (`phase4-miniapp-research`)
+- Artifacts: `IResearchArtifactStore` (Postgres/in-mem) — normalized snapshot posts/visual notes (cap last K=5) + 14-day plan (cap K=3). Capture: `IInstagramResearchCapture` after Graph fetch. Inject: marketing pack only (`ResearchPackInjector`). Episode domain=`marketing`. Soft-fail persist. **Not RAG.** ✅
+- Images: Cursor GenerateImage via local marketing-pack + Docker volume `research-images` (`Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`) (ADR-011). Bridge `collectImages` → `images[]` cap 14; soft-fail `image-tool-missing`; mediaPath on plan; gateway `sendPhoto`. **Not OpenAI Images.** ✅
+- UI: gateway Mini App research settings + `/research` command ✅; Mini App mutations require initData HMAC ✅ (`phase4-hardening`)
 - Scheduler: `ResearchSchedulerHostedService` + `ResearchSchedulerJob` — 14d cadence, ListDue, idempotent `research_schedule_runs` (userId+period), lastError on Graph fail / image soft-fail, no-op without token/enabled; notify = `GatewayResearchNotifyHook` → gateway `/internal/notify` (+ optional photos). No Hangfire. ✅
+- Hardening: Graph fetch ≤50; payload size; path traversal; retention caps; token rotation README; non-goals guard tests ✅
 - Do not add separate `instagram-research-api` until independent ownership
 
 ## Reserved (do not implement in Phase 4)

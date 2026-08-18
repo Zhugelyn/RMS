@@ -68,7 +68,14 @@ public sealed class ResearchImageWorkspace : IResearchImageWorkspace
 
         var safeRun = ResearchGeneratedImageCollector.SanitizeRunId(runId);
         var relativeRoot = $"{ResearchImageLimits.RelativeMediaRoot}/{safeRun}";
-        var cwd = Path.Combine(volume, ResearchImageLimits.RelativeMediaRoot, safeRun);
+        var cwd = Path.GetFullPath(Path.Combine(volume, ResearchImageLimits.RelativeMediaRoot, safeRun));
+        if (!cwd.StartsWith(volume + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            && !string.Equals(cwd, volume, StringComparison.Ordinal))
+        {
+            _logger.LogWarning("Research image workspace path escaped volume; skip");
+            return null;
+        }
+
         Directory.CreateDirectory(cwd);
         Directory.CreateDirectory(Path.Combine(cwd, "out"));
         Directory.CreateDirectory(Path.Combine(cwd, "refs"));

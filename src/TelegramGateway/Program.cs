@@ -119,8 +119,10 @@ app.MapGet("/api/miniapp/research/settings", async (
 });
 
 app.MapPut("/api/miniapp/research/settings", async (
+    HttpRequest httpRequest,
     [FromBody] MiniAppResearchSettingsRequest request,
     IAssistantApiClient assistant,
+    IOptions<TelegramOptions> telegramOptions,
     CancellationToken cancellationToken) =>
 {
     if (!IsTelegramUserId(request.UserId))
@@ -129,6 +131,12 @@ app.MapPut("/api/miniapp/research/settings", async (
             "userId must be tg-<id>. Anonymous writes rejected.",
             statusCode: StatusCodes.Status400BadRequest,
             title: "Validation failed");
+    }
+
+    var auth = RequireInitDataUser(httpRequest, request.InitData, request.UserId!, telegramOptions.Value);
+    if (auth is not null)
+    {
+        return auth;
     }
 
     if (SecretScanner.ContainsForbiddenSecret(request.InstagramHandle) ||
@@ -164,8 +172,10 @@ app.MapPut("/api/miniapp/research/settings", async (
 });
 
 app.MapPost("/api/miniapp/research/run", async (
+    HttpRequest httpRequest,
     [FromBody] MiniAppResearchRunRequest request,
     IAssistantApiClient assistant,
+    IOptions<TelegramOptions> telegramOptions,
     CancellationToken cancellationToken) =>
 {
     if (!IsTelegramUserId(request.UserId))
@@ -174,6 +184,12 @@ app.MapPost("/api/miniapp/research/run", async (
             "userId must be tg-<id>. Anonymous runs rejected.",
             statusCode: StatusCodes.Status400BadRequest,
             title: "Validation failed");
+    }
+
+    var auth = RequireInitDataUser(httpRequest, request.InitData, request.UserId!, telegramOptions.Value);
+    if (auth is not null)
+    {
+        return auth;
     }
 
     try
@@ -315,6 +331,51 @@ static bool IsTelegramUserId(string? userId) =>
     && userId.Length <= 64
     && userId[3..].All(char.IsDigit);
 
+/// <summary>
+/// Mini App research mutations require Telegram initData HMAC (not just tg-* prefix).
+/// Header <c>X-Telegram-Init-Data</c> preferred; body <c>initData</c> accepted as fallback.
+/// </summary>
+static IResult? RequireInitDataUser(
+    HttpRequest httpRequest,
+    string? bodyInitData,
+    string userId,
+    TelegramOptions options)
+{
+    string? initData = null;
+    if (httpRequest.Headers.TryGetValue("X-Telegram-Init-Data", out var header)
+        && !string.IsNullOrWhiteSpace(header))
+    {
+        initData = header.ToString();
+    }
+    else if (!string.IsNullOrWhiteSpace(bodyInitData))
+    {
+        initData = bodyInitData;
+    }
+
+    var validated = TelegramInitDataValidator.Validate(
+        initData,
+        options.BotToken,
+        options.InitDataMaxAgeSeconds);
+    if (!validated.Ok || validated.UserId is null)
+    {
+        return Results.Problem(
+            detail: $"Telegram initData required for research mutations ({validated.ErrorCode ?? "invalid"}).",
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Unauthorized");
+    }
+
+    var expected = $"tg-{validated.UserId.Value}";
+    if (!string.Equals(userId, expected, StringComparison.Ordinal))
+    {
+        return Results.Problem(
+            detail: "userId must match Telegram initData user.",
+            statusCode: StatusCodes.Status403Forbidden,
+            title: "Forbidden");
+    }
+
+    return null;
+}
+
 static string? NormalizeIntent(string? intent)
 {
     if (string.IsNullOrWhiteSpace(intent))
@@ -348,12 +409,16 @@ public sealed class MiniAppResearchSettingsRequest
     public int? CadenceDays { get; set; }
     public string? Timezone { get; set; }
     public string? NotifyChatId { get; set; }
+    /// <summary>Optional fallback when header X-Telegram-Init-Data is absent.</summary>
+    public string? InitData { get; set; }
 }
 
 public sealed class MiniAppResearchRunRequest
 {
     public string? UserId { get; set; }
     public string? NotifyChatId { get; set; }
+    /// <summary>Optional fallback when header X-Telegram-Init-Data is absent.</summary>
+    public string? InitData { get; set; }
 }
 
 public partial class Program;

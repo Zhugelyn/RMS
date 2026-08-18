@@ -15,6 +15,13 @@ public sealed class TelegramOptions
 
     /// <summary>When true, gateway starts long polling (local/dev).</summary>
     public bool UsePolling { get; set; } = true;
+
+    /// <summary>
+    /// Max age for Mini App initData auth_date (seconds). Mutations reject stale HMAC payloads.
+    /// Env: TELEGRAM__INITDATAMAXAGESECONDS
+    /// </summary>
+    [Range(60, 604_800)]
+    public int InitDataMaxAgeSeconds { get; set; } = Security.TelegramInitDataValidator.DefaultMaxAgeSeconds;
 }
 
 public sealed class AssistantClientOptions
