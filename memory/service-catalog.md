@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; next=`phase7-es-compose`).
+Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; next=`phase7-rag-api`).
 
 ## Service: telegram-gateway
 
@@ -80,19 +80,28 @@
 - Photos: CDN `*.userapi.com` download to `Research:ImageVolumePath`; relative MediaPath only (no durable CDN URLs)
 - ApiBaseUrl: `api.vk.com` only; allowlist ≤10; wall ≤50; photos ≤14
 
+## Service: elasticsearch (Phase 7 data plane, reserved)
+
+- Owner (planned): `rag-service` (not yet implemented)
+- Image: `docker.elastic.co/elasticsearch/elasticsearch:8.15.3` via compose
+- Internal only `:9200`; health `_cluster/health` (yellow|green)
+- Volume: `elasticsearch-data`
+- **Not** connected to assistant-api / gateway / bridge in this slice
+- Security: xpack.security disabled for local compose until `phase7-rag-api` / hardening
+
 ## Phase 7 — Knowledge / RAG (open)
 
 - Docs ✅ (`phase7-docs`, ADR-014): RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP
-- Next slice: `phase7-es-compose` (ES in Compose; no app wiring)
+- ES compose ✅ (`phase7-es-compose`): container + health; no app wiring
+- Next slice: `phase7-rag-api` (rag-service ingest/search + domain isolation)
 - Owner (planned): `rag-service` → Elasticsearch; assistant-api does not query ES
 - Domain indexes: `kb-salon` / `kb-marketing`; pack MCP retriever only (`salon`/`marketing`; not `_router`/`tasks`)
 - Soft-fail: empty retrieval must not fail `/v1/chat`
 - Embeddings: prefer no new SaaS key; stub OK until dedicated slice
 - Non-goals: MinIO (8), Direct (9), Apify, mixing indexes, replacing harness/research with RAG
 
-## Reserved (do not implement in `phase7-docs`)
+## Reserved (do not implement in `phase7-es-compose`)
 
-- Elasticsearch container (→ `phase7-es-compose`)
 - rag-service ingest/search code (→ `phase7-rag-api`)
 - pack MCP retriever wiring (→ `phase7-pack-retriever`)
 - files-minio (Phase 8)

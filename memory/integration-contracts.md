@@ -181,16 +181,17 @@
 
 ## Planned: rag-service (Phase 7, ADR-014)
 
-- Owner: rag-service (planned; **not implemented in `phase7-docs`**)
+- Owner: rag-service (planned; **not implemented in `phase7-es-compose`**)
 - Consumers: assistant-api only (HTTP); packs call retriever MCP → assistant/rag path, not ES directly
 - Planned methods (contract sketch for later slices):
   - `POST /v1/ingest` — document upsert into domain index (`salon` | `marketing`)
   - `POST /v1/search` — query + `domain` → hits[]; cross-domain rejected
 - Auth: `X-Service-Key` (`RAG__SERVICEKEY` / shared inter-service pattern)
 - Indexes: `kb-salon` / `kb-marketing` (Elasticsearch owned by rag-service)
+- ES data plane: compose service `elasticsearch` ✅ (`phase7-es-compose`, internal `:9200`)
 - Failure: timeout/retry; soft-fail → empty hits; must not break `/v1/chat`
 - Not: harness episodes, research snapshots, MinIO blobs, Direct tools
-- Status: docs only (`phase7-docs`); impl → `phase7-rag-api` + `phase7-pack-retriever`
+- Status: ES compose ready; rag-service impl → `phase7-rag-api` + pack → `phase7-pack-retriever`
 
 ## File Contract Template
 

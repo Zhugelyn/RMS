@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18n
+
+- Trigger: webhook (empty payload) → first open slice `phase7-es-compose`
+- Slice: phase7-es-compose
+- Status: passed
+- Checks: ES `8.15.3` single-node in compose (internal `:9200`, health `_cluster/health`, volume `elasticsearch-data`); no rag-service / no assistant-api ES wiring; `Phase7EsComposeTests` 4/4; `dotnet test` 175/175 (136 api + 39 gateway); compose YAML OK (docker CLI absent); no MinIO/Direct/Apify; next=`phase7-rag-api`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-014 note, README, .env.example, run-log
+- Next slice: phase7-rag-api
+- Blocker: none (docker CLI absent in this env; compose YAML + unit asserts cover health/wiring)
+
 ## Run 2026-08-18m
 
 - Trigger: webhook (empty payload) → first open slice `phase7-docs`

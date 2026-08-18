@@ -92,7 +92,7 @@
 - Hardening ✅: `Phase6HardeningTests` caps + non-goals (no scrape/Apify/user-OAuth/RAG/MinIO/Direct); README token rotation VK.
 - Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
 
-## Phase 7 controls (docs / planned)
+## Phase 7 controls (docs / ES compose)
 
 - ADR-014: document RAG ≠ harness memory ≠ research artifacts; domain-split indexes (`kb-salon` / `kb-marketing`).
 - Owner: `rag-service` + Elasticsearch; assistant-api does **not** query ES; HTTP + `X-Service-Key` only.
@@ -101,14 +101,15 @@
 - Soft-fail: empty/failed retrieval must not fail `/v1/chat`; PII not in ES/query logs (hardening later).
 - Embeddings: prefer no new SaaS key; stub OK until dedicated slice.
 - Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG.
-- `phase7-docs`: placeholders in `.env.example` only — **no** ES container / rag-service code yet.
+- `phase7-docs`: placeholders in `.env.example`.
+- `phase7-es-compose` ✅: ES container in compose (internal `:9200`, health); **no** rag-service / assistant-api ES client. xpack.security off until rag-api/hardening.
 
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4–6 closed. Phase 7 open after `phase7-docs`; ES/rag-service not wired yet — do not treat placeholders as live secrets.
+- Phase 4–6 closed. Phase 7: ES in compose; rag-service not wired — do not treat RAG placeholders as live secrets; ES local compose has security disabled until hardening.
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 

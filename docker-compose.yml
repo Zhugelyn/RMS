@@ -18,6 +18,35 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # Phase 7 Knowledge/RAG (ADR-014): Elasticsearch only.
+  # Owner of indexes = future rag-service. assistant-api must NOT connect here.
+  # This slice: container + health; no rag-service / no app wiring.
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      cluster.name: telegram-ai-kb
+      # Local compose: security off until rag-service wires creds (phase7-rag-api / hardening).
+      xpack.security.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      ES_JAVA_OPTS: ${ELASTICSEARCH__JAVA_OPTS:--Xms512m -Xmx512m}
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    # Internal only — not published; reserved for rag-service.
+    expose:
+      - "9200"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
   cursor-sdk-bridge:
     build:
       context: ./src
@@ -119,3 +148,4 @@ services:
 volumes:
   assistant-pgdata:
   research-images:
+  elasticsearch-data:
