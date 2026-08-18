@@ -179,19 +179,21 @@
 - Non-goals: Apify, HTML/`m.vk.com`, user VK ID OAuth, separate `vk-research-api`
 - Status: **closed** (`phase6-vk-hardening` ✅)
 
-## Planned: rag-service (Phase 7, ADR-014)
+## rag-service (Phase 7, ADR-014)
 
-- Owner: rag-service (planned; **not implemented in `phase7-es-compose`**)
-- Consumers: assistant-api only (HTTP); packs call retriever MCP → assistant/rag path, not ES directly
-- Planned methods (contract sketch for later slices):
-  - `POST /v1/ingest` — document upsert into domain index (`salon` | `marketing`)
-  - `POST /v1/search` — query + `domain` → hits[]; cross-domain rejected
-- Auth: `X-Service-Key` (`RAG__SERVICEKEY` / shared inter-service pattern)
-- Indexes: `kb-salon` / `kb-marketing` (Elasticsearch owned by rag-service)
-- ES data plane: compose service `elasticsearch` ✅ (`phase7-es-compose`, internal `:9200`)
-- Failure: timeout/retry; soft-fail → empty hits; must not break `/v1/chat`
-- Not: harness episodes, research snapshots, MinIO blobs, Direct tools
-- Status: ES compose ready; rag-service impl → `phase7-rag-api` + pack → `phase7-pack-retriever`
+- Owner: rag-service ✅ (`phase7-rag-api`)
+- Consumers: assistant-api only (HTTP); packs call retriever MCP → assistant/rag path, not ES directly (→ `phase7-pack-retriever`)
+- Methods:
+  - `POST /v1/ingest` — document upsert into domain index (`salon` | `marketing` → `kb-salon` | `kb-marketing`)
+  - `POST /v1/search` — query + `domain` → hits[]; other domain's docs never returned (isolation tests)
+  - `GET /health/live`, `GET /health/ready`
+- Auth: `X-Service-Key` (`RAG__SERVICEKEY` / `Rag:ServiceKey`, min 16 chars)
+- Response: `schemaVersion=1` additive; empty hits on ES soft-fail
+- Indexes: `kb-salon` / `kb-marketing` (Elasticsearch owned by rag-service; in-memory fallback if `Elasticsearch:Uris` empty)
+- Embeddings: `StubEmbedder` (deterministic hash-bag; no SaaS key)
+- ES data plane: compose `elasticsearch` + `rag-service` depends_on healthy
+- Not: harness episodes, research snapshots, MinIO blobs, Direct tools, assistant-api ES client
+- Status: rag-api ✅; pack retriever → `phase7-pack-retriever`
 
 ## File Contract Template
 

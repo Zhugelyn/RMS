@@ -1,6 +1,6 @@
 namespace AssistantApi.Extensions;
 
-/// <summary>Extension point for Phase 3 RAG. No implementation in Phase 2.</summary>
+/// <summary>Extension point for Phase 7 RAG pack retriever. Implementation → phase7-pack-retriever.</summary>
 public interface IRagRetriever;
 
 /// <summary>Extension point for Phase 4 files. No implementation in Phase 2.</summary>
