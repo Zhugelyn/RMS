@@ -21,7 +21,7 @@
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
-| 7 Knowledge | later | RAG + embeddings + Elasticsearch |
+| **7 Knowledge** | **open** (next=`phase7-docs`) | RAG + Elasticsearch; не harness / не research snapshot |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
 

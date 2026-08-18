@@ -10,10 +10,11 @@ alwaysApply: true
 - Phase 2 closed: Cursor SDK + persona-switch harness. Phase 3 packs functionally closed.
 - Phase 4 closed: Marketing Instagram Research (Graph API own account, scheduler, GenerateImage volume, hardening).
 - Phase 5 closed: Research Studio + `phase5-ui-hardening` ✅ (a11y/limits/VK gallery).
-- Phase 6 closed: VK Public Research (official `wall.get`, service token, media+hardening ✅). Next open = Phase 7 RAG — не открывать без явного slice. MinIO = 8; Direct = 9.
+- Phase 6 closed: VK Public Research (official `wall.get`, service token, media+hardening ✅).
+- Phase 7 open: Knowledge/RAG. Next = `phase7-docs`. MinIO = 8; Direct = 9.
 - Phase 4 leftovers: лента только Instagram Graph API своего аккаунта (Apify нет); GenerateImage = Cursor local marketing-pack + volume (не OpenAI Images); research memory = snapshot+plan+episodes в Postgres ≠ RAG.
-- Не реализуй RAG, embeddings, Elasticsearch, MinIO, Яндекс Директ, пока phase-plan не открыл фазу.
-- VK: только официальный API; не HTML/`m.vk.com`/Apify. Service token не из чата. User VK ID OAuth — не в Phase 6, пока service token достаточен.
+- VK: только официальный API; не HTML/`m.vk.com`/Apify. Service token не из чата.
+- Не реализуй MinIO, Яндекс Директ, пока phase-plan не открыл фазу. RAG — только slices Phase 7; не смешивать с harness/research memory.
 - Не подменяй Phase 3 packs новым промпт-префиксом. Specialist = AGENTS.md + skills + MCP allowlist + отдельный Agent на домен.
 - Harness memory ≠ Cursor resume и ≠ RAG: profile + короткие «задача→результат» per domain, store в assistant-api.
 - Telegram bot token не покидает gateway. Cursor API key не принимается из чата. IG token / VK service token — не из чата.

@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `5-ui-hardening` **closed** (Phase 5 + Phase 6 closed; Phase 7 RAG still gated)
+- Phase: `7-knowledge-rag` (Phase 5/6 closed; next=`phase7-docs`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -17,7 +17,7 @@
 - **marketing**: рынок красоты, топ-бренды косметики, тренды, таргет/аудитории; Instagram Research своего аккаунта + **Research Studio** Mini App; Phase 6 = открытые паблики VK (официальный API);
 - **tasks**: расписание работ и напоминания.
 
-Позже: RAG + Elasticsearch (Phase 7); MinIO / фото-видео (Phase 8); Яндекс Директ (Phase 9).
+Позже: MinIO / фото-видео (Phase 8); Яндекс Директ (Phase 9).
 
 ## Goal Phase 5 (Research Client UI)
 
@@ -40,6 +40,10 @@
 - Отдельный сайт вне Telegram Mini App
 - VK (→ Phase 6)
 
+## Goal Phase 7 (Knowledge / RAG)
+
+Документный RAG: `rag-service` + Elasticsearch; индексы salon/marketing раздельно; retriever только в pack MCP. Первый slice: `phase7-docs` (ADR-014, без кода).
+
 ## Phase 4 closed
 
 Marketing Instagram Research — all slices done including hardening.
@@ -50,4 +54,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase5-ui-hardening` ✅; **next_slice=none** (Phase 7 RAG — только по явному запросу).
+- Этот run: plan Phase 7 open; **next_slice=`phase7-docs`**.

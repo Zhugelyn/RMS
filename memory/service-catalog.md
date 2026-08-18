@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6 closed. Next open = Phase 7 RAG (not started).
+Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (next=`phase7-docs`).
 
 ## Service: telegram-gateway
 
@@ -80,9 +80,15 @@
 - Photos: CDN `*.userapi.com` download to `Research:ImageVolumePath`; relative MediaPath only (no durable CDN URLs)
 - ApiBaseUrl: `api.vk.com` only; allowlist ≤10; wall ≤50; photos ≤14
 
-## Reserved (do not implement until Phase 7+)
+## Phase 7 — Knowledge / RAG (open)
 
-- rag-service / embedding-service / search-elasticsearch (Phase 7)
+- Next slice: `phase7-docs` (ADR-014, no service code / no ES container)
+- Owner (planned): `rag-service` → Elasticsearch; assistant-api does not query ES
+- Domain indexes: `kb-salon` / `kb-marketing`; pack MCP retriever only
+
+## Reserved (do not implement in `phase7-docs`)
+
+- rag-service / Elasticsearch container (→ `phase7-es-compose` / `phase7-rag-api`)
 - files-minio (Phase 8)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers

@@ -242,11 +242,42 @@ Non-goals Phase 6:
 
 ## Phase 7 — Knowledge (RAG)
 
-- RAG service + embeddings + Elasticsearch. Можно готовые фреймворки.
-- Это **документы/база знаний**, не harness memory (Phase 3) и не research snapshot/plan (Phase 4) и не research UI (Phase 5) и не VK wall snapshot (Phase 6).
-- Отдельный ownership данных и retriever contract.
-- Не смешивать индекс салона и маркетинга без явного решения.
-- Retriever подключается **в pack** домена (MCP/skill), не в общий промпт.
+Status: **open** — next=`phase7-docs`.
+
+Суть: документная база знаний с retrieval. **Не** harness memory (Phase 3), **не** research snapshot/plan (Phase 4–6). Источник — явно загруженные документы, не лента IG/VK.
+
+Service boundary:
+
+- Owner индекса = **`rag-service`** (Elasticsearch). assistant-api **не** ходит в ES напрямую.
+- assistant-api → rag-service HTTP (`X-Service-Key`); timeout/retry/soft-fail: пустой retrieval не валит `/v1/chat`.
+- Retriever — MCP/skill **pack** (`salon` и `marketing` отдельно). `_router` и `tasks` RAG не видят.
+- Индексы разделены: `kb-salon` / `kb-marketing`. Cross-domain search запрещён.
+- Не отдельный публичный сайт. Mini App ingest — later slice, не docs.
+- Embeddings provider фиксирует ADR-014 (предпочтение: без нового SaaS-ключа; stub допустим до отдельного slice). OpenAI Images / MinIO / Direct — нет.
+
+Acceptance (фаза целиком; закрывать по slices):
+
+- [ ] ADR-014: RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP.
+- [ ] ES в compose; rag-service владеет индексом.
+- [ ] Ingest+search contract; salon pack не читает marketing index (тест).
+- [ ] Secrets не из чата; `schemaVersion` не ломаем.
+- [ ] `dotnet test` + compose зелёные; no MinIO/Direct/Apify.
+
+Slices (один run = один):
+
+1. [ ] `phase7-docs` — ADR-014 + README Phase 7 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без ES контейнера.
+2. [ ] `phase7-es-compose` — Elasticsearch в Docker Compose; health; без app wiring.
+3. [ ] `phase7-rag-api` — `rag-service` ingest/search; domain isolation; stub или выбранный embedder из ADR; auth `X-Service-Key`.
+4. [ ] `phase7-pack-retriever` — MCP/skill в `salon` и `marketing` packs; inject hits в specialist; router/tasks без RAG.
+5. [ ] `phase7-hardening` — caps, PII в логах, index isolation tests, token notes, non-goals guard (no MinIO/Direct/Apify; no mixing indexes).
+
+Non-goals Phase 7:
+
+- MinIO / бинарные файлы (→ Phase 8)
+- Яндекс Директ (→ Phase 9)
+- Смешивать salon+marketing в один индекс
+- Подменять harness episodes / research snapshots RAG-ом
+- Apify, scrape, OpenAI Images
 
 ## Phase 8 — Files / Video / Images storage
 
