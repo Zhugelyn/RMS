@@ -59,6 +59,10 @@ services:
       Instagram__MasterKey: ${INSTAGRAM__MASTERKEY:-}
       Instagram__IgUserId: ${INSTAGRAM__IGUSERID:-}
       Instagram__BusinessAccountId: ${INSTAGRAM__BUSINESSACCOUNTID:-}
+      # Phase 6 VK open communities (ADR-013). Empty → stub skip; compose stays green.
+      Vk__ServiceToken: ${VK__SERVICETOKEN:-}
+      Vk__EncryptedServiceToken: ${VK__ENCRYPTEDSERVICETOKEN:-}
+      Vk__MasterKey: ${VK__MASTERKEY:-}
       # ADR-011 GenerateImage volume (Cursor local marketing-pack). Empty Cursor key → skip images.
       Research__ImageVolumePath: ${RESEARCH__IMAGEVOLUMEPATH:-/data/marketing-images}
       Research__ImageCap: "14"

@@ -301,10 +301,12 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
 
         // Never persist token-looking fragments into lastError.
         if (message.Contains("access_token", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("service_token", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase) ||
-            message.Contains("EAA", StringComparison.Ordinal))
+            message.Contains("EAA", StringComparison.Ordinal) ||
+            message.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase))
         {
-            return "Instagram research fetch failed.";
+            return "Research fetch failed.";
         }
 
         return message;

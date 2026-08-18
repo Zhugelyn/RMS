@@ -15,6 +15,7 @@ public sealed class Phase4HardeningTests
         Assert.Equal(14, ResearchArtifactLimits.PlanDays);
         Assert.Equal(14, ResearchImageLimits.MaxImages);
         Assert.Equal(50, InstagramFetchLimits.MaxMediaFetch);
+        Assert.Equal(50, VkFetchLimits.MaxWallFetch);
         Assert.True(ResearchArtifactLimits.MaxPayloadBytes >= 64 * 1024);
         Assert.Equal(50, ResearchArtifactLimits.MaxPostsPerSnapshot);
     }

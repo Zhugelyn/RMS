@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 = VK Public Research (next=`phase6-vk-docs`). RAG = Phase 7.
+Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 = VK Public Research (next=`phase6-vk-artifacts`). RAG = Phase 7.
 
 ## Service: telegram-gateway
 
@@ -74,10 +74,10 @@
 ## Phase 6 — VK Public Research (open)
 
 - Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token (ADR-013)
-- Docs ✅ (`phase6-vk-docs`): ADR-013 + README/catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`)
-- Next slice: `phase6-vk-client` (`IVkWallClient` / resolveScreenName + wall.get; no service code yet)
+- Docs ✅ (`phase6-vk-docs`); Client ✅ (`phase6-vk-client`): `IVkWallClient` / `HttpVkWallClient` / `EncryptedVkTokenStore` / `VkCdnUrlGuard`
+- Next slice: `phase6-vk-artifacts` (snapshot `source=vk` + inject; no settings/media yet)
 - Owner: assistant-api adapter (alongside Instagram Graph); do not add separate `vk-research-api`
-- Secrets: `VK__SERVICETOKEN` env/secret store only; not from chat/Mini App
+- Secrets: `VK__SERVICETOKEN` env/secret store + AES-GCM; not from chat/Mini App
 
 ## Reserved (do not implement in Phase 6)
 

@@ -384,6 +384,8 @@ public sealed class ResearchApiService : IResearchApiService
 
     private static bool LooksLikeSecretFragment(string text) =>
         text.Contains("access_token", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("service_token", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("EAA", StringComparison.Ordinal) ||
         text.Contains("sk-", StringComparison.OrdinalIgnoreCase);

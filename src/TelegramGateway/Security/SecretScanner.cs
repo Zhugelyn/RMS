@@ -18,9 +18,13 @@ public static partial class SecretScanner
             text.Contains("INSTAGRAM__ACCESSTOKEN", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("INSTAGRAM_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("IG_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("VK_SERVICE_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("VK_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("api_key=", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("apikey=", StringComparison.OrdinalIgnoreCase) ||
-            text.Contains("access_token=", StringComparison.OrdinalIgnoreCase))
+            text.Contains("access_token=", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("service_token=", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
