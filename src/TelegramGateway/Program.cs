@@ -142,10 +142,12 @@ app.MapPut("/api/miniapp/research/settings", async (
 
     if (SecretScanner.ContainsForbiddenSecret(request.InstagramHandle) ||
         SecretScanner.ContainsForbiddenSecret(request.Timezone) ||
-        SecretScanner.ContainsForbiddenSecret(request.NotifyChatId))
+        SecretScanner.ContainsForbiddenSecret(request.NotifyChatId) ||
+        (request.VkCommunities is not null &&
+         request.VkCommunities.Any(c => SecretScanner.ContainsForbiddenSecret(c.ScreenName))))
     {
         return Results.Problem(
-            "IG token / secrets must not be sent from Mini App.",
+            "IG/VK token / secrets must not be sent from Mini App.",
             statusCode: StatusCodes.Status400BadRequest,
             title: "Secret rejected");
     }
@@ -157,6 +159,7 @@ app.MapPut("/api/miniapp/research/settings", async (
             UserId = request.UserId!,
             Enabled = request.Enabled,
             InstagramHandle = request.InstagramHandle,
+            VkCommunities = request.VkCommunities,
             CadenceDays = request.CadenceDays ?? 14,
             Timezone = request.Timezone,
             NotifyChatId = request.NotifyChatId
@@ -198,7 +201,8 @@ app.MapPost("/api/miniapp/research/run", async (
         var result = await assistant.RunResearchAsync(new ResearchRunRequest
         {
             UserId = request.UserId!,
-            NotifyChatId = request.NotifyChatId
+            NotifyChatId = request.NotifyChatId,
+            Source = request.Source
         }, cancellationToken);
         return Results.Ok(result);
     }
@@ -515,6 +519,7 @@ public sealed class MiniAppResearchSettingsRequest
     public string? UserId { get; set; }
     public bool? Enabled { get; set; }
     public string? InstagramHandle { get; set; }
+    public List<VkCommunityTargetDto>? VkCommunities { get; set; }
     public int? CadenceDays { get; set; }
     public string? Timezone { get; set; }
     public string? NotifyChatId { get; set; }
@@ -526,6 +531,8 @@ public sealed class MiniAppResearchRunRequest
 {
     public string? UserId { get; set; }
     public string? NotifyChatId { get; set; }
+    /// <summary>Additive: null/instagram → IG; vk → VK allowlist.</summary>
+    public string? Source { get; set; }
     /// <summary>Optional fallback when header X-Telegram-Init-Data is absent.</summary>
     public string? InitData { get; set; }
 }

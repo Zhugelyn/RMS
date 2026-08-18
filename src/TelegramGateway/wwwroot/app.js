@@ -44,6 +44,7 @@
   const researchForm = document.getElementById("research-form");
   const researchEnabled = document.getElementById("research-enabled");
   const researchHandle = document.getElementById("research-handle");
+  const researchVk = document.getElementById("research-vk");
   const researchTz = document.getElementById("research-tz");
   const researchCadence = document.getElementById("research-cadence");
   const researchLast = document.getElementById("research-last");
@@ -51,6 +52,7 @@
   const researchErrorLine = document.getElementById("research-error-line");
   const researchStatus = document.getElementById("research-status");
   const researchRunBtn = document.getElementById("research-run");
+  const researchVkRunBtn = document.getElementById("research-vk-run");
   const studioHandle = document.getElementById("studio-handle");
   const studioEnabled = document.getElementById("studio-enabled");
   const analyticsGrid = document.getElementById("analytics-grid");
@@ -89,15 +91,58 @@
     }
   }
 
+  function formatVkCommunities(list) {
+    if (!Array.isArray(list) || list.length === 0) return "";
+    return list.map((c) => {
+      if (c.screenName) return c.screenName;
+      if (c.ownerId != null) return String(c.ownerId);
+      return "";
+    }).filter(Boolean).join("\n");
+  }
+
+  function parseVkCommunities(text) {
+    if (!text || !text.trim()) return [];
+    const out = [];
+    const seen = new Set();
+    for (const part of text.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean)) {
+      let t = part.replace(/^@/, "");
+      t = t.replace(/^https?:\/\/(m\.)?vk\.com\//i, "").replace(/\/$/, "");
+      if (/access_token|service_token|VK__|IGQVJ|EAA|sk-/i.test(t)) {
+        throw new Error("Не вставляй VK/IG token — только screen_name / owner_id.");
+      }
+      let item = null;
+      const club = /^(?:club|public|event)(\d+)$/i.exec(t);
+      if (club) {
+        item = { ownerId: -Number(club[1]) };
+      } else if (/^-?\d+$/.test(t) && Number(t) !== 0) {
+        item = { ownerId: Number(t) };
+      } else if (/^[A-Za-z0-9._]{2,64}$/.test(t)) {
+        item = { screenName: t };
+      } else {
+        throw new Error(`Не распознал VK цель: ${part}`);
+      }
+      const key = item.screenName ? `n:${item.screenName.toLowerCase()}` : `o:${item.ownerId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+      if (out.length >= 10) break;
+    }
+    return out;
+  }
+
   function paintSettings(s) {
     researchEnabled.checked = !!s.enabled;
     researchHandle.value = s.instagramHandle ? `@${s.instagramHandle}` : "";
+    researchVk.value = formatVkCommunities(s.vkCommunities);
     researchTz.value = s.timezone || "";
     researchCadence.value = String(s.cadenceDays || 14);
     researchLast.textContent = fmt(s.lastRunAt);
     researchNext.textContent = fmt(s.nextRunAt);
     researchErrorLine.textContent = "last error: " + (s.lastError || "—");
-    studioHandle.textContent = s.instagramHandle ? `@${s.instagramHandle}` : "@—";
+    const vkN = Array.isArray(s.vkCommunities) ? s.vkCommunities.length : 0;
+    studioHandle.textContent = s.instagramHandle
+      ? `@${s.instagramHandle}` + (vkN ? ` · vk:${vkN}` : "")
+      : (vkN ? `vk:${vkN}` : "@—");
     studioEnabled.textContent = s.enabled ? "on" : "off";
     studioEnabled.dataset.on = s.enabled ? "1" : "0";
   }
@@ -355,8 +400,16 @@
     }
 
     const handle = researchHandle.value.trim();
-    if (/access_token|IGQVJ|EAA|sk-/i.test(handle)) {
-      researchStatus.textContent = "Не вставляй IG token — только @handle.";
+    if (/access_token|IGQVJ|EAA|sk-|VK__/i.test(handle)) {
+      researchStatus.textContent = "Не вставляй IG/VK token — только @handle.";
+      return;
+    }
+
+    let vkCommunities;
+    try {
+      vkCommunities = parseVkCommunities(researchVk.value);
+    } catch (error) {
+      researchStatus.textContent = error.message || "Ошибка VK allowlist";
       return;
     }
 
@@ -370,6 +423,7 @@
           userId,
           enabled: researchEnabled.checked,
           instagramHandle: handle,
+          vkCommunities,
           cadenceDays: Number(researchCadence.value) || 14,
           timezone: researchTz.value.trim() || null,
           notifyChatId: resolveNotifyChatId()
@@ -389,7 +443,7 @@
     }
   });
 
-  researchRunBtn.addEventListener("click", async () => {
+  async function runResearch(source) {
     const userId = resolveUserId();
     if (!userId) {
       researchStatus.textContent = "Нужен Telegram userId (не аноним).";
@@ -400,16 +454,19 @@
       return;
     }
 
-    researchStatus.textContent = "Запускаю research…";
+    researchStatus.textContent = source === "vk" ? "Запускаю VK research…" : "Запускаю IG research…";
     researchRunBtn.disabled = true;
+    if (researchVkRunBtn) researchVkRunBtn.disabled = true;
     try {
+      const body = {
+        userId,
+        notifyChatId: resolveNotifyChatId()
+      };
+      if (source) body.source = source;
       const response = await fetch("/api/miniapp/research/run", {
         method: "POST",
         headers: initDataHeaders(),
-        body: JSON.stringify({
-          userId,
-          notifyChatId: resolveNotifyChatId()
-        })
+        body: JSON.stringify(body)
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -423,6 +480,10 @@
       researchStatus.textContent = error.message || "Ошибка run";
     } finally {
       researchRunBtn.disabled = false;
+      if (researchVkRunBtn) researchVkRunBtn.disabled = false;
     }
-  });
+  }
+
+  researchRunBtn.addEventListener("click", () => runResearch(null));
+  researchVkRunBtn?.addEventListener("click", () => runResearch("vk"));
 })();

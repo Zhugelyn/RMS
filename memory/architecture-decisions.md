@@ -167,4 +167,5 @@ ADR-журнал для решений, которые должны пережи
 - Docs 2026-08-18 (`phase6-vk-docs`): ADR + README/catalog/contracts/security/.env.example. No service code in this slice.
 - Client 2026-08-18 (`phase6-vk-client`): `IVkWallClient` / `HttpVkWallClient` / stub+fallback; `EncryptedVkTokenStore`; `VkCdnUrlGuard` (`*.userapi.com`); compose `Vk__ServiceToken`; no artifacts/settings/media persist.
 - Artifacts 2026-08-18 (`phase6-vk-artifacts`): `IVkResearchCapture` + `FromVkFetch` → snapshot `source=vk` + plan + marketing episode; inject; cap ≤50; soft-fail; no CDN URLs in payload; no settings/media.
+- Settings 2026-08-18 (`phase6-vk-settings`): allowlist `vkCommunities` (screen_name/owner_id) in research_settings; Mini App + `/research vk`; `source=vk` run → CaptureAllowlist; token not from UI/chat.
 - Links: `memory/phase-plan.md` Phase 6, `memory/security-baseline.md`, ADR-009, ADR-010

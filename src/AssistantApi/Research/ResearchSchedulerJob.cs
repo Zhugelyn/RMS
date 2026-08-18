@@ -255,6 +255,7 @@ public sealed class ResearchSchedulerJob : IResearchSchedulerJob
         {
             UserId = settings.UserId,
             InstagramHandle = settings.InstagramHandle,
+            VkCommunities = settings.VkCommunities,
             Enabled = settings.Enabled,
             CadenceDays = settings.CadenceDays,
             Timezone = settings.Timezone,

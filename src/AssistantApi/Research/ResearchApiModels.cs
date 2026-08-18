@@ -1,11 +1,13 @@
 namespace AssistantApi.Research;
 
-/// <summary>Public research settings DTO — never includes IG token.</summary>
+/// <summary>Public research settings DTO — never includes IG/VK tokens.</summary>
 public sealed class ResearchSettingsDto
 {
     public string UserId { get; init; } = string.Empty;
     public bool Enabled { get; init; }
     public string? InstagramHandle { get; init; }
+    /// <summary>Open VK communities allowlist (screen_name / owner_id). Additive Phase 6.</summary>
+    public IReadOnlyList<VkCommunityTargetDto> VkCommunities { get; init; } = Array.Empty<VkCommunityTargetDto>();
     public int CadenceDays { get; init; } = ResearchSettingsDefaults.DefaultCadenceDays;
     public string? Timezone { get; init; }
     public string? NotifyChatId { get; init; }
@@ -14,11 +16,22 @@ public sealed class ResearchSettingsDto
     public string? LastError { get; init; }
 }
 
+public sealed class VkCommunityTargetDto
+{
+    public string? ScreenName { get; init; }
+    public long? OwnerId { get; init; }
+}
+
 public sealed class ResearchSettingsUpdateRequest
 {
     public string UserId { get; init; } = string.Empty;
     public bool? Enabled { get; init; }
     public string? InstagramHandle { get; init; }
+    /// <summary>
+    /// When null — keep existing allowlist. When set (incl. empty) — replace.
+    /// Never send VK service token here.
+    /// </summary>
+    public IReadOnlyList<VkCommunityTargetDto>? VkCommunities { get; init; }
     public int? CadenceDays { get; init; }
     public string? Timezone { get; init; }
     public string? NotifyChatId { get; init; }
@@ -29,6 +42,10 @@ public sealed class ResearchRunRequest
     public string UserId { get; init; } = string.Empty;
     /// <summary>Optional override; bot sets from Telegram chat id.</summary>
     public string? NotifyChatId { get; init; }
+    /// <summary>
+    /// Additive: null/instagram → IG Graph path; <c>vk</c> → VK allowlist capture.
+    /// </summary>
+    public string? Source { get; init; }
 }
 
 public sealed class ResearchRunResponse

@@ -186,7 +186,7 @@ Non-goals Phase 5 UI:
 
 ## Phase 6 — Marketing VK Public Research
 
-Status: **open** — `phase6-vk-docs` ✅; `phase6-vk-client` ✅; `phase6-vk-artifacts` ✅; next=`phase6-vk-settings`.
+Status: **open** — `phase6-vk-docs` ✅; `phase6-vk-client` ✅; `phase6-vk-artifacts` ✅; `phase6-vk-settings` ✅; next=`phase6-vk-media`.
 
 Суть: маркетинговый research по **открытым пабликам VK** (посты: текст + картинки вложений). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ приложения (`VK__SERVICETOKEN`). HTML-скрейп, Apify, неофициальный mobile API — запрещены.
 
@@ -208,14 +208,15 @@ Acceptance (фаза целиком; закрывать по slices):
 - [x] Token не из чата; encrypt-at-rest / env. (`EncryptedVkTokenStore` + SecretScanner)
 - [x] Snapshot+plan+episodes ≠ RAG; `source=vk` additive. (`phase6-vk-artifacts`)
 - [x] ADR-013 + catalog/contracts/security/README/.env.example (docs slice).
-- [x] `dotnet test` + compose зелёные (artifacts slice; settings/media later).
+- [x] Settings allowlist screen_name/owner_id; Mini App + `/research vk` аддитивно; token не из UI. (`phase6-vk-settings`)
+- [x] `dotnet test` + compose зелёные (artifacts/settings slices; media later).
 
 Slices (один run = один):
 
 1. [x] `phase6-vk-docs` — ADR-013 + README Phase 6 + catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`). Без кода сервисов.
 2. [x] `phase6-vk-client` — `IVkWallClient` / `HttpVkWallClient`; service token store; `resolveScreenName` + `wall.get`; stub без токена; SSRF allowlist CDN.
 3. [x] `phase6-vk-artifacts` — map VK items → snapshot (`source=vk`); inject marketing; cap ≤50; soft-fail.
-4. [ ] `phase6-vk-settings` — settings: allowlist пабликов (screen_name / owner_id); Mini App + `/research` аддитивно; не принимать token из UI.
+4. [x] `phase6-vk-settings` — settings: allowlist пабликов (screen_name / owner_id); Mini App + `/research` аддитивно; не принимать token из UI.
 5. [ ] `phase6-vk-media` — download photo sizes в volume; media proxy; URL CDN не хранить как долгоживущие.
 6. [ ] `phase6-vk-hardening` — caps, tests, token rotation notes, non-goals guard (no scrape/Apify/user-OAuth/RAG/MinIO/Direct).
 

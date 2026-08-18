@@ -422,13 +422,20 @@ textarea {
 }
 
 .research-form input[type="text"],
-.research-form input[type="number"] {
+.research-form input[type="number"],
+.research-form textarea {
   width: 100%;
   border: 1px solid rgba(15, 61, 43, 0.2);
   border-radius: 12px;
   padding: 12px 14px;
   font: inherit;
   background: rgba(255, 255, 255, 0.7);
+}
+
+.studio-hint {
+  margin: -2px 0 0;
+  font-size: 0.85rem;
+  color: var(--tg-hint, var(--muted));
 }
 
 .research-form .check {

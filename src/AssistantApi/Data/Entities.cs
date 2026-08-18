@@ -24,11 +24,13 @@ public sealed class HarnessEpisodeEntity
     public string? TraceId { get; set; }
 }
 
-/// <summary>Instagram research schedule settings (Phase 4). No IG token here.</summary>
+/// <summary>Instagram + VK research schedule settings (Phase 4/6). No IG/VK tokens here.</summary>
 public sealed class ResearchSettingsEntity
 {
     public string UserId { get; set; } = string.Empty;
     public string? InstagramHandle { get; set; }
+    /// <summary>JSON allowlist of open VK communities (screen_name / owner_id). Never tokens.</summary>
+    public string? VkCommunitiesJson { get; set; }
     public bool Enabled { get; set; }
     public int CadenceDays { get; set; } = 14;
     public string? Timezone { get; set; }

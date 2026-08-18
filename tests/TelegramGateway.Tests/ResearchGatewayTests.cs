@@ -180,6 +180,109 @@ public sealed class ResearchGatewayTests
     }
 
     [Fact]
+    public async Task MiniApp_research_rejects_vk_token_in_communities()
+    {
+        var assistant = new FakeResearchAssistant();
+        await using var factory = CreateFactory(assistant);
+        var client = factory.CreateClient();
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 1);
+
+        using var req = new HttpRequestMessage(HttpMethod.Put, "/api/miniapp/research/settings");
+        req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+        req.Content = JsonContent.Create(new
+        {
+            userId = "tg-1",
+            vkCommunities = new[] { new { screenName = "VK__SERVICETOKEN" } }
+        });
+        var put = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.BadRequest, put.StatusCode);
+        Assert.Null(assistant.LastPut);
+    }
+
+    [Fact]
+    public async Task MiniApp_research_settings_accepts_vk_communities()
+    {
+        var assistant = new FakeResearchAssistant();
+        await using var factory = CreateFactory(assistant);
+        var client = factory.CreateClient();
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 42);
+
+        using var req = new HttpRequestMessage(HttpMethod.Put, "/api/miniapp/research/settings");
+        req.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+        req.Content = JsonContent.Create(new
+        {
+            userId = "tg-42",
+            enabled = true,
+            instagramHandle = "@babor",
+            vkCommunities = new object[]
+            {
+                new { screenName = "babor_bryansk" },
+                new { ownerId = -123L }
+            },
+            cadenceDays = 14
+        });
+        var put = await client.SendAsync(req);
+        Assert.Equal(HttpStatusCode.OK, put.StatusCode);
+        Assert.NotNull(assistant.LastPut);
+        Assert.Equal(2, assistant.LastPut!.VkCommunities!.Count);
+        Assert.Equal("babor_bryansk", assistant.LastPut.VkCommunities[0].ScreenName);
+        Assert.Equal(-123L, assistant.LastPut.VkCommunities[1].OwnerId);
+    }
+
+    [Fact]
+    public async Task Bot_research_vk_add_and_now()
+    {
+        var telegram = new CapturingTelegram();
+        var assistant = new FakeResearchAssistant();
+        var sut = new UpdateProcessingService(
+            assistant,
+            telegram,
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.TelegramOptions
+            {
+                BotToken = "000000000:TESTTOKEN_FOR_UNIT_TESTS",
+                WebAppUrl = "https://example.com/app"
+            }),
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.ResearchImageOptions()),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateProcessingService>.Instance);
+
+        await sut.ProcessAsync(new TelegramUpdate
+        {
+            UpdateId = 9001,
+            Message = new TelegramMessage
+            {
+                MessageId = 1,
+                Text = "/research vk add babor_bryansk",
+                Chat = new TelegramChat { Id = 7 },
+                From = new TelegramUser { Id = 7 }
+            }
+        }, CancellationToken.None);
+
+        Assert.NotNull(assistant.LastPut);
+        Assert.Single(assistant.LastPut!.VkCommunities!);
+        Assert.Equal("babor_bryansk", assistant.LastPut.VkCommunities[0].ScreenName);
+        Assert.Contains(telegram.Sent, s => s.Text.Contains("allowlist", StringComparison.OrdinalIgnoreCase)
+                                            || s.Text.Contains("babor_bryansk", StringComparison.OrdinalIgnoreCase));
+
+        telegram.Sent.Clear();
+        await sut.ProcessAsync(new TelegramUpdate
+        {
+            UpdateId = 9002,
+            Message = new TelegramMessage
+            {
+                MessageId = 2,
+                Text = "/research vk now",
+                Chat = new TelegramChat { Id = 7 },
+                From = new TelegramUser { Id = 7 }
+            }
+        }, CancellationToken.None);
+
+        Assert.NotNull(assistant.LastRun);
+        Assert.Equal("vk", assistant.LastRun!.Source);
+    }
+
+    [Fact]
     public async Task Internal_notify_requires_service_key_and_sends_telegram()
     {
         var telegram = new CapturingTelegram();
@@ -245,8 +348,11 @@ public sealed class ResearchGatewayTests
         Assert.Contains("plan-gallery", html);
         Assert.Contains("analytics-grid", html);
         Assert.Contains("Research Studio", html);
+        Assert.Contains("research-vk", html);
+        Assert.Contains("VK паблики", html);
         Assert.DoesNotContain("id=\"research-plan\"", html);
         Assert.DoesNotContain("INSTAGRAM__ACCESSTOKEN", html);
+        Assert.DoesNotContain("VK__SERVICETOKEN", html);
         Assert.DoesNotContain("access_token", html);
     }
 
@@ -429,6 +535,7 @@ public sealed class ResearchGatewayTests
         public ResearchRunRequest? LastRun { get; private set; }
         public int LatestCalls { get; private set; }
         public ResearchLatestResponse? LatestOverride { get; set; }
+        private readonly Dictionary<string, ResearchSettingsDto> _settings = new(StringComparer.Ordinal);
 
         public Task<AssistantChatResponse> ChatAsync(AssistantChatRequest request, CancellationToken cancellationToken) =>
             Task.FromResult(new AssistantChatResponse
@@ -440,23 +547,36 @@ public sealed class ResearchGatewayTests
                 Provider = "stub"
             });
 
-        public Task<ResearchSettingsDto> GetResearchSettingsAsync(string userId, CancellationToken cancellationToken) =>
-            Task.FromResult(new ResearchSettingsDto { UserId = userId, CadenceDays = 14 });
+        public Task<ResearchSettingsDto> GetResearchSettingsAsync(string userId, CancellationToken cancellationToken)
+        {
+            if (_settings.TryGetValue(userId, out var existing))
+            {
+                return Task.FromResult(existing);
+            }
+
+            return Task.FromResult(new ResearchSettingsDto { UserId = userId, CadenceDays = 14 });
+        }
 
         public Task<ResearchSettingsDto> PutResearchSettingsAsync(
             ResearchSettingsUpdateRequest request,
             CancellationToken cancellationToken)
         {
             LastPut = request;
-            return Task.FromResult(new ResearchSettingsDto
+            _settings.TryGetValue(request.UserId, out var prev);
+            var dto = new ResearchSettingsDto
             {
                 UserId = request.UserId,
-                Enabled = request.Enabled ?? false,
-                InstagramHandle = request.InstagramHandle?.TrimStart('@'),
-                CadenceDays = request.CadenceDays ?? 14,
-                Timezone = request.Timezone,
-                NotifyChatId = request.NotifyChatId
-            });
+                Enabled = request.Enabled ?? prev?.Enabled ?? false,
+                InstagramHandle = request.InstagramHandle is null
+                    ? prev?.InstagramHandle
+                    : request.InstagramHandle.TrimStart('@'),
+                VkCommunities = request.VkCommunities ?? prev?.VkCommunities ?? [],
+                CadenceDays = request.CadenceDays ?? prev?.CadenceDays ?? 14,
+                Timezone = request.Timezone ?? prev?.Timezone,
+                NotifyChatId = request.NotifyChatId ?? prev?.NotifyChatId
+            };
+            _settings[request.UserId] = dto;
+            return Task.FromResult(dto);
         }
 
         public Task<ResearchRunResponse> RunResearchAsync(ResearchRunRequest request, CancellationToken cancellationToken)
