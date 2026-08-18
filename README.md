@@ -20,7 +20,7 @@
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
-| **6 VK Public Research** | **open** (docs/client/artifacts/settings ✅; next=`phase6-vk-media`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
+| **6 VK Public Research** | **open** (docs/client/artifacts/settings/media ✅; next=`phase6-vk-hardening`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
@@ -65,7 +65,7 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 | Auth | `VK__SERVICETOKEN` только env/secret store + AES-GCM (`EncryptedVkTokenStore`). Не из чата / Mini App. |
 | Scope | Allowlist `screen_name` / `owner_id` в settings ✅; closed/Donut → soft skip |
 | Артефакты | Те же snapshot+plan+episodes в Postgres; additive `source=vk` ✅; **не RAG** |
-| Картинки | CDN SSRF allowlist `*.userapi.com` ✅; download→volume = `phase6-vk-media` |
+| Картинки | CDN SSRF allowlist `*.userapi.com` ✅; download→volume + media proxy ✅ (`phase6-vk-media`) |
 | UI | Mini App VK allowlist + `/research vk add\|remove\|list\|now` ✅ (IG path intact) |
 
 ### Non-goals Phase 6
@@ -75,7 +75,7 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 - Apify / HTML / user VK ID OAuth / комментарии авторов / закрытые группы
 - Отдельный `vk-research-api`
 
-Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → `phase6-vk-settings` ✅ → next `phase6-vk-media`.
+Slices: `phase6-vk-docs` ✅ → `phase6-vk-client` ✅ → `phase6-vk-artifacts` ✅ → `phase6-vk-settings` ✅ → `phase6-vk-media` ✅ → next `phase6-vk-hardening`.
 ## Требования
 
 - Docker + Docker Compose v2
@@ -328,7 +328,7 @@ memory/                    # phase-plan, contracts, ADR
 - Health без auth; `/v1/chat` только с service key
 - Mini App research mutations: Telegram `initData` HMAC (`X-Telegram-Init-Data`); не полагаться только на `tg-*` prefix
 - Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens; retention last K snapshots/plans
-- Phase 6: `VK__SERVICETOKEN` env/secret store + AES-GCM (`EncryptedVkTokenStore`); CDN SSRF allowlist `*.userapi.com` (download = media slice)
+- Phase 6: `VK__SERVICETOKEN` env/secret store + AES-GCM (`EncryptedVkTokenStore`); CDN SSRF allowlist `*.userapi.com` + download to research volume (`VkPhotoStore`); media proxy via gateway
 
 ### Token rotation (не логировать значения)
 
