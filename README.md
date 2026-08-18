@@ -290,7 +290,7 @@ dotnet run --urls http://127.0.0.1:5081
 1. Создай бота у BotFather → токен в `.env`.
 2. `TELEGRAM__USEPOLLING=true` — для local/dev (default).
 3. Напиши боту `/start`, `/salon`, `/marketing`, `/tasks` или обычный текст.
-4. `/research` — status; `on` | `off` | `account @handle` | `now` | `plan` (≤3 photos + студия). IG token в чат не принимать.
+4. `/research` — status; `on` | `off` | `account @handle` | `vk add|remove|list|now` | `now` | `plan` (≤3 photos + студия). IG/VK token в чат не принимать.
 5. `TELEGRAM__WEBAPPURL=https://…` — MenuButton «Студия» + inline «Открыть студию».
 5. Для webhook (позже/prod): выставь публичный URL на `POST /telegram/webhook`, `TELEGRAM__USEPOLLING=false`, опционально `TELEGRAM__WEBHOOKSECRETTOKEN`.
 
