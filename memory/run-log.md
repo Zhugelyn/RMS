@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18d
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-docs`
+- Slice: phase6-vk-docs
+- Status: passed
+- Checks: ADR-013 accepted; README Phase 6 table + non-goals; catalog/contracts/security/.env.example `VK__SERVICETOKEN=`; no service code; `dotnet test` 105/105 (75 api + 30 gateway); next=`phase6-vk-client`
+- Memory updated: architecture-decisions ADR-013, phase-plan checkbox, current-project, catalog, contracts, security-baseline, README, .env.example, run-log
+- Next slice: phase6-vk-client
+- Blocker: none
+
 ## Run 2026-08-18c
 
 - Trigger: chat — add Phase 6 VK plan + webhook kick `phase6-vk-docs`

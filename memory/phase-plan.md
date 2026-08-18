@@ -186,7 +186,7 @@ Non-goals Phase 5 UI:
 
 ## Phase 6 — Marketing VK Public Research
 
-Status: **open** — next=`phase6-vk-docs`.
+Status: **open** — `phase6-vk-docs` ✅; next=`phase6-vk-client`.
 
 Суть: маркетинговый research по **открытым пабликам VK** (посты: текст + картинки вложений). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ приложения (`VK__SERVICETOKEN`). HTML-скрейп, Apify, неофициальный mobile API — запрещены.
 
@@ -207,11 +207,12 @@ Acceptance (фаза целиком; закрывать по slices):
 - [ ] Посты: `text` + photo attachments; closed/Donut → soft skip.
 - [ ] Token не из чата; encrypt-at-rest / env.
 - [ ] Snapshot+plan+episodes ≠ RAG; `source=vk` additive.
-- [ ] `dotnet test` + compose зелёные; ADR-013; catalog/contracts/security/run-log.
+- [x] ADR-013 + catalog/contracts/security/README/.env.example (docs slice).
+- [ ] `dotnet test` + compose зелёные (runtime client+); docs-only green now.
 
 Slices (один run = один):
 
-1. [ ] `phase6-vk-docs` — ADR-013 + README Phase 6 + catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`). Без кода сервисов.
+1. [x] `phase6-vk-docs` — ADR-013 + README Phase 6 + catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`). Без кода сервисов.
 2. [ ] `phase6-vk-client` — `IVkWallClient` / `HttpVkWallClient`; service token store; `resolveScreenName` + `wall.get`; stub без токена; SSRF allowlist CDN.
 3. [ ] `phase6-vk-artifacts` — map VK items → snapshot (`source=vk`); inject marketing; cap ≤50; soft-fail.
 4. [ ] `phase6-vk-settings` — settings: allowlist пабликов (screen_name / owner_id); Mini App + `/research` аддитивно; не принимать token из UI.

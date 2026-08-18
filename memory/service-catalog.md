@@ -73,9 +73,11 @@
 
 ## Phase 6 — VK Public Research (open)
 
-- Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token
-- Next slice: `phase6-vk-docs` (ADR-013, no service code)
-- Do not add separate `vk-research-api`
+- Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token (ADR-013)
+- Docs ✅ (`phase6-vk-docs`): ADR-013 + README/catalog/contracts/security/.env.example (`VK__SERVICETOKEN=`)
+- Next slice: `phase6-vk-client` (`IVkWallClient` / resolveScreenName + wall.get; no service code yet)
+- Owner: assistant-api adapter (alongside Instagram Graph); do not add separate `vk-research-api`
+- Secrets: `VK__SERVICETOKEN` env/secret store only; not from chat/Mini App
 
 ## Reserved (do not implement in Phase 6)
 

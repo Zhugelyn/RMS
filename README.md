@@ -20,7 +20,7 @@
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
 | **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
-| **6 VK Public Research** | **open** (next=`phase6-vk-docs`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
+| **6 VK Public Research** | **open** (docs ✅; next=`phase6-vk-client`) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |
 | 9 External tools | later | Яндекс Директ и др. |
@@ -57,8 +57,25 @@ Mini App **Research Studio** + bot `web_app` (ADR-012). Additive `GET /v1/resear
 
 ## Phase 6 — VK Public Research
 
-Открытые паблики через официальный **VK API** (`wall.get`, `VK__SERVICETOKEN`). Текст + картинки вложений. Allowlist screen_name. **Не scrape / Apify.** Первый slice: `phase6-vk-docs` (ADR-013, без кода сервисов). См. `memory/phase-plan.md`.
+Маркетинговый research по **открытым пабликам VK** (текст + photo attachments). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ: `VK__SERVICETOKEN`. HTML-скрейп, Apify, `m.vk.com` — запрещены (ADR-013).
 
+| Тема | Решение |
+| --- | --- |
+| Источник стены | Официальный VK API открытых сообществ. **Не scrape.** |
+| Auth | `VK__SERVICETOKEN` только env/secret store (AES-GCM в client slice). Не из чата / Mini App. |
+| Scope | Allowlist `screen_name` / `owner_id` в settings; closed/Donut → soft skip |
+| Артефакты | Те же snapshot+plan+episodes в Postgres; additive `source=vk`; **не RAG** |
+| Картинки | CDN `*.userapi.com` → volume + media proxy (MinIO → Phase 8) |
+| UI | Mini App settings + `/research` аддитивно (не ломать IG) |
+
+### Non-goals Phase 6
+
+- RAG / embeddings / Elasticsearch (→ Phase 7)
+- MinIO (→ Phase 8), Яндекс Директ (→ Phase 9)
+- Apify / HTML / user VK ID OAuth / комментарии авторов / закрытые группы
+- Отдельный `vk-research-api`
+
+Slices: `phase6-vk-docs` ✅ → next `phase6-vk-client`. См. `memory/phase-plan.md`.
 ## Требования
 
 - Docker + Docker Compose v2
@@ -127,6 +144,7 @@ Mini App UI     ──► gateway /api/miniapp/chat ─────────�
 - Service key — inter-service auth (`X-Service-Key`).
 - Cursor API key из чата/Mini App **не принимается**.
 - Instagram Graph token (Phase 4) — только в assistant-api / secret store, не в Telegram.
+- VK service token (Phase 6) — только в assistant-api / secret store (`VK__SERVICETOKEN`), не в Telegram.
 - Mini App не содержит секретов; ключ на сервере gateway.
 
 ## Ручные проверки API
@@ -306,10 +324,11 @@ memory/                    # phase-plan, contracts, ADR
 
 - Не коммить `.env`
 - Не слать API keys в чат / Mini App
-- Bot token ≠ service key ≠ Instagram token ≠ Cursor API key
+- Bot token ≠ service key ≠ Instagram token ≠ VK service token ≠ Cursor API key
 - Health без auth; `/v1/chat` только с service key
 - Mini App research mutations: Telegram `initData` HMAC (`X-Telegram-Init-Data`); не полагаться только на `tg-*` prefix
 - Phase 4: IG token encrypt-at-rest / env only; research artifacts без raw tokens; retention last K snapshots/plans
+- Phase 6: `VK__SERVICETOKEN` env/secret store only (ADR-013); CDN SSRF allowlist reserved for client slice
 
 ### Token rotation (не логировать значения)
 
@@ -320,7 +339,8 @@ memory/                    # phase-plan, contracts, ADR
 | `ASSISTANT__SERVICEKEY` | gateway ↔ assistant-api (`X-Service-Key` / Bearer-like inter-service) | Новое значение ≥16 в обоих сервисах одновременно → restart. Не логировать header. |
 | `CURSOR__APIKEY` (+ `CURSOR__MASTERKEY`) | assistant-api (+ bridge) | Новый Cursor key → env; master key только для AES-GCM seal. Без ApiKey = stub. Не из чата. |
 | `INSTAGRAM__ACCESSTOKEN` (+ master) | assistant-api | Meta/Graph long-lived refresh → env; encrypt-at-rest на старте. Не из Mini App/chat. |
+| `VK__SERVICETOKEN` (+ master later) | assistant-api | VK app service key → env; encrypt-at-rest в client slice. Не из Mini App/chat. |
 
-Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/Telegram.
+Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 
 Подробности: `memory/security-baseline.md`, `memory/phase-plan.md`.

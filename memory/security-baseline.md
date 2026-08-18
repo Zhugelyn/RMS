@@ -80,12 +80,22 @@
 - Postgres: credentials только env (`POSTGRES__PASSWORD` / `ConnectionStrings__AssistantDb`); migrations без secrets in git; database-per-service owner=assistant-api; ready fails if CS set but DB down; without CS → in-process fallback.
 
 
+## Phase 6 controls (docs ✅; client later)
+
+- `VK__SERVICETOKEN` только env/secret store; не из chat, Mini App, query, webhook body (ADR-013). ✅ docs (`phase6-vk-docs`)
+- Encrypt-at-rest / AES-GCM seal — **reserved for `phase6-vk-client`** (same pattern as IG/Cursor).
+- Official VK API only (`wall.get` / `utils.resolveScreenName`); Apify / HTML / `m.vk.com` forbidden.
+- CDN download SSRF allowlist `*.userapi.com` (+ size limit) — **reserved for client/media slices**; do not fetch arbitrary URLs.
+- Allowlist communities in settings; closed/Donut soft skip; no comments / author profile scrape (PII).
+- Snapshot additive `source=vk`; no raw token in Postgres dumps/logs; cap ≤50 posts.
+- Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
+
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK open (docs first). Graph token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled). VK service token — not from chat (ADR-013 in `phase6-vk-docs`).
+- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK: docs ✅; next=`phase6-vk-client`. Graph/VK token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 
