@@ -1,14 +1,14 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 3 packs functionally closed. Phase 4 = Marketing Instagram Research (`phase4-miniapp-research` ✅ → next `phase4-generate-image`).
+Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 = Research Client UI (`phase5-research-ui` ✅ → next `phase5-ui-hardening`). RAG = Phase 6.
 
 ## Service: telegram-gateway
 
 - Owner: telegram-bot-agent
 - Business capability: Telegram chat + Mini App UI; доставка запросов в assistant-api
 - Code: `src/TelegramGateway`
-- Public API: `POST /telegram/webhook`; `POST /api/miniapp/chat`; Mini App research proxy `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`; internal `POST /internal/notify` (X-Service-Key); static Mini App (`/`); health
-- Bot: `/research` | `on` | `off` | `account @handle` | `now` | `plan` | status
+- Public API: `POST /telegram/webhook`; `POST /api/miniapp/chat`; Mini App research proxy `GET/PUT /api/miniapp/research/settings`, `POST /api/miniapp/research/run`, `GET /api/miniapp/research/latest`, `GET /api/miniapp/research/media` (initData + path guard); internal `POST /internal/notify` (X-Service-Key); static Mini App Research Studio (`/`); health
+- Bot: `/research` | `on` | `off` | `account @handle` | `now` | `plan` | status; InlineKeyboard web_app «Открыть студию» + MenuButtonWebApp when `TELEGRAM__WEBAPPURL`
 - Events produced: нет в Phase 1
 - Events consumed: нет
 - Database: optional mapping telegramUserId -> userId (пока inline `tg-{id}`)
@@ -60,16 +60,23 @@
 - Settings schema: `research_settings` (userId, instagramHandle, enabled, cadenceDays=14, timezone, notifyChatId, nextRunAt, lastRunAt, lastError) ✅
 - Artifacts: `IResearchArtifactStore` (Postgres/in-mem) — normalized snapshot posts/visual notes (cap last K=5) + 14-day plan (cap K=3). Capture: `IInstagramResearchCapture` after Graph fetch. Inject: marketing pack only (`ResearchPackInjector`). Episode domain=`marketing`. Soft-fail persist. **Not RAG.** ✅
 - Images: Cursor GenerateImage via local marketing-pack + Docker volume `research-images` (`Research:ImageVolumePath` / `RESEARCH__IMAGEVOLUMEPATH`) (ADR-011). Bridge `collectImages` → `images[]` cap 14; soft-fail `image-tool-missing`; mediaPath on plan; gateway `sendPhoto`. **Not OpenAI Images.** ✅
-- UI: gateway Mini App research settings + `/research` command ✅; Mini App mutations require initData HMAC ✅ (`phase4-hardening`)
+- UI: gateway Mini App Research Studio + `/research` + web_app (ADR-012) ✅ (`phase5-research-ui`); Mini App mutations require initData HMAC ✅ (`phase4-hardening`)
 - Scheduler: `ResearchSchedulerHostedService` + `ResearchSchedulerJob` — 14d cadence, ListDue, idempotent `research_schedule_runs` (userId+period), lastError on Graph fail / image soft-fail, no-op without token/enabled; notify = `GatewayResearchNotifyHook` → gateway `/internal/notify` (+ optional photos). No Hangfire. ✅
 - Hardening: Graph fetch ≤50; payload size; path traversal; retention caps; token rotation README; non-goals guard tests ✅
 - Do not add separate `instagram-research-api` until independent ownership
 
-## Reserved (do not implement in Phase 4)
+## Phase 5 — Research Client UI
 
-- rag-service / embedding-service / search-elasticsearch (Phase 5)
-- files-minio (Phase 6)
-- yandex-direct-adapter (Phase 7)
+- Capability: Mini App studio + bot web_app over existing research API (ADR-012). Not RAG.
+- latest DTO: analytics + posts[] + items[] (+ planPreview); imageUrl = media proxy
+- next slice: `phase5-ui-hardening`
+
+## Reserved (do not implement in Phase 5 UI)
+
+- rag-service / embedding-service / search-elasticsearch (Phase 6)
+- files-minio (Phase 7)
+- yandex-direct-adapter (Phase 8)
 - apify-adapter / foreign-account scrapers
 - openai-images-adapter
 - per-domain public microservices (`salon-api`, …) — только после независимого ownership
+- отдельный marketing website вне Telegram

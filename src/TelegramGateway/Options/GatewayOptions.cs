@@ -22,6 +22,12 @@ public sealed class TelegramOptions
     /// </summary>
     [Range(60, 604_800)]
     public int InitDataMaxAgeSeconds { get; set; } = Security.TelegramInitDataValidator.DefaultMaxAgeSeconds;
+
+    /// <summary>
+    /// HTTPS URL of the Mini App (research studio). When set: MenuButtonWebApp + inline web_app keyboard.
+    /// Env: TELEGRAM__WEBAPPURL. Skip menu button when empty.
+    /// </summary>
+    public string? WebAppUrl { get; set; }
 }
 
 public sealed class AssistantClientOptions

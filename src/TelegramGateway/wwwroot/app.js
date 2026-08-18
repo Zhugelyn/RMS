@@ -3,6 +3,19 @@
   tg?.ready();
   tg?.expand();
 
+  // Theme: Telegram themeParams + leaf palette fallbacks.
+  const tp = tg?.themeParams || {};
+  const root = document.documentElement;
+  if (tp.bg_color) root.style.setProperty("--tg-bg", tp.bg_color);
+  if (tp.text_color) root.style.setProperty("--tg-text", tp.text_color);
+  if (tp.hint_color) root.style.setProperty("--tg-hint", tp.hint_color);
+  if (tp.button_color) root.style.setProperty("--tg-button", tp.button_color);
+  if (tp.secondary_bg_color) root.style.setProperty("--tg-secondary", tp.secondary_bg_color);
+  try {
+    tg?.setHeaderColor?.(tp.bg_color || "#0f3d2b");
+    tg?.setBackgroundColor?.(tp.secondary_bg_color || tp.bg_color || "#f3f7f2");
+  } catch (_) { /* older clients */ }
+
   const copy = {
     salon: {
       title: "Салон",
@@ -10,7 +23,7 @@
     },
     marketing: {
       title: "Маркетинг",
-      text: "Рынок и тренды — intent=marketing. Ниже — Instagram Research своего аккаунта."
+      text: "Спроси ассистента (intent=marketing). Студия research — ниже."
     },
     tasks: {
       title: "Задачи",
@@ -35,13 +48,19 @@
   const researchCadence = document.getElementById("research-cadence");
   const researchLast = document.getElementById("research-last");
   const researchNext = document.getElementById("research-next");
-  const researchError = document.getElementById("research-error");
-  const researchPlan = document.getElementById("research-plan");
+  const researchErrorLine = document.getElementById("research-error-line");
   const researchStatus = document.getElementById("research-status");
   const researchRunBtn = document.getElementById("research-run");
+  const studioHandle = document.getElementById("studio-handle");
+  const studioEnabled = document.getElementById("studio-enabled");
+  const analyticsGrid = document.getElementById("analytics-grid");
+  const analyticsEmpty = document.getElementById("analytics-empty");
+  const planGallery = document.getElementById("plan-gallery");
+  const galleryEmpty = document.getElementById("gallery-empty");
 
   let activeIntent = null;
   let conversationId = `mini-${crypto.randomUUID()}`;
+  const blobUrls = [];
 
   function initDataHeaders() {
     const headers = { "Content-Type": "application/json" };
@@ -57,7 +76,6 @@
   }
 
   function resolveNotifyChatId() {
-    // Prefer private chat id = user id when opened from Telegram.
     const id = tg?.initDataUnsafe?.user?.id;
     return id ? String(id) : null;
   }
@@ -78,8 +96,141 @@
     researchCadence.value = String(s.cadenceDays || 14);
     researchLast.textContent = fmt(s.lastRunAt);
     researchNext.textContent = fmt(s.nextRunAt);
-    researchError.textContent = s.lastError || "—";
+    researchErrorLine.textContent = "last error: " + (s.lastError || "—");
+    studioHandle.textContent = s.instagramHandle ? `@${s.instagramHandle}` : "@—";
+    studioEnabled.textContent = s.enabled ? "on" : "off";
+    studioEnabled.dataset.on = s.enabled ? "1" : "0";
   }
+
+  function paintAnalytics(analytics) {
+    analyticsGrid.innerHTML = "";
+    const noInsights = !analytics || (
+      analytics.impressions == null &&
+      analytics.reach == null &&
+      analytics.engagement == null &&
+      analytics.saved == null
+    );
+    if (noInsights) {
+      analyticsEmpty.hidden = false;
+      return;
+    }
+    analyticsEmpty.hidden = true;
+    const cards = [
+      ["impressions", analytics.impressions],
+      ["reach", analytics.reach],
+      ["engagement", analytics.engagement],
+      ["saved", analytics.saved],
+      ["posts", analytics.postCount],
+      ["captured", analytics.capturedAt ? fmt(analytics.capturedAt) : "—"]
+    ];
+    for (const [label, value] of cards) {
+      const el = document.createElement("div");
+      el.className = "analytics-card";
+      el.innerHTML = `<span class="analytics-label">${label}</span><span class="analytics-value">${value ?? "—"}</span>`;
+      analyticsGrid.appendChild(el);
+    }
+  }
+
+  function revokeBlobs() {
+    while (blobUrls.length) {
+      URL.revokeObjectURL(blobUrls.pop());
+    }
+  }
+
+  async function loadMediaBlob(imageUrl) {
+    if (!imageUrl || !tg?.initData) return null;
+    try {
+      const res = await fetch(imageUrl, {
+        headers: { "X-Telegram-Init-Data": tg.initData }
+      });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      blobUrls.push(url);
+      return url;
+    } catch {
+      return null;
+    }
+  }
+
+  async function paintGallery(items) {
+    revokeBlobs();
+    planGallery.innerHTML = "";
+    if (!items || items.length === 0) {
+      galleryEmpty.hidden = false;
+      return;
+    }
+    galleryEmpty.hidden = true;
+
+    for (const item of items) {
+      const card = document.createElement("article");
+      card.className = "plan-card";
+      card.dataset.status = item.status || "draft";
+
+      const media = document.createElement("div");
+      media.className = "plan-media";
+      if (item.imageUrl) {
+        const src = await loadMediaBlob(item.imageUrl);
+        if (src) {
+          const img = document.createElement("img");
+          img.alt = item.date || "plan";
+          img.loading = "lazy";
+          img.src = src;
+          media.appendChild(img);
+        } else {
+          media.classList.add("is-empty");
+          media.textContent = "нет фото";
+        }
+      } else {
+        media.classList.add("is-empty");
+        media.textContent = "нет фото";
+      }
+
+      const body = document.createElement("div");
+      body.className = "plan-body";
+      const tags = (item.hashtags || []).map((h) => (h.startsWith("#") ? h : "#" + h)).join(" ");
+      body.innerHTML = `
+        <div class="plan-meta">
+          <time>${item.date || "—"}</time>
+          <span class="plan-status">${item.status || "draft"}</span>
+        </div>
+        <p class="plan-caption">${escapeHtml(item.caption || "")}</p>
+        <p class="plan-tags">${escapeHtml(tags)}</p>
+        <div class="plan-prompt">
+          <code class="plan-prompt-text">${escapeHtml(item.imagePrompt || "")}</code>
+          <button type="button" class="copy-btn" data-copy="${escapeAttr(item.imagePrompt || "")}">copy</button>
+        </div>`;
+
+      card.appendChild(media);
+      card.appendChild(body);
+      planGallery.appendChild(card);
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
+  }
+
+  planGallery.addEventListener("click", async (ev) => {
+    const btn = ev.target.closest("[data-copy]");
+    if (!btn) return;
+    const text = btn.getAttribute("data-copy") || "";
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = "ok";
+      setTimeout(() => { btn.textContent = "copy"; }, 900);
+    } catch {
+      btn.textContent = "err";
+    }
+  });
 
   async function loadResearch() {
     const userId = resolveUserId();
@@ -89,6 +240,7 @@
     }
 
     researchStatus.textContent = "Загружаю…";
+    researchPanel.classList.add("is-loading");
     try {
       const [settingsRes, latestRes] = await Promise.all([
         fetch(`/api/miniapp/research/settings?userId=${encodeURIComponent(userId)}`),
@@ -103,17 +255,22 @@
 
       if (latestRes.ok) {
         const latest = await latestRes.json();
-        if (latest.planPreview) {
-          researchPlan.hidden = false;
-          researchPlan.textContent = latest.planPreview;
-        } else {
-          researchPlan.hidden = true;
-          researchPlan.textContent = "";
-        }
+        if (latest.settings) paintSettings(latest.settings);
+        paintAnalytics(latest.analytics);
+        await paintGallery(latest.items || []);
+      } else {
+        paintAnalytics(null);
+        await paintGallery([]);
       }
       researchStatus.textContent = "";
+      researchPanel.classList.remove("is-error");
     } catch (error) {
       researchStatus.textContent = error.message || "Ошибка загрузки";
+      researchPanel.classList.add("is-error");
+      paintAnalytics(null);
+      await paintGallery([]);
+    } finally {
+      researchPanel.classList.remove("is-loading");
     }
   }
 
@@ -122,18 +279,22 @@
       activeIntent = btn.dataset.intent;
       buttons.forEach((b) => b.classList.toggle("is-active", b === btn));
       const meta = copy[activeIntent];
+      const showResearch = activeIntent === "marketing";
+
+      // Marketing tab = studio first; chat stays secondary.
       panel.hidden = false;
       panelTitle.textContent = meta.title;
       panelCopy.textContent = meta.text;
       status.textContent = "";
       reply.hidden = true;
       reply.textContent = "";
-      message.focus();
 
-      const showResearch = activeIntent === "marketing";
       researchPanel.hidden = !showResearch;
       if (showResearch) {
         loadResearch();
+      }
+      if (!showResearch) {
+        message.focus();
       }
     });
   });
@@ -256,11 +417,8 @@
       }
       const data = await response.json();
       if (data.settings) paintSettings(data.settings);
-      if (data.planPreview) {
-        researchPlan.hidden = false;
-        researchPlan.textContent = data.planPreview;
-      }
       researchStatus.textContent = data.message || data.outcome || "done";
+      await loadResearch();
     } catch (error) {
       researchStatus.textContent = error.message || "Ошибка run";
     } finally {

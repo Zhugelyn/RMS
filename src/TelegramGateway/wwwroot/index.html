@@ -16,7 +16,7 @@
     <header class="brand">
       <p class="brand-mark">Telegram AI</p>
       <h1 id="headline">Выбери домен</h1>
-      <p class="lede">Салон, маркетинг (Instagram research) и задачи — через бота и Mini App.</p>
+      <p class="lede">Салон, маркетинг (Instagram research studio) и задачи — через бота и Mini App.</p>
     </header>
 
     <nav class="domain-nav" aria-label="Домены">
@@ -37,31 +37,52 @@
       <pre id="reply" class="reply" hidden></pre>
     </section>
 
-    <section id="research-panel" class="panel research-panel" hidden>
-      <h2>Instagram Research</h2>
-      <p class="panel-lede">Настройки своего аккаунта. IG token сюда не вводится — только на сервере.</p>
-      <form id="research-form" class="research-form">
-        <label class="check">
-          <input type="checkbox" id="research-enabled" />
-          Включён (каденция 14 дней)
-        </label>
-        <label for="research-handle">Instagram handle</label>
-        <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" />
-        <label for="research-tz">Timezone</label>
-        <input id="research-tz" type="text" maxlength="64" placeholder="Europe/Moscow" autocomplete="off" />
-        <label for="research-cadence">Cadence days</label>
-        <input id="research-cadence" type="number" min="1" max="90" value="14" />
-        <div class="research-actions">
-          <button type="submit" class="cta" id="research-save">Сохранить</button>
-          <button type="button" class="cta cta-secondary" id="research-run">Run now</button>
+    <section id="research-panel" class="panel research-studio" hidden data-studio="research">
+      <header class="studio-header" id="studio-header">
+        <div class="studio-title-row">
+          <h2>Research Studio</h2>
+          <span id="studio-enabled" class="studio-badge" data-on="0">off</span>
         </div>
-      </form>
-      <dl class="research-meta" id="research-meta">
-        <div><dt>last run</dt><dd id="research-last">—</dd></div>
-        <div><dt>next run</dt><dd id="research-next">—</dd></div>
-        <div><dt>last error</dt><dd id="research-error">—</dd></div>
-      </dl>
-      <pre id="research-plan" class="reply" hidden></pre>
+        <p class="studio-handle" id="studio-handle">@—</p>
+        <dl class="studio-runs">
+          <div><dt>last</dt><dd id="research-last">—</dd></div>
+          <div><dt>next</dt><dd id="research-next">—</dd></div>
+        </dl>
+      </header>
+
+      <section class="studio-analytics" id="studio-analytics" aria-label="Аналитика ленты">
+        <h3>Аналитика ленты</h3>
+        <div id="analytics-empty" class="studio-empty" hidden>нет данных Graph insights</div>
+        <div id="analytics-grid" class="analytics-grid" data-studio="analytics"></div>
+      </section>
+
+      <section class="studio-gallery" aria-label="План 14 дней">
+        <h3>План 14 дней</h3>
+        <div id="gallery-empty" class="studio-empty" hidden>Плана пока нет — Run now или дождись scheduler.</div>
+        <div id="plan-gallery" class="plan-gallery" data-studio="gallery"></div>
+      </section>
+
+      <details class="studio-settings" id="studio-settings">
+        <summary>Настройки research</summary>
+        <form id="research-form" class="research-form">
+          <label class="check">
+            <input type="checkbox" id="research-enabled" />
+            Включён
+          </label>
+          <label for="research-handle">Handle</label>
+          <input id="research-handle" type="text" maxlength="64" placeholder="@mybrand" autocomplete="off" />
+          <label for="research-tz">Timezone</label>
+          <input id="research-tz" type="text" maxlength="64" placeholder="Europe/Moscow" autocomplete="off" />
+          <label for="research-cadence">Cadence (days)</label>
+          <input id="research-cadence" type="number" min="1" max="90" value="14" />
+          <div class="research-actions">
+            <button type="submit" class="cta" id="research-save">Save</button>
+            <button type="button" class="cta cta-secondary" id="research-run">Run now</button>
+          </div>
+        </form>
+        <p class="studio-error-line" id="research-error-line">last error: —</p>
+      </details>
+
       <p id="research-status" class="status" role="status" aria-live="polite"></p>
     </section>
   </main>

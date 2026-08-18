@@ -235,15 +235,93 @@ public sealed class ResearchGatewayTests
     }
 
     [Fact]
-    public async Task Serves_research_panel_in_mini_app()
+    public async Task Serves_research_studio_markers_in_mini_app()
     {
         await using var factory = CreateFactory(new FakeResearchAssistant());
         var client = factory.CreateClient();
         var html = await client.GetStringAsync("/");
-        Assert.Contains("research-panel", html);
-        Assert.Contains("Instagram Research", html);
+        Assert.Contains("research-studio", html);
+        Assert.Contains("data-studio=\"research\"", html);
+        Assert.Contains("plan-gallery", html);
+        Assert.Contains("analytics-grid", html);
+        Assert.Contains("Research Studio", html);
+        Assert.DoesNotContain("id=\"research-plan\"", html);
         Assert.DoesNotContain("INSTAGRAM__ACCESSTOKEN", html);
         Assert.DoesNotContain("access_token", html);
+    }
+
+    [Fact]
+    public async Task Media_proxy_requires_initData_and_denies_traversal()
+    {
+        var volume = Path.Combine(Path.GetTempPath(), "media-vol-" + Guid.NewGuid().ToString("N"));
+        var rel = Path.Combine("research-media", "r1", "out", "day-01.png");
+        var abs = Path.Combine(volume, rel);
+        Directory.CreateDirectory(Path.GetDirectoryName(abs)!);
+        await File.WriteAllBytesAsync(abs, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A]);
+
+        await using var factory = CreateFactory(new FakeResearchAssistant(), imageVolumePath: volume);
+        var client = factory.CreateClient();
+
+        var noAuth = await client.GetAsync(
+            "/api/miniapp/research/media?path=" + Uri.EscapeDataString("research-media/r1/out/day-01.png"));
+        Assert.Equal(HttpStatusCode.Unauthorized, noAuth.StatusCode);
+
+        var init = TelegramInitDataValidator.BuildSignedInitDataForTests(
+            "000000000:TESTTOKEN_FOR_UNIT_TESTS", 42);
+
+        using (var trav = new HttpRequestMessage(
+                   HttpMethod.Get,
+                   "/api/miniapp/research/media?path=" + Uri.EscapeDataString("../etc/passwd.png")))
+        {
+            trav.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+            var denied = await client.SendAsync(trav);
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        }
+
+        using (var ok = new HttpRequestMessage(
+                   HttpMethod.Get,
+                   "/api/miniapp/research/media?path=" + Uri.EscapeDataString("research-media/r1/out/day-01.png")))
+        {
+            ok.Headers.TryAddWithoutValidation("X-Telegram-Init-Data", init);
+            var allowed = await client.SendAsync(ok);
+            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+            Assert.Equal("image/png", allowed.Content.Headers.ContentType?.MediaType);
+        }
+
+        try { Directory.Delete(volume, true); } catch { /* ignore */ }
+    }
+
+    [Fact]
+    public async Task Latest_proxy_enriches_imageUrl_as_media_proxy()
+    {
+        var assistant = new FakeResearchAssistant
+        {
+            LatestOverride = new ResearchLatestResponse
+            {
+                Settings = new ResearchSettingsDto { UserId = "tg-42" },
+                PlanPreview = "preview",
+                Items =
+                [
+                    new ResearchPlanItemDto
+                    {
+                        Date = DateOnly.FromDateTime(DateTime.UtcNow),
+                        Caption = "c",
+                        ImagePrompt = "p",
+                        MediaPath = "research-media/r1/out/day-01.png",
+                        Status = "ready"
+                    }
+                ]
+            }
+        };
+        await using var factory = CreateFactory(assistant);
+        var client = factory.CreateClient();
+        var latest = await client.GetAsync("/api/miniapp/research/latest?userId=tg-42");
+        Assert.Equal(HttpStatusCode.OK, latest.StatusCode);
+        var body = await latest.Content.ReadFromJsonAsync<ResearchLatestResponse>();
+        Assert.NotNull(body);
+        Assert.Single(body!.Items);
+        Assert.StartsWith("/api/miniapp/research/media?path=", body.Items[0].ImageUrl);
+        Assert.DoesNotContain("access_token", body.Items[0].ImageUrl!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -254,6 +332,12 @@ public sealed class ResearchGatewayTests
         var sut = new UpdateProcessingService(
             assistant,
             telegram,
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.TelegramOptions
+            {
+                BotToken = "000000000:TESTTOKEN_FOR_UNIT_TESTS",
+                WebAppUrl = "https://example.com/miniapp"
+            }),
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.ResearchImageOptions()),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateProcessingService>.Instance);
 
         await sut.ProcessAsync(new TelegramUpdate
@@ -273,6 +357,7 @@ public sealed class ResearchGatewayTests
         Assert.True(assistant.LastPut.Enabled);
         Assert.Equal("42", assistant.LastPut.NotifyChatId);
         Assert.Contains(telegram.Sent, s => s.Text.Contains("включ", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(telegram.Sent, s => s.ReplyMarkup is not null);
 
         telegram.Sent.Clear();
         await sut.ProcessAsync(new TelegramUpdate
@@ -288,6 +373,54 @@ public sealed class ResearchGatewayTests
         }, CancellationToken.None);
         Assert.True(assistant.LatestCalls > 0);
         Assert.Single(telegram.Sent);
+        Assert.NotNull(telegram.Sent[0].ReplyMarkup);
+    }
+
+    [Fact]
+    public async Task Bot_start_includes_web_app_keyboard_when_url_set()
+    {
+        var telegram = new CapturingTelegram();
+        var sut = new UpdateProcessingService(
+            new FakeResearchAssistant(),
+            telegram,
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.TelegramOptions
+            {
+                BotToken = "000000000:TESTTOKEN_FOR_UNIT_TESTS",
+                WebAppUrl = "https://example.com/app"
+            }),
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.ResearchImageOptions()),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateProcessingService>.Instance);
+
+        await sut.ProcessAsync(new TelegramUpdate
+        {
+            UpdateId = 1,
+            Message = new TelegramMessage
+            {
+                MessageId = 1,
+                Text = "/start",
+                Chat = new TelegramChat { Id = 1 },
+                From = new TelegramUser { Id = 1 }
+            }
+        }, CancellationToken.None);
+
+        Assert.Single(telegram.Sent);
+        Assert.NotNull(telegram.Sent[0].ReplyMarkup);
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            telegram.Sent[0].ReplyMarkup,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+        Assert.Contains("web_app", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(TelegramWebAppKeyboard.OpenStudioLabel, json);
+    }
+
+    [Fact]
+    public void WebApp_keyboard_null_when_url_missing()
+    {
+        Assert.Null(TelegramWebAppKeyboard.TryCreate(null));
+        Assert.Null(TelegramWebAppKeyboard.TryCreate(""));
+        Assert.NotNull(TelegramWebAppKeyboard.TryCreate("https://example.com/x"));
     }
 
     private sealed class FakeResearchAssistant : IAssistantApiClient
@@ -295,6 +428,7 @@ public sealed class ResearchGatewayTests
         public ResearchSettingsUpdateRequest? LastPut { get; private set; }
         public ResearchRunRequest? LastRun { get; private set; }
         public int LatestCalls { get; private set; }
+        public ResearchLatestResponse? LatestOverride { get; set; }
 
         public Task<AssistantChatResponse> ChatAsync(AssistantChatRequest request, CancellationToken cancellationToken) =>
             Task.FromResult(new AssistantChatResponse
@@ -339,6 +473,11 @@ public sealed class ResearchGatewayTests
         public Task<ResearchLatestResponse> GetResearchLatestAsync(string userId, CancellationToken cancellationToken)
         {
             LatestCalls++;
+            if (LatestOverride is not null)
+            {
+                return Task.FromResult(LatestOverride);
+            }
+
             return Task.FromResult(new ResearchLatestResponse
             {
                 Settings = new ResearchSettingsDto { UserId = userId },
@@ -349,18 +488,25 @@ public sealed class ResearchGatewayTests
 
     private sealed class CapturingTelegram : ITelegramBotClient
     {
-        public List<(long ChatId, string Text)> Sent { get; } = [];
+        public List<(long ChatId, string Text, object? ReplyMarkup)> Sent { get; } = [];
         public List<(long ChatId, string FileName)> Photos { get; } = [];
+        public int MenuButtonCalls { get; private set; }
 
-        public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken)
+        public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken, object? replyMarkup = null)
         {
-            Sent.Add((chatId, text));
+            Sent.Add((chatId, text, replyMarkup));
             return Task.CompletedTask;
         }
 
         public Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken)
         {
             Photos.Add((chatId, fileName));
+            return Task.CompletedTask;
+        }
+
+        public Task SetChatMenuButtonWebAppAsync(string text, string url, CancellationToken cancellationToken)
+        {
+            MenuButtonCalls++;
             return Task.CompletedTask;
         }
 

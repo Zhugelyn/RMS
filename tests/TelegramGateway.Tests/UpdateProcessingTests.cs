@@ -11,7 +11,15 @@ public sealed class UpdateProcessingTests
     {
         var assistant = new FakeAssistant();
         var telegram = new FakeTelegram();
-        var sut = new UpdateProcessingService(assistant, telegram, NullLogger<UpdateProcessingService>.Instance);
+        var sut = new UpdateProcessingService(
+            assistant,
+            telegram,
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.TelegramOptions
+            {
+                BotToken = "000000000:TESTTOKEN_FOR_UNIT_TESTS"
+            }),
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.ResearchImageOptions()),
+            NullLogger<UpdateProcessingService>.Instance);
 
         await sut.ProcessAsync(new TelegramUpdate
         {
@@ -39,7 +47,15 @@ public sealed class UpdateProcessingTests
     {
         var assistant = new FakeAssistant();
         var telegram = new FakeTelegram();
-        var sut = new UpdateProcessingService(assistant, telegram, NullLogger<UpdateProcessingService>.Instance);
+        var sut = new UpdateProcessingService(
+            assistant,
+            telegram,
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.TelegramOptions
+            {
+                BotToken = "000000000:TESTTOKEN_FOR_UNIT_TESTS"
+            }),
+            Microsoft.Extensions.Options.Options.Create(new TelegramGateway.Options.ResearchImageOptions()),
+            NullLogger<UpdateProcessingService>.Instance);
 
         await sut.ProcessAsync(new TelegramUpdate
         {
@@ -101,13 +117,16 @@ public sealed class UpdateProcessingTests
     {
         public List<(long ChatId, string Text)> Sent { get; } = [];
 
-        public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken)
+        public Task SendMessageAsync(long chatId, string text, CancellationToken cancellationToken, object? replyMarkup = null)
         {
             Sent.Add((chatId, text));
             return Task.CompletedTask;
         }
 
         public Task SendPhotoAsync(long chatId, Stream photo, string fileName, string? caption, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task SetChatMenuButtonWebAppAsync(string text, string url, CancellationToken cancellationToken)
             => Task.CompletedTask;
 
         public Task<IReadOnlyList<TelegramUpdate>> GetUpdatesAsync(long offset, CancellationToken cancellationToken)
