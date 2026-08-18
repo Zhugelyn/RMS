@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18h
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-media`
+- Slice: phase6-vk-media
+- Status: passed
+- Checks: `IVkMediaDownloader` + `VkPhotoStore` → volume `research-media/*/vk/`; plan MediaPath; gateway media proxy reuse; no CDN URLs in snapshot/plan JSON; soft-skip without volume; SSRF `*.userapi.com` + size cap; `dotnet test` 160/160 (125 api + 35 gateway); no RAG/Apify/MinIO/Direct/user-OAuth
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-013 note, README, run-log
+- Next slice: phase6-vk-hardening
+- Blocker: none
+
 ## Run 2026-08-18g
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-settings`

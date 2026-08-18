@@ -124,6 +124,7 @@ public sealed class VkResearchArtifactsTests
             vk,
             artifacts,
             memory,
+            new NoOpVkPhotoStore(),
             NullLogger<VkResearchCapture>.Instance);
 
         var result = await capture.CaptureAsync(
@@ -215,6 +216,7 @@ public sealed class VkResearchArtifactsTests
             vk,
             new ThrowingArtifactStore(),
             memory,
+            new NoOpVkPhotoStore(),
             NullLogger<VkResearchCapture>.Instance);
 
         var result = await capture.CaptureAsync("u-soft", ownerId: -1);
@@ -235,6 +237,7 @@ public sealed class VkResearchArtifactsTests
             new StubVkWallClient(),
             artifacts,
             memory,
+            new NoOpVkPhotoStore(),
             NullLogger<VkResearchCapture>.Instance);
 
         var missing = await capture.CaptureAsync("u1");

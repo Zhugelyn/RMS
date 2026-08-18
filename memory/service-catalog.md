@@ -74,11 +74,11 @@
 ## Phase 6 — VK Public Research (open)
 
 - Capability: open VK community walls via official API (`wall.get`); text + photo attachments; service token (ADR-013)
-- Docs ✅; Client ✅; Artifacts ✅; Settings ✅ (`VkCommunities` allowlist in research_settings; Mini App + `/research vk`; `source=vk` run)
-- Next slice: `phase6-vk-media` (CDN download → volume; media proxy)
+- Docs ✅; Client ✅; Artifacts ✅; Settings ✅; Media ✅ (`IVkMediaDownloader` / `VkPhotoStore` → volume + plan MediaPath / gateway media proxy)
+- Next slice: `phase6-vk-hardening`
 - Owner: assistant-api adapter (alongside Instagram Graph); do not add separate `vk-research-api`
 - Secrets: `VK__SERVICETOKEN` env/secret store + AES-GCM; not from chat/Mini App
-- Not yet: media download to volume (`phase6-vk-media`)
+- Photos: CDN `*.userapi.com` download to `Research:ImageVolumePath`; relative MediaPath only (no durable CDN URLs)
 
 ## Reserved (do not implement in Phase 6)
 

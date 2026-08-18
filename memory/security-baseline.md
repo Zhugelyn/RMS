@@ -80,14 +80,14 @@
 - Postgres: credentials только env (`POSTGRES__PASSWORD` / `ConnectionStrings__AssistantDb`); migrations без secrets in git; database-per-service owner=assistant-api; ready fails if CS set but DB down; without CS → in-process fallback.
 
 
-## Phase 6 controls (client ✅)
+## Phase 6 controls (media ✅)
 
 - `VK__SERVICETOKEN` только env/secret store; не из chat, Mini App, query, webhook body (ADR-013). ✅ docs + SecretScanner/`LooksLikeSecret`
 - Encrypt-at-rest / AES-GCM seal ✅ (`EncryptedVkTokenStore`; scrub plaintext at startup). Same pattern as IG/Cursor.
 - Official VK API only (`wall.get` / `utils.resolveScreenName`); Apify / HTML / `m.vk.com` forbidden.
-- CDN SSRF allowlist `*.userapi.com` ✅ (`VkCdnUrlGuard`); download to volume = `phase6-vk-media`.
+- CDN SSRF allowlist `*.userapi.com` ✅ (`VkCdnUrlGuard` + `IVkMediaDownloader`); download → `Research:ImageVolumePath` ✅ (`VkPhotoStore`); plan MediaPath relative only; gateway media proxy (initData + path guard); no durable CDN URLs in Postgres.
 - Allowlist communities in settings ✅ (`VkCommunitiesJson` / Mini App / `/research vk`); closed/Donut soft skip in client mapper; no comments / author profile scrape (PII); VK token rejected from UI/chat.
-- Snapshot additive `source=vk` ✅ (`phase6-vk-artifacts`); no raw token / CDN URLs in Postgres dumps/logs; cap ≤50 posts.
+- Snapshot additive `source=vk` ✅ (`phase6-vk-artifacts`); no raw token / CDN URLs in Postgres dumps/logs; cap ≤50 posts; photo download cap ≤14.
 - Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
 
 ## Open Risks
@@ -95,7 +95,7 @@
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK: settings ✅; next=`phase6-vk-media`. Graph/VK token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
+- Phase 4 closed; Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK: media ✅; next=`phase6-vk-hardening`. Graph/VK token expiry / rate limits and GenerateImage soft-fail remain operational realities (soft-handled).
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 

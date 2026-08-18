@@ -30,7 +30,7 @@ public sealed class VkOptions
     [Range(5, 120)]
     public int RequestTimeoutSeconds { get; set; } = 30;
 
-    /// <summary>Max bytes when downloading CDN photo URLs (SSRF-safe path; used later in media slice).</summary>
+    /// <summary>Max bytes when downloading CDN photo URLs (SSRF-safe; phase6-vk-media).</summary>
     [Range(64 * 1024, 20 * 1024 * 1024)]
     public int MaxMediaDownloadBytes { get; set; } = 5 * 1024 * 1024;
 }
