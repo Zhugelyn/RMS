@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18j
+
+- Trigger: chat — Phase 6 closed; lift deferral, kick `phase5-ui-hardening` (not RAG)
+- Slice: plan-pointer only
+- Status: passed
+- Checks: next_slice=`phase5-ui-hardening`; Phase 7 still gated
+- Memory updated: current-project, phase-plan, catalog, README, telegram-ai rule, run-log
+- Next slice: phase5-ui-hardening
+- Blocker: none
+
 ## Run 2026-08-18i
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-hardening`

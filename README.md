@@ -19,7 +19,7 @@
 | 2 Cursor SDK | closed | bridge + classify→agent→verify (persona) |
 | 3 Domain packs | functionally closed | packs + affinity + hard verify; Postgres leftover closed in Phase 4 |
 | 4 Marketing Instagram Research | closed | Graph API своего аккаунта, 14d scheduler, artifacts, GenerateImage volume |
-| **5 Research Client UI** | studio ✅; ui-hardening **deferred** | Mini App studio + bot web_app (ADR-012); не RAG |
+| **5 Research Client UI** | studio ✅; **next=`phase5-ui-hardening`** | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | 7 Knowledge | later | RAG + embeddings + Elasticsearch |
 | 8 Files / media | later | MinIO, фото/видео adapters |

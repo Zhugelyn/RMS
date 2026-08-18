@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4 Instagram Research closed. Phase 5 studio ✅ (`phase5-ui-hardening` deferred). Phase 6 VK Public Research **closed** (hardening ✅). RAG = Phase 7.
+Проект `telegram-ai`. Phase 4/6 closed. Phase 5 leftover next=`phase5-ui-hardening`. RAG = Phase 7 (not open).
 
 ## Service: telegram-gateway
 
@@ -69,7 +69,7 @@
 
 - Capability: Mini App studio + bot web_app over existing research API (ADR-012). Not RAG.
 - latest DTO: analytics + posts[] + items[] (+ planPreview); imageUrl = media proxy
-- leftover: `phase5-ui-hardening` deferred
+- leftover: `phase5-ui-hardening` **open** (Phase 6 closed)
 
 ## Phase 6 — VK Public Research (closed)
 

@@ -158,7 +158,7 @@ Non-goals Phase 4:
 
 ## Phase 5 — Research Client UI
 
-Status: **open leftover** — slice `phase5-research-ui` ✅; `phase5-ui-hardening` **deferred** (Phase 6 VK opened 2026-08-18).
+Status: **open leftover** — slice `phase5-research-ui` ✅; next=`phase5-ui-hardening` (deferral lifted: Phase 6 closed 2026-08-18).
 
 Суть: клиентский UI поверх уже существующего research API. **Не RAG.** UI = Telegram Mini App + bot `web_app` (ADR-012), не отдельный сайт.
 
@@ -175,7 +175,7 @@ Acceptance (slice=`phase5-research-ui`):
 Slices:
 
 1. [x] `phase5-research-ui` — studio Mini App + latest DTO + media proxy + bot web_app.
-2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio. **Deferred** until Phase 6 closes or explicit request.
+2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio (VK gallery/allowlist included). Phase 6 closed — deferral lifted.
 
 Non-goals Phase 5 UI:
 
@@ -186,7 +186,7 @@ Non-goals Phase 5 UI:
 
 ## Phase 6 — Marketing VK Public Research
 
-Status: **closed** (2026-08-18). Hardening ✅; next = Phase 7 Knowledge/RAG only on explicit request (`phase5-ui-hardening` still deferred).
+Status: **closed** (2026-08-18). Hardening ✅. Leftover UI polish = `phase5-ui-hardening` (not RAG).
 
 Суть: маркетинговый research по **открытым пабликам VK** (посты: текст + картинки вложений). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ приложения (`VK__SERVICETOKEN`). HTML-скрейп, Apify, неофициальный mobile API — запрещены.
 
