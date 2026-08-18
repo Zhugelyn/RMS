@@ -108,7 +108,8 @@ public sealed class PostgresResearchArtifactStore : IResearchArtifactStore
             Posts = payload.Posts,
             Summary = payload.Summary,
             PostCount = payload.PostCount > 0 ? payload.PostCount : payload.Posts.Count,
-            SourceStatus = payload.SourceStatus
+            SourceStatus = payload.SourceStatus,
+            Source = payload.Source
         };
     }
 

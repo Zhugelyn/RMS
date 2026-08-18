@@ -51,7 +51,9 @@ public sealed class ResearchPackInjector : IResearchPackInjector
         sb.AppendLine("## Research artifacts (marketing only, not RAG)");
         if (snapshot is not null)
         {
-            sb.AppendLine($"snapshot@{snapshot.CapturedAt:u} posts={snapshot.PostCount}: {Trim(snapshot.Summary, 360)}");
+            var source = string.IsNullOrWhiteSpace(snapshot.Source) ? "instagram" : snapshot.Source;
+            sb.AppendLine(
+                $"snapshot source={source} @{snapshot.CapturedAt:u} posts={snapshot.PostCount}: {Trim(snapshot.Summary, 360)}");
         }
 
         if (plan is not null)

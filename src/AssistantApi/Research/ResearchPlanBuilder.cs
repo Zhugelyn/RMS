@@ -46,7 +46,11 @@ public static class ResearchPlanBuilder
     }
 
     /// <summary>Empty 14-day draft plan when Graph returned no usable posts.</summary>
-    public static ResearchPlan EmptyDraft(string userId, InstagramFetchStatus status, DateOnly? windowStart = null)
+    public static ResearchPlan EmptyDraft(string userId, InstagramFetchStatus status, DateOnly? windowStart = null) =>
+        EmptyDraft(userId, status.ToString(), windowStart);
+
+    /// <summary>Empty 14-day draft when feed source returned no usable posts (IG/VK).</summary>
+    public static ResearchPlan EmptyDraft(string userId, string status, DateOnly? windowStart = null)
     {
         var start = windowStart ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
         var end = start.AddDays(ResearchArtifactLimits.PlanDays - 1);

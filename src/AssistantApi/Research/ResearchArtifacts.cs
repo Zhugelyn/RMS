@@ -20,6 +20,13 @@ public sealed class ResearchSnapshotPost
     public long? Saved { get; init; }
 }
 
+/// <summary>Known research feed sources (additive; omit/null = legacy Instagram).</summary>
+public static class ResearchSources
+{
+    public const string Instagram = "instagram";
+    public const string Vk = "vk";
+}
+
 /// <summary>Feed snapshot payload persisted in research_snapshots.PayloadJson.</summary>
 public sealed class ResearchSnapshot
 {
@@ -31,6 +38,8 @@ public sealed class ResearchSnapshot
     public string Summary { get; init; } = string.Empty;
     public int PostCount { get; init; }
     public string? SourceStatus { get; init; }
+    /// <summary>Additive feed source: <c>vk</c> | <c>instagram</c> | null (legacy IG). Not RAG.</summary>
+    public string? Source { get; init; }
 }
 
 public enum ResearchPlanItemStatus
@@ -104,7 +113,8 @@ public static class ResearchArtifactJson
             Posts = posts,
             Summary = Truncate(snapshot.Summary, ResearchArtifactLimits.SummaryMaxChars),
             PostCount = snapshot.PostCount > 0 ? Math.Min(snapshot.PostCount, posts.Count) : posts.Count,
-            SourceStatus = snapshot.SourceStatus
+            SourceStatus = snapshot.SourceStatus,
+            Source = snapshot.Source
         }, Options);
         EnsurePayloadSize(json, "snapshot");
         return json;
@@ -151,6 +161,8 @@ public static class ResearchArtifactJson
         public string Summary { get; init; } = string.Empty;
         public int PostCount { get; init; }
         public string? SourceStatus { get; init; }
+        /// <summary>Additive: <c>vk</c> | <c>instagram</c>. Null = legacy Instagram payload.</summary>
+        public string? Source { get; init; }
     }
 
     public sealed class PlanPayload
