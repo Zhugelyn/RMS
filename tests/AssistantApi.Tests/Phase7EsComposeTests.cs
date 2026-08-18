@@ -60,7 +60,7 @@ public sealed class Phase7EsComposeTests
         Assert.DoesNotContain("elasticsearch", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("RAG__", apiBlock, StringComparison.Ordinal);
+        // phase7-pack-retriever wires Rag__BaseUrl/ServiceKey (HTTP to rag-service), not ES.
 
         var gatewayBlock = ExtractServiceBlock(yaml, "telegram-gateway");
         Assert.DoesNotContain("elasticsearch", gatewayBlock, StringComparison.OrdinalIgnoreCase);

@@ -51,9 +51,8 @@ public sealed class Phase7RagComposeTests
         Assert.DoesNotContain("elasticsearch", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
-        // Pack retriever slice wires RAG__BASEURL — not this slice.
-        Assert.DoesNotContain("RAG__", apiBlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("rag-service", apiBlock, StringComparison.OrdinalIgnoreCase);
+        // phase7-pack-retriever wires Rag__* HTTP client; this slice only asserts no ES.
+        // Full Rag__BaseUrl assertions live in Phase7PackRetrieverTests.
     }
 
     [Fact]

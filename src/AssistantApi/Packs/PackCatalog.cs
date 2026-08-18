@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using AssistantApi.Rag;
 using Microsoft.Extensions.Options;
 
 namespace AssistantApi.Packs;
@@ -281,15 +282,56 @@ public sealed class PackCatalog : IPackCatalog
         var allowlist = mcp.Allowlist ?? Array.Empty<string>();
         var servers = mcp.Servers ?? Array.Empty<McpServerStub>();
 
-        // Layout slice: allowlist stays empty until MCP wiring slice.
-        if (allowlist.Count > 0)
+        // Phase 7 pack-retriever: only salon|marketing may declare kb-retriever.
+        // _router / tasks stay empty (no RAG). No Direct/MinIO/Apify MCP names.
+        var isRagPack = string.Equals(folderName, PackIds.Salon, StringComparison.Ordinal)
+                        || string.Equals(folderName, PackIds.Marketing, StringComparison.Ordinal);
+
+        if (!isRagPack)
+        {
+            if (allowlist.Count > 0 || servers.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Pack '{folderName}' mcp allowlist/servers must be empty (no RAG for router/tasks).");
+            }
+
+            return;
+        }
+
+        if (allowlist.Count == 0)
         {
             throw new InvalidOperationException(
-                $"Pack '{folderName}' mcp allowlist must be empty until MCP wiring slice.");
+                $"Pack '{folderName}' must allowlist '{RagMcp.KbRetriever}' (phase7-pack-retriever).");
+        }
+
+        foreach (var entry in allowlist)
+        {
+            if (!string.Equals(entry, RagMcp.KbRetriever, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Pack '{folderName}' mcp allowlist entry '{entry}' is not allowed; only '{RagMcp.KbRetriever}'.");
+            }
+        }
+
+        if (allowlist.Count != 1)
+        {
+            throw new InvalidOperationException(
+                $"Pack '{folderName}' mcp allowlist must contain exactly one entry: '{RagMcp.KbRetriever}'.");
         }
 
         foreach (var server in servers)
         {
+            if (string.IsNullOrWhiteSpace(server.Name))
+            {
+                throw new InvalidOperationException($"Pack '{folderName}' mcp server name is required.");
+            }
+
+            if (!string.Equals(server.Name, RagMcp.KbRetriever, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Pack '{folderName}' mcp server '{server.Name}' is not allowlisted.");
+            }
+
             if (server.ExtensionData is null)
             {
                 continue;

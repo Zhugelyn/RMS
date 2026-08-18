@@ -19,7 +19,7 @@ services:
     restart: unless-stopped
 
   # Phase 7 Knowledge/RAG (ADR-014): Elasticsearch data plane for rag-service.
-  # assistant-api must NOT connect here (HTTP to rag-service only — pack slice later).
+  # assistant-api must NOT connect here (HTTP to rag-service only — pack retriever).
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     environment:
@@ -55,7 +55,7 @@ services:
       Rag__ServiceKey: ${RAG__SERVICEKEY:-dev-only-rag-service-key}
       Elasticsearch__Uris: http://elasticsearch:9200
       Elasticsearch__RequestTimeoutSeconds: "10"
-    # Internal only — assistant-api will call over compose network (phase7-pack-retriever).
+    # Internal only — assistant-api calls over compose network (phase7-pack-retriever).
     expose:
       - "8080"
     depends_on:
@@ -117,6 +117,12 @@ services:
       # ADR-011 GenerateImage volume (Cursor local marketing-pack). Empty Cursor key → skip images.
       Research__ImageVolumePath: ${RESEARCH__IMAGEVOLUMEPATH:-/data/marketing-images}
       Research__ImageCap: "14"
+      # Phase 7 Knowledge/RAG (ADR-014). assistant-api → rag-service HTTP only (never ES).
+      # Empty BaseUrl → NoOp retriever; chat soft-fails empty hits.
+      Rag__BaseUrl: ${RAG__BASEURL:-http://rag-service:8080}
+      Rag__ServiceKey: ${RAG__SERVICEKEY:-dev-only-rag-service-key}
+      Rag__RequestTimeoutSeconds: "10"
+      Rag__TopK: "5"
       # Research notify → gateway /internal/notify (bot token stays in gateway).
       Gateway__BaseUrl: http://telegram-gateway:8080
       Gateway__ServiceKey: ${ASSISTANT__SERVICEKEY}
@@ -128,6 +134,8 @@ services:
       postgres:
         condition: service_healthy
       cursor-sdk-bridge:
+        condition: service_healthy
+      rag-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]

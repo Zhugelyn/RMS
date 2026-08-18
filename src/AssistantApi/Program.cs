@@ -5,6 +5,7 @@ using AssistantApi.Instagram;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Rag;
 using AssistantApi.Research;
 using AssistantApi.Security;
 using AssistantApi.Services;
@@ -163,6 +164,33 @@ builder.Services
 builder.Services
     .AddOptions<GatewayNotifyOptions>()
     .Bind(builder.Configuration.GetSection(GatewayNotifyOptions.SectionName));
+
+// Phase 7 pack retriever: assistant-api → rag-service HTTP (never ES). Soft-fail when unset/down.
+builder.Services
+    .AddOptions<RagOptions>()
+    .Bind(builder.Configuration.GetSection(RagOptions.SectionName))
+    .Validate(
+        o => string.IsNullOrWhiteSpace(o.BaseUrl)
+             || (!string.IsNullOrWhiteSpace(o.ServiceKey) && o.ServiceKey.Length >= 16),
+        "Rag:ServiceKey (≥16 chars) is required when Rag:BaseUrl is set.")
+    .ValidateOnStart();
+
+var ragBaseUrl = builder.Configuration.GetSection(RagOptions.SectionName)["BaseUrl"];
+if (!string.IsNullOrWhiteSpace(ragBaseUrl))
+{
+    builder.Services.AddHttpClient<IRagRetriever, HttpRagRetriever>((sp, client) =>
+    {
+        var options = sp.GetRequiredService<IOptions<RagOptions>>().Value;
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+        client.Timeout = TimeSpan.FromSeconds(options.RequestTimeoutSeconds);
+    });
+}
+else
+{
+    builder.Services.AddSingleton<IRagRetriever, NoOpRagRetriever>();
+}
+
+builder.Services.AddSingleton<IRagPackInjector, RagPackInjector>();
 
 builder.Services.AddSingleton<IResearchImageWorkspace, ResearchImageWorkspace>();
 builder.Services.AddSingleton<IResearchImageGenerator, ResearchImageGenerator>();

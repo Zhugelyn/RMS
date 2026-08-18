@@ -8,6 +8,7 @@ using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Rag;
 using AssistantApi.Research;
 using AssistantApi.Security;
 using Microsoft.Data.Sqlite;
@@ -332,6 +333,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             new InMemoryAgentAffinityStore(),
             new InMemoryHarnessMemoryStore(),
             injector,
+            new NoOpRagPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
@@ -377,6 +379,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             new InMemoryAgentAffinityStore(),
             new InMemoryHarnessMemoryStore(),
             new ResearchPackInjector(new ThrowingArtifactStore()),
+            new NoOpRagPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

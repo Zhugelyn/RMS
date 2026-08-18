@@ -19,5 +19,5 @@ AgentPacks/
 
 - `_router`: `answersUser=false`, `resumePolicy=none`.
 - Specialists: `answersUser=true`, `resumePolicy=per-domain-conversation`.
-- MCP servers empty until a later slice wires real tools.
+- MCP: `salon` / `marketing` allowlist `kb-retriever` only (Phase 7 RAG inject via assistant-api → rag-service). `_router` / `tasks` stay empty.
 - Do not put API keys in `mcp.json`.

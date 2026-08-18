@@ -3,6 +3,7 @@ using AssistantApi.Harness;
 using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
+using AssistantApi.Rag;
 using AssistantApi.Research;
 using AssistantApi.Security;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
     private readonly IAgentAffinityStore _affinity;
     private readonly IHarnessMemoryStore _memory;
     private readonly IResearchPackInjector _researchInject;
+    private readonly IRagPackInjector _ragInject;
     private readonly CursorOptions _options;
     private readonly ILogger<CursorSdkLlmProvider> _logger;
 
@@ -31,6 +33,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         IAgentAffinityStore affinity,
         IHarnessMemoryStore memory,
         IResearchPackInjector researchInject,
+        IRagPackInjector ragInject,
         IOptions<CursorOptions> options,
         ILogger<CursorSdkLlmProvider> logger)
     {
@@ -42,6 +45,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         _affinity = affinity;
         _memory = memory;
         _researchInject = researchInject;
+        _ragInject = ragInject;
         _options = options.Value;
         _logger = logger;
     }
@@ -91,6 +95,28 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
                 memoryBlock = string.IsNullOrWhiteSpace(memoryBlock)
                     ? researchBlock
                     : memoryBlock + "\n\n" + researchBlock;
+            }
+
+            // salon|marketing only: KB hits via rag-service (ADR-014). Soft-fail empty → chat continues.
+            string? ragBlock = null;
+            try
+            {
+                ragBlock = await _ragInject.BuildInjectBlockAsync(packId, request.Text, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "RAG inject failed conversationId={ConversationId} pack={PackId}",
+                    request.ConversationId,
+                    packId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(ragBlock))
+            {
+                memoryBlock = string.IsNullOrWhiteSpace(memoryBlock)
+                    ? ragBlock
+                    : memoryBlock + "\n\n" + ragBlock;
             }
 
             var prompt = _prompts.BuildSpecialistPrompt(pack, request, memoryBlock);

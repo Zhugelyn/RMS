@@ -1,5 +1,11 @@
 {
   "schemaVersion": 1,
-  "allowlist": [],
-  "servers": []
+  "allowlist": ["kb-retriever"],
+  "servers": [
+    {
+      "name": "kb-retriever",
+      "transport": "assistant-inject",
+      "description": "Domain KB search via rag-service (assistant-api injects hits). No secrets here."
+    }
+  ]
 }

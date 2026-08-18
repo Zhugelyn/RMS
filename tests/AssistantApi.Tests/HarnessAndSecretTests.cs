@@ -4,6 +4,7 @@ using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
 using AssistantApi.Providers;
+using AssistantApi.Rag;
 using AssistantApi.Research;
 using AssistantApi.Security;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -246,6 +247,7 @@ public sealed class HarnessAndSecretTests
             new InMemoryAgentAffinityStore(),
             new InMemoryHarnessMemoryStore(),
             new ResearchPackInjector(new InMemoryResearchArtifactStore()),
+            new NoOpRagPackInjector(),
             MsOptions.Create(new CursorOptions()),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
@@ -284,6 +286,7 @@ public sealed class HarnessAndSecretTests
             affinity,
             memory,
             researchInject ?? new ResearchPackInjector(new InMemoryResearchArtifactStore()),
+            new NoOpRagPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

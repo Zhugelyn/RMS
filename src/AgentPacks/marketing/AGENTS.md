@@ -14,7 +14,8 @@
 
 ## Non-goals
 
-- CRM/записи салона, Яндекс Директ API wiring, RAG/ES.
+- CRM/записи салона, Яндекс Директ API wiring.
+- Cross-domain RAG (`kb-salon`) — только `kb-marketing` via MCP `kb-retriever`.
 - OpenAI Images / DALL·E — картинки только через Cursor GenerateImage (skill `generate-research-images`).
 - Classify — `_router`.
 
