@@ -3,7 +3,7 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `6-vk-research` (Phase 5 studio ✅; `phase5-ui-hardening` deferred; docs/client/artifacts/settings/media ✅; next=`phase6-vk-hardening`)
+- Phase: `6-vk-research` **closed** (hardening ✅ 2026-08-18); `phase5-ui-hardening` deferred; next = Phase 7 Knowledge/RAG only on explicit request
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + shared `research-images` volume)
 
@@ -31,7 +31,7 @@
 
 ## Goal Phase 6 (VK Public Research)
 
-Официальный VK API открытых пабликов (`wall.get`, service token). Текст + картинки постов → те же snapshot/plan. Не scrape. Docs ✅; client ✅; artifacts ✅; settings ✅; media ✅ (CDN→volume + media proxy); next: `phase6-vk-hardening`.
+Официальный VK API открытых пабликов (`wall.get`, service token). Текст + картинки постов → те же snapshot/plan. Не scrape. **Closed** (docs/client/artifacts/settings/media/hardening ✅).
 
 ## Phase 5 non-goals
 
@@ -50,4 +50,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase6-vk-media` ✅; **next_slice=`phase6-vk-hardening`**.
+- Этот run: `phase6-vk-hardening` ✅; **next_slice=none** (Phase 7 RAG — только по явному запросу; `phase5-ui-hardening` deferred).
