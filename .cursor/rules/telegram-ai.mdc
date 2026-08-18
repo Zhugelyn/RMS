@@ -10,7 +10,7 @@ alwaysApply: true
 - Phase 2 closed: Cursor SDK + persona-switch harness. Phase 3 packs functionally closed.
 - Phase 4 closed: Marketing Instagram Research (Graph API own account, scheduler, GenerateImage volume, hardening).
 - Phase 5 leftover: Research Studio ✅; `phase5-ui-hardening` deferred.
-- Phase 6 open: VK Public Research (official `wall.get`, service token, open communities allowlist). Next = `phase6-vk-docs`. RAG = Phase 7; MinIO = 8; Direct = 9.
+- Phase 6 open: VK Public Research (official `wall.get`, service token, open communities allowlist). Docs ✅. Next = `phase6-vk-client`. RAG = Phase 7; MinIO = 8; Direct = 9.
 - Phase 4 leftovers: лента только Instagram Graph API своего аккаунта (Apify нет); GenerateImage = Cursor local marketing-pack + volume (не OpenAI Images); research memory = snapshot+plan+episodes в Postgres ≠ RAG.
 - Не реализуй RAG, embeddings, Elasticsearch, MinIO, Яндекс Директ, пока phase-plan не открыл фазу.
 - VK: только официальный API; не HTML/`m.vk.com`/Apify. Service token не из чата. User VK ID OAuth — не в Phase 6, пока service token достаточен.

@@ -1,18 +1,18 @@
 # Phase 6 webhook payload
 
-Automation берёт **один** slice. Если payload пустой — `next_slice` из `memory/current-project.md` / `memory/phase-plan.md`.
+Automation берёт **один** slice. Если payload пустой — `next_slice` из `memory/current-project.md` / `memory/phase-plan.md` (`phase6-vk-client`).
 
 ```json
 {
-  "slice": "phase6-vk-docs",
-  "task": "Зафиксируй Phase 6 VK Public Research в memory: ADR-013 (официальный VK API wall.get открытых пабликов, service token, allowlist screen_name; не scrape/Apify/HTML). README, catalog, contracts, security, .env.example VK__SERVICETOKEN=. Без кода сервисов. schemaVersion не ломать. Один slice.",
+  "slice": "phase6-vk-client",
+  "task": "Один slice phase6-vk-client: IVkWallClient / HttpVkWallClient в assistant-api; VK__SERVICETOKEN из env/secret store + AES-GCM по паттерну IG; utils.resolveScreenName + wall.get; stub без токена; SSRF CDN allowlist *.userapi.com. Не scrape/Apify. Не artifacts/settings/Mini App/media persist (это следующие slices). schemaVersion не ломать. Token не из чата.",
   "acceptance": [
-    "ADR-013 accepted in memory/architecture-decisions.md",
-    "phase-plan Phase 6 slices listed; RAG=7 Files=8 Direct=9",
-    ".env.example has VK__SERVICETOKEN= placeholder, no real secret",
-    "security-baseline: VK token not from chat; CDN SSRF note reserved for client slice",
-    "dotnet test still green (docs-only)",
-    "run-log updated; next_slice=phase6-vk-client"
+    "IVkWallClient + HttpVkWallClient + stub without token",
+    "service token env/AES-GCM; reject from chat/Mini App",
+    "resolveScreenName + wall.get mapping text + photo attachments",
+    "SSRF allowlist *.userapi.com; no IP literals",
+    "dotnet test green; no RAG/Apify/MinIO/Direct/user-OAuth",
+    "run-log updated; next_slice=phase6-vk-artifacts"
   ]
 }
 ```
