@@ -126,8 +126,14 @@ public sealed class VkPhotoStore : IVkPhotoStore
                 await File.WriteAllBytesAsync(abs, dl.Bytes, cancellationToken);
 
                 var relFile = $"{VkPhotoStoreLimits.RelativePhotoDir}/{name}";
+                var mediaPath = ResearchMediaPathGuard.SanitizeOrNull($"{relativeRoot}/{relFile}");
+                if (mediaPath is null)
+                {
+                    continue;
+                }
+
                 relativeFiles.Add(relFile);
-                mediaPaths.Add($"{relativeRoot}/{relFile}");
+                mediaPaths.Add(mediaPath);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

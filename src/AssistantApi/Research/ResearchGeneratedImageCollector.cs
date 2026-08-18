@@ -135,6 +135,12 @@ public static class ResearchGeneratedImageCollector
             var media = string.IsNullOrWhiteSpace(runRelativeRoot)
                 ? relativeImages[i]
                 : $"{runRelativeRoot.TrimEnd('/')}/{relativeImages[i].TrimStart('/')}";
+            media = ResearchMediaPathGuard.SanitizeOrNull(media);
+            if (media is null)
+            {
+                continue;
+            }
+
             var prev = items[i];
             items[i] = new ResearchPlanItem
             {
