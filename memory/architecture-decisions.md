@@ -149,10 +149,11 @@ ADR-журнал для решений, которые должны пережи
 - Date: 2026-08-18
 - Context: Phase 4 закрыла research API/artifacts/scheduler/images. Нужен клиентский UX для плана/аналитики/галереи. Отдельный marketing website = ещё один deploy/auth/surface вне продукта «Telegram AI».
 - Decision: Research Client UI живёт в **Telegram Mini App** (вкладка Маркетинг = студия) + bot **InlineKeyboard web_app** / **MenuButtonWebApp** (`TELEGRAM__WEBAPPURL`). Не отдельный публичный сайт. Картинки — только gateway media proxy (`initData` + path guard), не прямой volume и не IG CDN token в клиенте.
-- Consequences: Один клиентский surface (bot + Mini App). Additive `GET /v1/research/latest` fields (`analytics`, `posts[]`, `items[]`); `planPreview` остаётся. RAG/ES остаются Phase 7. VK wall — Phase 6.
+- Consequences: Один клиентский surface (bot + Mini App). Additive `GET /v1/research/latest` fields (`analytics`, `posts[]`, `items[]`, `source`); `planPreview` остаётся. RAG/ES остаются Phase 7. VK wall — Phase 6 (closed).
 - Alternatives considered: отдельный SPA/landing; deep-link только без Mini App; отдавать volume paths в браузер.
 - Security impact: media proxy требует initData HMAC; path traversal deny; IG token не в URL/Mini App; bot token остаётся в gateway.
 - Impl 2026-08-18 (`phase5-research-ui`): studio wwwroot; media endpoint; web_app keyboard + MenuButton hosted service; latest DTO enrichment.
+- Follow-up 2026-08-18 (`phase5-ui-hardening`): a11y/limits/VK allowlist+gallery; additive `latest.source`; Phase 5 closed.
 - Links: `memory/phase-plan.md` Phase 5, `memory/integration-contracts.md`
 
 ## ADR-013: VK feed source = official API open communities only (no scrape)

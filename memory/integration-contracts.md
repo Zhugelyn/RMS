@@ -135,7 +135,7 @@
   - `GET /v1/research/settings?userId=tg-*`
   - `PUT /v1/research/settings` body `{ userId, enabled?, instagramHandle?, cadenceDays?, timezone?, notifyChatId? }`
   - `POST /v1/research/run` body `{ userId, notifyChatId? }` — force capture (period `manual-…`)
-  - `GET /v1/research/latest?userId=tg-*` — settings + snapshot summary + plan preview + **additive** `analytics` + `posts[]` + `items[]` (Phase 5; schemaVersion unchanged)
+  - `GET /v1/research/latest?userId=tg-*` — settings + snapshot summary + plan preview + **additive** `analytics` + `posts[]` + `items[]` + `source` (`instagram`|`vk`) (Phase 5; schemaVersion unchanged)
 - Auth: `X-Service-Key`
 - Validation: userId must be `tg-<digits>`; reject secret-like handle/token fields; no IG token in request/response
 - Errors: ProblemDetails 400/401
@@ -150,6 +150,7 @@
 - Media (`GET /media`): initData HMAC (header preferred; query `initData` fallback for img) + `ResearchPhotoPathGuard`; no IG token in URL; deny traversal
 - `POST /internal/notify` `{ chatId, text, photoPaths?, imageVolumePath? }` — `X-Service-Key`; sendMessage always; sendPhoto from shared volume (path guard); fail photos ≠ fail text
 - Bot UX (ADR-012): `TELEGRAM__WEBAPPURL` → InlineKeyboard web_app + MenuButtonWebApp; `/research plan` ≤3 photos + studio button
+- Studio hardening (`phase5-ui-hardening`): posts feed, `source` badge, VK allowlist ≤10, gallery ≤14, a11y/limits
 
 ## External: instagram-graph (Phase 4)
 

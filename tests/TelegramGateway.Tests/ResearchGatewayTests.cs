@@ -350,6 +350,8 @@ public sealed class ResearchGatewayTests
         Assert.Contains("Research Studio", html);
         Assert.Contains("research-vk", html);
         Assert.Contains("VK паблики", html);
+        Assert.Contains("posts-feed", html);
+        Assert.Contains("studio-source", html);
         Assert.DoesNotContain("id=\"research-plan\"", html);
         Assert.DoesNotContain("INSTAGRAM__ACCESSTOKEN", html);
         Assert.DoesNotContain("VK__SERVICETOKEN", html);

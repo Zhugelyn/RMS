@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18k
+
+- Trigger: webhook (empty payload) → first open slice `phase5-ui-hardening`
+- Slice: phase5-ui-hardening
+- Status: passed
+- Checks: studio polish empty/error/limits/a11y (skip-link, tabs, aria-busy, reduced-motion); VK allowlist ≤10 + Run VK empty guard; posts feed ≤20 + gallery ≤14 + source badges; additive `latest.source`; `Phase5UiHardeningTests`; `dotnet test` 171/171 (132 api + 39 gateway); Phase 5 closed; no RAG/Apify/MinIO/Direct
+- Memory updated: phase-plan checkbox + Phase 5 closed, current-project, catalog, contracts, security-baseline, README, run-log
+- Next slice: none (Phase 7 RAG — только по явному запросу)
+- Blocker: none
+
 ## Run 2026-08-18j
 
 - Trigger: chat — Phase 6 closed; lift deferral, kick `phase5-ui-hardening` (not RAG)

@@ -63,6 +63,8 @@ public sealed class ResearchLatestResponse
     public ResearchSettingsDto Settings { get; init; } = new();
     public string? SnapshotSummary { get; init; }
     public DateTimeOffset? SnapshotCapturedAt { get; init; }
+    /// <summary>Additive: <c>instagram</c> | <c>vk</c> from latest snapshot (Phase 5 UI / Phase 6).</summary>
+    public string? Source { get; init; }
     public string? PlanPreview { get; init; }
     public DateTimeOffset? PlanCreatedAt { get; init; }
     public int? PlanItemCount { get; init; }

@@ -17,6 +17,23 @@
 
 * { box-sizing: border-box; }
 
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--leaf-deep);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
 html, body {
   margin: 0;
   min-height: 100%;
@@ -110,6 +127,17 @@ html, body {
   outline: none;
 }
 
+.domain:focus-visible {
+  box-shadow: 0 0 0 3px rgba(31, 107, 74, 0.45), 0 10px 30px var(--glow);
+}
+
+.field-hint,
+.section-limit-hint {
+  margin: -4px 0 8px;
+  font-size: 0.8rem;
+  color: var(--tg-hint, var(--muted));
+}
+
 .panel {
   animation: rise 420ms ease-out both;
 }
@@ -182,6 +210,11 @@ textarea {
 
 .research-studio.is-loading { opacity: 0.72; }
 .research-studio.is-error .studio-header { outline: 1px solid rgba(140, 40, 40, 0.35); }
+.research-studio .studio-header:focus { outline: none; }
+.research-studio .studio-header:focus-visible {
+  outline: 2px solid var(--leaf);
+  outline-offset: 2px;
+}
 
 .studio-header {
   margin-bottom: 18px;
@@ -226,6 +259,47 @@ textarea {
   color: var(--leaf-deep);
 }
 
+.studio-source-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+}
+
+.studio-source-label {
+  color: var(--tg-hint, var(--muted));
+  font-weight: 600;
+}
+
+.studio-source-badge {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(15, 61, 43, 0.12);
+  color: var(--leaf-deep);
+}
+
+.studio-source-badge[data-source="vk"] {
+  background: rgba(70, 100, 160, 0.18);
+  color: #243a66;
+}
+
+.studio-source-badge[data-source="instagram"] {
+  background: rgba(180, 80, 40, 0.15);
+  color: #6b3418;
+}
+
+.studio-summary {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--tg-hint, var(--muted));
+  word-break: break-word;
+}
+
 .studio-runs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -249,10 +323,54 @@ textarea {
 .studio-runs dd { margin: 0; }
 
 .studio-analytics h3,
+.studio-posts h3,
 .studio-gallery h3 {
   margin: 0 0 10px;
   font-family: var(--font-display);
   font-size: 1.05rem;
+}
+
+.posts-feed {
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.post-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(15, 61, 43, 0.1);
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tg-hint, var(--muted));
+}
+
+.post-source {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--leaf-deep);
+}
+
+.post-caption {
+  margin: 0 0 4px !important;
+  color: var(--ink) !important;
+  line-height: 1.4;
+}
+
+.post-metrics {
+  margin: 0 !important;
+  font-size: 0.8rem;
+  color: var(--tg-hint, var(--muted)) !important;
 }
 
 .studio-empty {
@@ -357,6 +475,16 @@ textarea {
   color: var(--leaf);
 }
 
+.plan-source {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(70, 100, 160, 0.16);
+  color: #243a66;
+}
+
 .plan-caption {
   margin: 0 0 6px !important;
   color: var(--ink) !important;
@@ -438,6 +566,17 @@ textarea {
   color: var(--tg-hint, var(--muted));
 }
 
+.studio-count {
+  margin: -4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--leaf-deep);
+}
+
+.studio-count.is-full {
+  color: #8a3b18;
+}
+
 .research-form .check {
   display: flex;
   gap: 10px;
@@ -462,7 +601,27 @@ textarea {
   color: var(--tg-hint, var(--muted));
 }
 
+.studio-error-line.has-error {
+  color: #8a2f2f;
+  font-weight: 600;
+}
+
+.copy-btn:focus-visible,
+.cta:focus-visible {
+  outline: 2px solid var(--leaf-deep);
+  outline-offset: 2px;
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

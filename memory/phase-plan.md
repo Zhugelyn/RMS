@@ -158,7 +158,7 @@ Non-goals Phase 4:
 
 ## Phase 5 — Research Client UI
 
-Status: **open leftover** — slice `phase5-research-ui` ✅; next=`phase5-ui-hardening` (deferral lifted: Phase 6 closed 2026-08-18).
+Status: **closed** (2026-08-18). Studio ✅ + `phase5-ui-hardening` ✅. Next open phase = Phase 7 RAG (не стартовать без явного slice).
 
 Суть: клиентский UI поверх уже существующего research API. **Не RAG.** UI = Telegram Mini App + bot `web_app` (ADR-012), не отдельный сайт.
 
@@ -172,10 +172,18 @@ Acceptance (slice=`phase5-research-ui`):
 - [x] `dotnet test` зелёный; no RAG/Apify/OpenAI Images/MinIO.
 - [x] ADR-012, catalog, contracts, README, run-log.
 
+Acceptance (slice=`phase5-ui-hardening`):
+
+- [x] Studio polish: empty/error/limits/a11y (skip-link, tabs, aria-busy, reduced-motion, focus).
+- [x] VK allowlist UI + counter ≤10; Run VK guard на пустой allowlist; gallery/posts source badges (IG/VK).
+- [x] Additive `latest.source`; posts feed ≤20; gallery ≤14; cadence clamp 1–90.
+- [x] `dotnet test` зелёный; no RAG/Apify/MinIO/Direct wiring в wwwroot.
+- [x] Phase 5 closed; run-log updated.
+
 Slices:
 
 1. [x] `phase5-research-ui` — studio Mini App + latest DTO + media proxy + bot web_app.
-2. [ ] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio (VK gallery/allowlist included). Phase 6 closed — deferral lifted.
+2. [x] `phase5-ui-hardening` — polish/a11y/limits/edge cases studio (VK gallery/allowlist included).
 
 Non-goals Phase 5 UI:
 
@@ -186,7 +194,7 @@ Non-goals Phase 5 UI:
 
 ## Phase 6 — Marketing VK Public Research
 
-Status: **closed** (2026-08-18). Hardening ✅. Leftover UI polish = `phase5-ui-hardening` (not RAG).
+Status: **closed** (2026-08-18). Hardening ✅. Phase 5 leftover UI polish also closed (`phase5-ui-hardening`).
 
 Суть: маркетинговый research по **открытым пабликам VK** (посты: текст + картинки вложений). Источник — только официальный **VK API** (`wall.get` / `utils.resolveScreenName`). Сервисный ключ приложения (`VK__SERVICETOKEN`). HTML-скрейп, Apify, неофициальный mobile API — запрещены.
 
