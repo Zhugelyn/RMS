@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18e
+
+- Trigger: webhook (empty payload) → first open slice `phase6-vk-client`
+- Slice: phase6-vk-client
+- Status: passed
+- Checks: `IVkWallClient`/`HttpVkWallClient`/`Stub`/`Fallback`; `EncryptedVkTokenStore` AES-GCM; `utils.resolveScreenName` + `wall.get`; Donut soft-skip; CDN SSRF `*.userapi.com` no IP; chat/gateway reject `VK__SERVICETOKEN`; no artifacts/settings/media persist; `dotnet test` 130/130 (98 api + 32 gateway); no RAG/Apify/MinIO/Direct/user-OAuth
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-013 note, README, .env.example, run-log
+- Next slice: phase6-vk-artifacts
+- Blocker: none
+
 ## Run 2026-08-18d
 
 - Trigger: webhook (empty payload) → first open slice `phase6-vk-docs`

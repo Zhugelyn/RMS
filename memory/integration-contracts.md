@@ -161,17 +161,17 @@
 - Failure: no token → stub skip; rate-limit / token expiry → soft error codes (`instagram-rate-limited` / `instagram-token-expired`); no secret leak in logs/messages
 - Non-goals: foreign profiles, Apify, unofficial mobile API
 
-## External: vk-wall (Phase 6) — contract reserved
+## External: vk-wall (Phase 6)
 
-- Owner: assistant-api adapter (planned `IVkWallClient` / `HttpVkWallClient` in `phase6-vk-client`)
-- Auth: `VK__SERVICETOKEN` from env/secret store; encrypt-at-rest in client slice; **never** from chat / Mini App / query
-- Methods (official API only): `utils.resolveScreenName` → `wall.get` for allowlisted open communities
-- Payload: post `text` + photo attachments; closed/Donut → soft skip; no comments / author profiles
-- Cap: ≤50 posts (align with IG); additive snapshot field `source=vk`; `schemaVersion` unchanged
-- Media download (later `phase6-vk-media`): SSRF allowlist `*.userapi.com` + size limit → research volume + existing media proxy
-- Failure: no token → stub skip; API errors soft; no secret leak in logs/messages
+- Owner: assistant-api adapter (`AssistantApi.Vk`: `IVkWallClient` / `HttpVkWallClient` / `FallbackVkWallClient`)
+- Auth: `VK__SERVICETOKEN` from env/secret store; AES-GCM encrypt-at-rest (`EncryptedVkTokenStore`); master = `Vk:MasterKey` or shared Instagram/Cursor MasterKey
+- Methods (official API only): `utils.resolveScreenName` → `wall.get` for open communities; stub skip without token
+- Payload: post `text` + photo attachments; Donut posts soft-skipped in mapper; closed wall → `vk-wall-closed`; no comments / author profiles
+- Cap: ≤50 posts (`VkFetchLimits`, align with IG); additive snapshot field `source=vk` — **artifacts slice**
+- CDN SSRF allowlist `*.userapi.com` (+ no IP literals) ✅; media download → volume = `phase6-vk-media`
+- Failure: no token → stub skip; rate-limit / token invalid / closed → soft error codes; no secret leak in logs/messages
 - Non-goals: Apify, HTML/`m.vk.com`, user VK ID OAuth, separate `vk-research-api`
-- Status: **docs only** (`phase6-vk-docs`); no runtime wiring yet
+- Status: **client ✅** (`phase6-vk-client`); artifacts/settings/media not wired yet
 
 ## File Contract Template
 
