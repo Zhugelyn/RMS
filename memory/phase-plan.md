@@ -281,10 +281,43 @@ Non-goals Phase 7:
 
 ## Phase 8 — Files / Video / Images storage
 
-- MinIO, metadata DB, scanning hook, presigned URLs.
-- Работа с фото/видео через отдельные adapters (поверх GenerateImage из Phase 4 / VK downloads из Phase 6 при необходимости).
-- Большие файлы не проксировать через assistant-api без причины.
-- File tools — MCP/skill конкретного pack, не shared agent.
+Status: **open** — next=`phase8-docs`.
+
+Суть: object storage для фото/видео/документов. **MinIO** + metadata + **presigned URLs**. Большие байты не идут через assistant-api. File tools — MCP/skill pack (`salon` / `marketing`), не shared agent.
+
+Service boundary:
+
+- MinIO = object store (private buckets). assistant-api **не** проксирует большие файлы.
+- Metadata + authz + presign = **assistant-api** (Postgres, database-per-service). Не отдельный `files-api`, пока нет независимого ownership/cadence.
+- Ключи объектов непрозрачные (не PII, не sequential id в URL). Buckets/prefix по domain: salon ≠ marketing.
+- Presigned upload/download, TTL, size + MIME allowlist. Public bucket запрещён.
+- Scanning hook — stub в hardening (antivirus later).
+- Research volume (GenerateImage / VK photos) **не** мигрировать в этом slice; optional later.
+- Яндекс Директ — Phase 9.
+
+Acceptance (фаза целиком; закрывать по slices):
+
+- [ ] ADR-015: MinIO private + presign; metadata в assistant-api; pack MCP files; domain isolation.
+- [ ] MinIO в compose; health; без app wiring в docs/compose-first slices.
+- [ ] Presign + metadata; size/MIME; no byte proxy.
+- [ ] Pack file tools salon/marketing; router/tasks без files MCP.
+- [ ] `dotnet test` + compose зелёные; no Direct/Apify/public bucket.
+
+Slices (один run = один):
+
+1. [ ] `phase8-docs` — ADR-015 + README Phase 8 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без MinIO контейнера.
+2. [ ] `phase8-minio-compose` — MinIO в Docker Compose; health; private buckets; без app wiring.
+3. [ ] `phase8-presign` — metadata schema + presigned PUT/GET; size/MIME; object-key strategy; `X-Service-Key` / initData где UI.
+4. [ ] `phase8-pack-files` — MCP/skill в `salon` и `marketing`; domain prefix isolation; router/tasks empty.
+5. [ ] `phase8-hardening` — TTL, scanning hook stub, tests, token rotation notes, non-goals guard (no Direct/Apify/public bucket).
+
+Non-goals Phase 8:
+
+- Яндекс Директ (→ Phase 9)
+- Public MinIO bucket / CDN без TTL
+- Проксировать большие файлы через assistant-api
+- Миграция research-images volume целиком (optional follow-up)
+- Apify, OpenAI Images
 
 ## Phase 9 — External tools
 

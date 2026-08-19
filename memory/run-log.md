@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-19a
+
+- Trigger: chat — explicit next phase after Phase 7 closed → open Phase 8
+- Slice: plan-only (`phase8-docs` not implemented here)
+- Status: passed
+- Checks: Phase 8 slices listed; next=`phase8-docs`; Direct still gated
+- Memory updated: phase-plan, current-project, catalog, README, telegram-ai rule, run-log
+- Next slice: phase8-docs
+- Blocker: none
+
 ## Run 2026-08-18q
 
 - Trigger: webhook (empty payload) → first open slice `phase7-hardening`

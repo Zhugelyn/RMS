@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 MinIO / Phase 9 Direct — только по явному slice.
+Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (next=`phase8-docs`).
 
 ## Service: telegram-gateway
 
@@ -113,9 +113,14 @@
 - Embeddings: stub OK until dedicated slice
 - Non-goals: MinIO (8), Direct (9), Apify, mixing indexes, replacing harness/research with RAG
 
-## Reserved (do not implement without Phase 8/9 open)
+## Phase 8 — Files / MinIO (open)
 
-- files-minio (Phase 8)
+- Next slice: `phase8-docs` (ADR-015, no MinIO container)
+- Owner (planned): MinIO objects; metadata+presign in assistant-api; pack MCP salon/marketing
+
+## Reserved (do not implement in `phase8-docs`)
+
+- MinIO container (→ `phase8-minio-compose`)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers
 - vk-id-user-oauth (unless service token insufficient — follow-up, not this phase)

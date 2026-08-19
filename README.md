@@ -24,7 +24,7 @@ Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-se
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | **7 Knowledge** | **closed** (hardening ✅ 2026-08-18) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
-| 8 Files / media | later | MinIO, фото/видео adapters |
+| **8 Files / media** | **open** (next=`phase8-docs`) | MinIO private + presign; metadata в assistant-api |
 | 9 External tools | later | Яндекс Директ и др. |
 
 ## Phase 4 — Marketing Instagram Research (план)
