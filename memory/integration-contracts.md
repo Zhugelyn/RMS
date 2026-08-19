@@ -199,17 +199,18 @@
 ## File Flow: MinIO object storage (Phase 8, ADR-015)
 
 - Owner: MinIO = objects; **assistant-api** = metadata + authz + presign (Postgres). Not a separate `files-api` yet.
-- Bucket: private only (no public ACL). Domain isolation via buckets and/or opaque prefix (`salon/` ≠ `marketing/`).
-- Object key strategy: server-generated opaque UUID/hash; never user-controlled path; no PII / sequential ids in URL.
-- Metadata (planned Postgres, later slice): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, size, status (`pending|uploaded|scanning|active|rejected|deleted`), createdAt, expiresAt/retention.
-- Upload: client requests intent → assistant-api authz + size/MIME allowlist → short-TTL **presigned PUT** → direct to MinIO → confirm/poll metadata. **No large byte proxy through assistant-api.**
-- Download: authz → short-TTL **presigned GET** (or gateway Mini App proxy later if needed for Telegram constraints — not in docs slice).
-- Access control: inter-service / initData as applicable; pack MCP only `salon`|`marketing`; `_router`/`tasks` empty; cross-domain deny.
-- Retention: TTL on pending uploads; lifecycle TBD in hardening.
-- Scanning: stub hook in hardening (antivirus later); soft-fail missing MinIO must not break `/v1/chat`.
-- Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git.
-- Status: **compose ✅** (`phase8-minio-compose`). Presign/API → `phase8-presign`. Pack tools → `phase8-pack-files`.
-- Compose: `minio` (S3 API `:9000`, console `:9001` internal-only, health `/minio/health/live`, volume `minio-data`); `minio-init` creates private buckets `tg-ai-salon` / `tg-ai-marketing` (`mc anonymous set none`). No assistant-api depends_on / `MINIO__*` env yet.
+- Bucket: private only (no public ACL). Domain isolation via buckets (`tg-ai-salon` / `tg-ai-marketing`).
+- Object key strategy: server-generated opaque GUID (`N` format); never user-controlled path; no PII / sequential ids in URL.
+- Metadata (Postgres `file_objects` / in-memory fallback): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, sizeBytes, status (`pending|uploaded|active|rejected|deleted`), createdAt, uploadedAt, expiresAt.
+- Upload: `POST /v1/files/upload-intent` → authz + size/MIME allowlist → short-TTL **presigned PUT** → client PUT direct to MinIO → `POST /v1/files/{fileId}/confirm`. **No large byte proxy through assistant-api.**
+- Download: `POST /v1/files/{fileId}/download-url` → owner authz → short-TTL **presigned GET**. Metadata: `GET /v1/files/{fileId}?userId=`.
+- Access control: `X-Service-Key` on assistant-api (gateway/pack). Mini App initData HMAC when UI proxy added (not this slice). Owner-only; cross-user → 404. Pack MCP only `salon`|`marketing` → `phase8-pack-files`.
+- Retention: TTL on pending uploads (`Minio:PendingTtlSeconds`); lifecycle TBD in hardening.
+- Scanning: stub hook in hardening; soft-fail missing MinIO → 503 on file routes; must not break `/v1/chat`.
+- Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git. SecretScanner rejects `MINIO__SECRETKEY` / `MINIO__ROOTPASSWORD`.
+- Status: **presign ✅** (`phase8-presign`). Pack tools → `phase8-pack-files`.
+- Compose: assistant-api `Minio__*` + depends_on healthy `minio` + completed `minio-init`. Gateway/bridge/rag unwired.
+- `schemaVersion=1` on file DTOs; `/v1/chat` unchanged.
 
 ## File Contract Template
 

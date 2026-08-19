@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-19d
+
+- Trigger: webhook (empty payload) → first open slice `phase8-presign`
+- Slice: phase8-presign
+- Status: passed
+- Checks: `file_objects` EF migration + store; `POST /v1/files/upload-intent|confirm|download-url` + GET metadata; MinIO SDK presign PUT/GET; size/MIME allowlist; opaque GUID object keys; salon/marketing buckets; soft-fail UnavailablePresigner; compose `Minio__*` + depends_on minio/minio-init; SecretScanner MINIO; `Phase8PresignTests`; `dotnet test` 232 (167 api + 45 gateway + 20 rag); no pack tools / Direct / Apify / byte proxy; next=`phase8-pack-files`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-015 note, README, .env.example, run-log
+- Next slice: phase8-pack-files
+- Blocker: none (docker CLI may be absent; unit + compose YAML asserts cover wiring)
+
 ## Run 2026-08-19c
 
 - Trigger: webhook (empty payload) → first open slice `phase8-minio-compose`
