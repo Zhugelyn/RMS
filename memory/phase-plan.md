@@ -281,7 +281,7 @@ Non-goals Phase 7:
 
 ## Phase 8 — Files / Video / Images storage
 
-Status: **open** — next=`phase8-docs`.
+Status: **open** — `phase8-docs` ✅; next=`phase8-minio-compose`.
 
 Суть: object storage для фото/видео/документов. **MinIO** + metadata + **presigned URLs**. Большие байты не идут через assistant-api. File tools — MCP/skill pack (`salon` / `marketing`), не shared agent.
 
@@ -297,7 +297,7 @@ Service boundary:
 
 Acceptance (фаза целиком; закрывать по slices):
 
-- [ ] ADR-015: MinIO private + presign; metadata в assistant-api; pack MCP files; domain isolation.
+- [x] ADR-015: MinIO private + presign; metadata в assistant-api; pack MCP files; domain isolation. (`phase8-docs`)
 - [ ] MinIO в compose; health; без app wiring в docs/compose-first slices.
 - [ ] Presign + metadata; size/MIME; no byte proxy.
 - [ ] Pack file tools salon/marketing; router/tasks без files MCP.
@@ -305,7 +305,7 @@ Acceptance (фаза целиком; закрывать по slices):
 
 Slices (один run = один):
 
-1. [ ] `phase8-docs` — ADR-015 + README Phase 8 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без MinIO контейнера.
+1. [x] `phase8-docs` — ADR-015 + README Phase 8 + catalog/contracts/security/.env.example placeholders. Без кода сервисов / без MinIO контейнера.
 2. [ ] `phase8-minio-compose` — MinIO в Docker Compose; health; private buckets; без app wiring.
 3. [ ] `phase8-presign` — metadata schema + presigned PUT/GET; size/MIME; object-key strategy; `X-Service-Key` / initData где UI.
 4. [ ] `phase8-pack-files` — MCP/skill в `salon` и `marketing`; domain prefix isolation; router/tasks empty.

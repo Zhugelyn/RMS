@@ -105,12 +105,22 @@
 - Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG — guard tests ✅.
 - `phase7-docs` … `phase7-hardening` all ✅; Phase 7 closed.
 
+## Phase 8 controls (docs ✅; impl later)
+
+- ADR-015: MinIO **private** buckets + **presigned** PUT/GET; metadata+authz in assistant-api Postgres; no large byte proxy through API.
+- Domain isolation: salon ≠ marketing prefixes/buckets; pack MCP files only in `salon`/`marketing`; `_router`/`tasks` without files MCP.
+- Object keys: opaque server-generated; no PII / sequential ids; size + MIME allowlist before presign; short TTL.
+- Secrets (`MINIO__ROOTUSER` / `MINIO__ROOTPASSWORD` / access keys — placeholders only in `.env.example`): env/secret store; never chat / Mini App / query / git.
+- Scanning hook stub in hardening; soft-fail missing MinIO must not fail `/v1/chat`.
+- Non-goals this phase: Яндекс Директ, Apify, public bucket/CDN without TTL, research-volume full migration in early slices.
+- `phase8-docs` ✅ (2026-08-19). Next: `phase8-minio-compose` (container only, no app wiring).
+
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4–7 closed. Phase 8 MinIO / Phase 9 Direct — только по явному запросу. ES volume created without auth must be wiped when enabling xpack first time.
+- Phase 7 closed. Phase 8 MinIO: docs ✅; container/presign only via remaining slices. Phase 9 Direct — только по явному запросу. ES volume created without auth must be wiped when enabling xpack first time.
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 

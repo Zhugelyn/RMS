@@ -196,6 +196,20 @@
 - Not: harness episodes, research snapshots, MinIO blobs, Direct tools, assistant-api ES client
 - Status: **closed** (`phase7-hardening` ✅) — caps, PII-safe logs, ES basic auth, isolation + non-goals tests
 
+## File Flow: MinIO object storage (Phase 8, ADR-015)
+
+- Owner: MinIO = objects; **assistant-api** = metadata + authz + presign (Postgres). Not a separate `files-api` yet.
+- Bucket: private only (no public ACL). Domain isolation via buckets and/or opaque prefix (`salon/` ≠ `marketing/`).
+- Object key strategy: server-generated opaque UUID/hash; never user-controlled path; no PII / sequential ids in URL.
+- Metadata (planned Postgres, later slice): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, size, status (`pending|uploaded|scanning|active|rejected|deleted`), createdAt, expiresAt/retention.
+- Upload: client requests intent → assistant-api authz + size/MIME allowlist → short-TTL **presigned PUT** → direct to MinIO → confirm/poll metadata. **No large byte proxy through assistant-api.**
+- Download: authz → short-TTL **presigned GET** (or gateway Mini App proxy later if needed for Telegram constraints — not in docs slice).
+- Access control: inter-service / initData as applicable; pack MCP only `salon`|`marketing`; `_router`/`tasks` empty; cross-domain deny.
+- Retention: TTL on pending uploads; lifecycle TBD in hardening.
+- Scanning: stub hook in hardening (antivirus later); soft-fail missing MinIO must not break `/v1/chat`.
+- Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git.
+- Status: **docs only** (`phase8-docs` ✅). Compose → `phase8-minio-compose`. Presign/API → `phase8-presign`. Pack tools → `phase8-pack-files`.
+
 ## File Contract Template
 
 ```markdown
