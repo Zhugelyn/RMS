@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-19b
+
+- Trigger: webhook (empty payload) → first open slice `phase8-docs`
+- Slice: phase8-docs
+- Status: passed
+- Checks: ADR-015 accepted (MinIO private + presign; metadata in assistant-api; pack MCP salon/marketing; domain isolation; no byte proxy); README Phase 8 + non-goals; catalog/contracts/security/.env.example placeholders (`MINIO__*`); no service code / no MinIO container; `dotnet test` green; next=`phase8-minio-compose`
+- Memory updated: architecture-decisions ADR-015, phase-plan checkbox, current-project, catalog, contracts, security-baseline, README, .env.example, telegram-ai rule, run-log
+- Next slice: phase8-minio-compose
+- Blocker: none
+
 ## Run 2026-08-19a
 
 - Trigger: chat — explicit next phase after Phase 7 closed → open Phase 8

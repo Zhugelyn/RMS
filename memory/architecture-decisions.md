@@ -194,3 +194,22 @@ ADR-журнал для решений, которые должны пережи
 - Pack 2026-08-18 (`phase7-pack-retriever`): salon/marketing MCP `kb-retriever` + skill; assistant-api `HttpRagRetriever` + `RagPackInjector` soft-fail inject; router/tasks without RAG; compose `Rag__BaseUrl`/`Rag__ServiceKey`. Hardening next.
 - Hardening 2026-08-18 (`phase7-hardening`): `RagLimits`/`RagClientLimits`; PII-safe logs; ES xpack basic auth; index isolation + comma-domain reject; SecretScanner RAG/ES keys; non-goals guard; Phase 7 closed.
 - Links: `memory/phase-plan.md` Phase 7, ADR-008, ADR-010, `memory/security-baseline.md`
+
+## ADR-015: Files = MinIO private + presign; metadata in assistant-api; pack MCP
+
+- Status: accepted
+- Date: 2026-08-19
+- Context: Нужен object storage для фото/видео/документов пользователя и pack tools. Research volume (GenerateImage / VK photos) — локальный disk, не MinIO. RAG (`rag-service`+ES) хранит текст/embeddings, не бинарники. Нельзя проксировать большие байты через assistant-api. Нельзя общий file toolbox для всех packs (domain isolation). Public bucket / CDN без TTL — риск.
+- Decision:
+  1. **MinIO** = private object store (buckets/prefixes по domain: `salon` ≠ `marketing`). Public bucket запрещён.
+  2. **Metadata + authz + presign** = **assistant-api** (Postgres, database-per-service). Не отдельный `files-api`, пока нет независимого ownership/deploy cadence. assistant-api **не** проксирует большие файлы.
+  3. Upload/download: client → **presigned PUT/GET** (короткий TTL); size + MIME allowlist до выдачи URL; object key непрозрачный (server-generated, не PII, не sequential id в URL).
+  4. File tools — MCP/skill **pack** (`salon` и `marketing`). `_router` и `tasks` files MCP не видят. Cross-domain object access запрещён.
+  5. Scanning hook — stub в hardening (antivirus later). Soft-fail: отсутствующий MinIO / expired URL не валят `/v1/chat`.
+  6. Research-images volume **не** мигрировать в docs/compose-first slices (optional follow-up). Яндекс Директ / Apify / OpenAI Images — out of Phase 8.
+  7. `/v1/chat` `schemaVersion` не ломаем; file metadata API — additive later slices.
+- Consequences: Phase 8 slices: docs → MinIO compose → presign+metadata → pack files → hardening. Secrets (`MINIO__*`) только env/secret store.
+- Alternatives considered: S3 SaaS сразу; proxy bytes through assistant-api; separate `files-api`; public bucket + CDN; migrate research volume in first slice.
+- Security impact: private buckets; short TTL presign; opaque keys; MIME/size caps; domain prefix isolation; no secrets from chat; scanning hook stub.
+- Docs 2026-08-19 (`phase8-docs`): ADR + README/catalog/contracts/security/.env.example placeholders. **No service code / no MinIO container in this slice.**
+- Links: `memory/phase-plan.md` Phase 8, ADR-011 (research volume), ADR-014 (RAG ≠ files), `memory/security-baseline.md`
