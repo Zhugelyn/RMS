@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (`phase8-docs` ✅; next=`phase8-minio-compose`).
+Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (`phase8-docs` ✅; `phase8-minio-compose` ✅; next=`phase8-presign`).
 
 ## Service: telegram-gateway
 
@@ -116,13 +116,15 @@
 ## Phase 8 — Files / MinIO (open)
 
 - Docs ✅ (`phase8-docs`, ADR-015): MinIO private + presign; metadata+authz в assistant-api Postgres; pack MCP salon/marketing; domain prefix isolation; no byte proxy
-- Next slice: `phase8-minio-compose` (container + health; no app wiring)
+- Compose ✅ (`phase8-minio-compose`): `minio` + `minio-init` (private `tg-ai-salon` / `tg-ai-marketing`); internal ports; health; volume `minio-data`; **no app wiring**
+- Next slice: `phase8-presign` (metadata + presigned PUT/GET)
 - Owner (planned): MinIO objects; metadata+presign in assistant-api; pack MCP salon/marketing
 - Non-goals: Direct (9), Apify, public bucket, proxy large bytes through API, research-volume migration in first slices
 
-## Reserved (do not implement in `phase8-docs` / until later slices)
+## Reserved (do not implement until later slices)
 
-- MinIO container (→ `phase8-minio-compose`)
+- Presign/metadata API (→ `phase8-presign`)
+- Pack file MCP (→ `phase8-pack-files`)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers
 - vk-id-user-oauth (unless service token insufficient — follow-up, not this phase)

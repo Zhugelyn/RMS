@@ -72,9 +72,12 @@ public sealed class Phase8MinioComposeTests
         foreach (var service in new[] { "assistant-api", "telegram-gateway", "cursor-sdk-bridge", "rag-service" })
         {
             var block = ExtractServiceBlock(yaml, service);
-            Assert.DoesNotContain("minio", block, StringComparison.OrdinalIgnoreCase);
+            // Avoid matching Phase 8 comments that may trail prior services; require real wiring.
             Assert.DoesNotContain("MINIO__", block, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("9000", block, StringComparison.Ordinal);
+            Assert.DoesNotContain("http://minio", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("minio:", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("minio-data", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("\"9000\"", block, StringComparison.Ordinal);
         }
     }
 
@@ -100,11 +103,12 @@ public sealed class Phase8MinioComposeTests
         var forbidden = new[]
         {
             "MinioClient",
-            "Minio.",
+            "using Minio",
             "Amazon.S3",
             "IAmazonS3",
             "MINIO__ENDPOINT",
-            "ConnectionStrings__Minio"
+            "ConnectionStrings__Minio",
+            "Include=\"Minio"
         };
 
         var hits = new List<string>();

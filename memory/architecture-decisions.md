@@ -212,4 +212,5 @@ ADR-журнал для решений, которые должны пережи
 - Alternatives considered: S3 SaaS сразу; proxy bytes through assistant-api; separate `files-api`; public bucket + CDN; migrate research volume in first slice.
 - Security impact: private buckets; short TTL presign; opaque keys; MIME/size caps; domain prefix isolation; no secrets from chat; scanning hook stub.
 - Docs 2026-08-19 (`phase8-docs`): ADR + README/catalog/contracts/security/.env.example placeholders. **No service code / no MinIO container in this slice.**
+- Compose 2026-08-19 (`phase8-minio-compose`): MinIO `RELEASE.2025-04-22` in `docker-compose.yml`, internal `:9000`/`:9001`, health `/minio/health/live`, volume `minio-data`; `minio-init` creates private buckets `tg-ai-salon` / `tg-ai-marketing` (`anonymous set none`). **No assistant-api / gateway / bridge / rag-service wiring.**
 - Links: `memory/phase-plan.md` Phase 8, ADR-011 (research volume), ADR-014 (RAG ≠ files), `memory/security-baseline.md`

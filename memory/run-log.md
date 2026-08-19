@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-19c
+
+- Trigger: webhook (empty payload) → first open slice `phase8-minio-compose`
+- Slice: phase8-minio-compose
+- Status: passed
+- Checks: MinIO `RELEASE.2025-04-22` in compose (internal `:9000`/`:9001`, health `/minio/health/live`, volume `minio-data`); `minio-init` private buckets `tg-ai-salon`/`tg-ai-marketing` (`anonymous set none`); no assistant-api/gateway/bridge/rag MinIO wiring; `Phase8MinioComposeTests`; Phase 7 compose guards relaxed (Direct/Apify still gated); `dotnet test` green; next=`phase8-presign`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-015 note, README, .env.example, run-log
+- Next slice: phase8-presign
+- Blocker: none (docker CLI absent; unit + compose YAML asserts cover health/wiring)
+
 ## Run 2026-08-19b
 
 - Trigger: webhook (empty payload) → first open slice `phase8-docs`

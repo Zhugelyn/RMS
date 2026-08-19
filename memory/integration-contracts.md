@@ -208,7 +208,8 @@
 - Retention: TTL on pending uploads; lifecycle TBD in hardening.
 - Scanning: stub hook in hardening (antivirus later); soft-fail missing MinIO must not break `/v1/chat`.
 - Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git.
-- Status: **docs only** (`phase8-docs` ✅). Compose → `phase8-minio-compose`. Presign/API → `phase8-presign`. Pack tools → `phase8-pack-files`.
+- Status: **compose ✅** (`phase8-minio-compose`). Presign/API → `phase8-presign`. Pack tools → `phase8-pack-files`.
+- Compose: `minio` (S3 API `:9000`, console `:9001` internal-only, health `/minio/health/live`, volume `minio-data`); `minio-init` creates private buckets `tg-ai-salon` / `tg-ai-marketing` (`mc anonymous set none`). No assistant-api depends_on / `MINIO__*` env yet.
 
 ## File Contract Template
 

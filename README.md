@@ -1,6 +1,6 @@
-# Telegram AI — Phase 8 Files/MinIO open (docs ✅) + Phase 7 RAG closed
+# Telegram AI — Phase 8 Files/MinIO open (compose ✅) + Phase 7 RAG closed
 
-Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-service:
+Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-service + MinIO:
 
 | Сервис | Порт | Назначение |
 | --- | --- | --- |
@@ -10,7 +10,8 @@ Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-se
 | `postgres` | internal | durable harness + research settings/artifacts |
 | `elasticsearch` | internal `:9200` | KB indexes owned by `rag-service` (ADR-014) |
 | `rag-service` | internal `:8080` | `POST /v1/ingest`, `POST /v1/search` (`X-Service-Key`) |
-| `minio` | — | Phase 8: object store (**docs only** now; container → `phase8-minio-compose`) |
+| `minio` | internal `:9000` | Phase 8: S3-compatible object store (private buckets) |
+| `minio-init` | one-shot | Creates `tg-ai-salon` / `tg-ai-marketing` with `anonymous=none` |
 
 Без `CURSOR__APIKEY` chat идёт в **stub fallback**.
 
@@ -25,7 +26,7 @@ Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-se
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | **7 Knowledge** | **closed** (hardening ✅ 2026-08-18) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
-| **8 Files / media** | **open** (`phase8-docs` ✅; next=`phase8-minio-compose`) | MinIO private + presign; metadata в assistant-api (ADR-015) |
+| **8 Files / media** | **open** (`phase8-docs` ✅; `phase8-minio-compose` ✅; next=`phase8-presign`) | MinIO private + presign; metadata в assistant-api (ADR-015) |
 | 9 External tools | later | Яндекс Директ и др. |
 
 ## Phase 4 — Marketing Instagram Research (план)
@@ -129,9 +130,9 @@ Object storage для фото/видео/документов (ADR-015). **Не
 - Проксировать большие файлы через assistant-api
 - Миграция research-images volume целиком (optional follow-up)
 - Apify, OpenAI Images
-- MinIO контейнер / app wiring в `phase8-docs` (→ `phase8-minio-compose` → `phase8-presign`)
+- App wiring / presign в `phase8-minio-compose` (→ `phase8-presign`)
 
-Slices: `phase8-docs` ✅ → `phase8-minio-compose` → `phase8-presign` → `phase8-pack-files` → `phase8-hardening`.
+Slices: `phase8-docs` ✅ → `phase8-minio-compose` ✅ → `phase8-presign` → `phase8-pack-files` → `phase8-hardening`.
 
 ## Требования
 
@@ -204,7 +205,7 @@ Mini App UI     ──► gateway /api/miniapp/chat ─────────�
 - Instagram Graph token (Phase 4) — только в assistant-api / secret store, не в Telegram.
 - VK service token (Phase 6) — только в assistant-api / secret store (`VK__SERVICETOKEN`), не в Telegram.
 - Phase 7 closed: `RAG__SERVICEKEY` / `RAG__BASEURL` / `ELASTICSEARCH__PASSWORD` — env/secret store only; не из Telegram/Mini App. Hardening ✅ (caps, PII-safe logs, ES basic auth).
-- Phase 8 docs: `MINIO__*` placeholders in `.env.example` only — контейнер ещё не в compose (`phase8-minio-compose`). Не из Telegram/Mini App.
+- Phase 8 compose ✅: `MINIO__ROOTUSER` / `MINIO__ROOTPASSWORD` / bucket names in `.env.example` + compose (`minio` + `minio-init`). App wiring → `phase8-presign`. Не из Telegram/Mini App.
 - Mini App не содержит секретов; ключ на сервере gateway.
 
 ## Ручные проверки API
@@ -403,7 +404,7 @@ memory/                    # phase-plan, contracts, ADR
 | `VK__APIBASEURL` (optional) | assistant-api | Только `https://api.vk.com/method/` (startup validate + runtime `VkApiHostGuard`). Не `m.vk.com` / oauth. |
 | `RAG__SERVICEKEY` (Phase 7) | rag-service + assistant-api (`X-Service-Key`) | ≥16 chars in `.env` → restart `rag-service` + `assistant-api`. `RAG__BASEURL=http://rag-service:8080` for assistant ✅. Не из чата. |
 | `ELASTICSEARCH__PASSWORD` (Phase 7) | elasticsearch + rag-service basic auth | Новый пароль → `.env` → **wipe ES volume** if upgrading from security-off → restart `elasticsearch` + `rag-service`. Не из чата. HTTP SSL off (compose-internal). |
-| `MINIO__*` (Phase 8, docs placeholders) | MinIO + assistant-api (later slices) | Root/access keys только env/secret store. Container → `phase8-minio-compose`. Не из чата/Mini App. Private buckets; short TTL presign. |
+| `MINIO__*` (Phase 8, compose ✅) | MinIO (+ assistant-api later) | Root password via `MINIO__ROOTPASSWORD` (dev default is local-only). Buckets `tg-ai-salon`/`tg-ai-marketing` private (`minio-init`). Presign wiring → `phase8-presign`. Не из чата/Mini App. |
 
 Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 
