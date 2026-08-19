@@ -282,6 +282,9 @@ public static partial class VkCommunityAllowlist
         text.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("VK_SERVICE_TOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("VK_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("RAG__SERVICEKEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("RAG_SERVICE_KEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ELASTICSEARCH__PASSWORD", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("IGQVJ", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("EAA", StringComparison.Ordinal) ||
         text.Contains("sk-", StringComparison.OrdinalIgnoreCase);

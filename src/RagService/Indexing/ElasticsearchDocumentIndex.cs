@@ -1,4 +1,6 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
@@ -12,6 +14,8 @@ namespace RagService.Indexing;
 /// <summary>
 /// Elasticsearch REST client (no Nest). Owns kb-salon / kb-marketing only.
 /// Soft-fail search → empty hits (must not cascade into /v1/chat later).
+/// Basic auth when Elasticsearch:Username/Password set (phase7-hardening).
+/// Logs never include query/text/snippet/password (PII-safe).
 /// </summary>
 public sealed class ElasticsearchDocumentIndex : IDocumentIndex
 {
@@ -36,12 +40,19 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
         _logger = logger;
         _dims = embedder.Dimensions;
 
-        var uri = options.Value.Uris.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        var opts = options.Value;
+        var uri = opts.Uris.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .FirstOrDefault()
             ?? throw new InvalidOperationException("Elasticsearch:Uris is required for ElasticsearchDocumentIndex.");
 
         _http.BaseAddress = new Uri(uri.TrimEnd('/') + "/");
-        _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.Value.RequestTimeoutSeconds, 1, 60));
+        _http.Timeout = TimeSpan.FromSeconds(Math.Clamp(opts.RequestTimeoutSeconds, 1, 60));
+
+        if (opts.HasBasicAuth)
+        {
+            var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{opts.Username}:{opts.Password}"));
+            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
+        }
     }
 
     public string Mode => "elasticsearch";
@@ -71,8 +82,9 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
         using var response = await _http.PutAsJsonAsync(path, body, JsonOptions, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"Elasticsearch upsert failed ({(int)response.StatusCode}): {Truncate(detail, 400)}");
+            // Do not log response body (may echo document text). Surface truncated detail only in exception for caller.
+            throw new InvalidOperationException(
+                $"Elasticsearch upsert failed ({(int)response.StatusCode}) for index={document.Index} documentId={document.DocumentId}");
         }
     }
 
@@ -90,13 +102,21 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
             throw new InvalidOperationException("Index/domain mismatch rejected.");
         }
 
+        // Reject multi-index / wildcard paths.
+        if (index.Contains(',', StringComparison.Ordinal)
+            || index.Contains('*', StringComparison.Ordinal)
+            || index.Contains('/', StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Mixed or wildcard index paths rejected.");
+        }
+
         try
         {
             await EnsureIndexesAsync(cancellationToken);
 
             var body = new
             {
-                size = Math.Clamp(topK, 1, 20),
+                size = RagLimits.ClampTopK(topK),
                 query = new
                 {
                     script_score = new
@@ -129,8 +149,11 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
             using var response = await _http.PostAsJsonAsync($"{index}/_search", body, JsonOptions, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
-                var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogWarning("ES search soft-fail {Status}: {Detail}", (int)response.StatusCode, Truncate(detail, 200));
+                // PII-safe: status + index only — never ES body (may contain query/text).
+                _logger.LogWarning(
+                    "ES search soft-fail status={Status} index={Index}",
+                    (int)response.StatusCode,
+                    index);
                 return Array.Empty<SearchHit>();
             }
 
@@ -151,12 +174,20 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
                 }
 
                 var text = source.TryGetProperty("text", out var t) ? t.GetString() ?? string.Empty : string.Empty;
+                var hitDomain = source.TryGetProperty("domain", out var d) ? d.GetString() : null;
+                // Defense: drop cross-domain docs if ES filter ever fails.
+                if (!string.IsNullOrEmpty(hitDomain)
+                    && !string.Equals(hitDomain, domain.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 results.Add(new SearchHit
                 {
                     DocumentId = source.TryGetProperty("documentId", out var id) ? id.GetString() ?? string.Empty : string.Empty,
                     Domain = domain.ToString().ToLowerInvariant(),
                     Title = source.TryGetProperty("title", out var title) ? title.GetString() : null,
-                    Snippet = text.Length <= 240 ? text : text[..240] + "…",
+                    Snippet = RagLimits.Snippet(text),
                     Score = hit.TryGetProperty("_score", out var score) && score.TryGetDouble(out var s) ? s : 0
                 });
             }
@@ -165,7 +196,7 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "ES search soft-fail for index {Index}", index);
+            _logger.LogWarning(ex, "ES search soft-fail for index={Index}", index);
             return Array.Empty<SearchHit>();
         }
     }
@@ -204,14 +235,11 @@ public sealed class ElasticsearchDocumentIndex : IDocumentIndex
             using var put = await _http.PutAsJsonAsync(index, mapping, JsonOptions, cancellationToken);
             if (!put.IsSuccessStatusCode && put.StatusCode != System.Net.HttpStatusCode.BadRequest)
             {
-                var detail = await put.Content.ReadAsStringAsync(cancellationToken);
-                throw new InvalidOperationException($"Failed to create index {index}: {Truncate(detail, 400)}");
+                throw new InvalidOperationException(
+                    $"Failed to create index {index} status={(int)put.StatusCode}");
             }
         }
 
         _indexesEnsured = true;
     }
-
-    private static string Truncate(string value, int max) =>
-        string.IsNullOrEmpty(value) || value.Length <= max ? value : value[..max];
 }

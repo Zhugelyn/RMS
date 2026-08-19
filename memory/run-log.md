@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-18q
+
+- Trigger: webhook (empty payload) → first open slice `phase7-hardening`
+- Slice: phase7-hardening
+- Status: passed
+- Checks: `RagLimits`/`RagClientLimits` caps; PII-safe RAG logs (no query/text/snippet/Detail); ES xpack basic auth + `Elasticsearch__Username/Password`; index isolation + reject comma domains; SecretScanner rejects `RAG__SERVICEKEY`/`ELASTICSEARCH__PASSWORD`; non-goals guard (no MinIO/Direct/Apify); `Phase7HardeningTests`+assistant; `dotnet test` 211/211 (148 api + 43 gateway + 20 rag); Phase 7 closed
+- Memory updated: phase-plan checkbox + Phase 7 closed, current-project, catalog, contracts, security-baseline, ADR-014 note, README, .env.example, run-log
+- Next slice: none (Phase 8 MinIO — только по явному запросу)
+- Blocker: none
+
 ## Run 2026-08-18p
 
 - Trigger: webhook (empty payload) → first open slice `phase7-pack-retriever`

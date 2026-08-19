@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6 closed. Phase 7 Knowledge/RAG open (`phase7-docs` ✅; `phase7-es-compose` ✅; `phase7-rag-api` ✅; `phase7-pack-retriever` ✅; next=`phase7-hardening`).
+Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 MinIO / Phase 9 Direct — только по явному slice.
 
 ## Service: telegram-gateway
 
@@ -88,7 +88,7 @@
 - Internal only `:9200`; health `_cluster/health` (yellow|green)
 - Volume: `elasticsearch-data`
 - Connected only via `rag-service` (assistant-api / gateway / bridge do **not** query ES)
-- Security: xpack.security disabled for local compose until hardening
+- Security: xpack.security **enabled** + basic auth (`ELASTIC_PASSWORD`); HTTP SSL off (compose-internal); not published
 
 ## Service: rag-service (Phase 7)
 
@@ -97,23 +97,24 @@
 - Auth: `X-Service-Key` (`Rag:ServiceKey` / `RAG__SERVICEKEY`)
 - Indexes: `kb-salon` / `kb-marketing`; stub embedder (no SaaS key)
 - Compose: depends_on healthy `elasticsearch`; internal `:8080`
-- Consumers (planned): assistant-api HTTP only — pack MCP wiring → `phase7-pack-retriever`
+- Consumers: assistant-api HTTP only (`HttpRagRetriever` / pack inject) ✅
 - Soft-fail search → empty hits
-- Pack retriever ✅ (`phase7-pack-retriever`): `HttpRagRetriever` + `RagPackInjector`; compose `Rag__BaseUrl`/`Rag__ServiceKey`; next=`phase7-hardening`
+- Pack retriever ✅ (`phase7-pack-retriever`): `HttpRagRetriever` + `RagPackInjector`; compose `Rag__BaseUrl`/`Rag__ServiceKey`
+- Hardening ✅ (`phase7-hardening`): `RagLimits`, PII-safe logs, ES basic auth, isolation + non-goals tests
 
-## Phase 7 — Knowledge / RAG (open)
+## Phase 7 — Knowledge / RAG (closed ✅)
 
 - Docs ✅ (`phase7-docs`, ADR-014): RAG ≠ harness ≠ research; domain-split indexes; retriever via pack MCP
 - ES compose ✅ (`phase7-es-compose`): container + health
 - rag-api ✅ (`phase7-rag-api`): ingest/search + domain isolation + stub embedder + service key
-- Next slice: `phase7-pack-retriever` (MCP/skill in salon/marketing packs)
+- Pack retriever ✅ (`phase7-pack-retriever`)
+- Hardening ✅ (`phase7-hardening`): caps, PII logs, ES basic auth, non-goals
 - Soft-fail: empty retrieval must not fail `/v1/chat`
 - Embeddings: stub OK until dedicated slice
 - Non-goals: MinIO (8), Direct (9), Apify, mixing indexes, replacing harness/research with RAG
 
-## Reserved (do not implement in `phase7-rag-api`)
+## Reserved (do not implement without Phase 8/9 open)
 
-- pack MCP retriever wiring (→ `phase7-pack-retriever`)
 - files-minio (Phase 8)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers

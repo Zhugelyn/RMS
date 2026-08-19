@@ -57,7 +57,7 @@ public sealed class HttpRagRetriever : IRagRetriever
             return Array.Empty<RagHit>();
         }
 
-        var k = Math.Clamp(topK ?? _options.TopK, 1, 20);
+        var k = RagClientLimits.ClampTopK(topK, _options.TopK);
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, "v1/search");
@@ -72,6 +72,7 @@ public sealed class HttpRagRetriever : IRagRetriever
             using var response = await _http.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                // PII-safe: never log query text or response body.
                 _logger.LogWarning(
                     "RAG search soft-fail status={Status} domain={Domain}",
                     (int)response.StatusCode,
@@ -86,6 +87,17 @@ public sealed class HttpRagRetriever : IRagRetriever
             }
 
             // Defense: never surface another domain's docs even if rag-service misbehaves.
+            // Also reject unexpected index names if present.
+            if (!string.IsNullOrWhiteSpace(body.Index)
+                && !string.Equals(body.Index, $"kb-{normalized}", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "RAG search soft-fail index-mismatch domain={Domain} index={Index}",
+                    normalized,
+                    body.Index);
+                return Array.Empty<RagHit>();
+            }
+
             return body.Hits
                 .Where(h => string.Equals(h.Domain, normalized, StringComparison.OrdinalIgnoreCase))
                 .Select(h => new RagHit(
@@ -95,6 +107,7 @@ public sealed class HttpRagRetriever : IRagRetriever
                     h.Snippet ?? string.Empty,
                     h.Score))
                 .Where(h => !string.IsNullOrWhiteSpace(h.DocumentId) || !string.IsNullOrWhiteSpace(h.Snippet))
+                .Take(k)
                 .ToList();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

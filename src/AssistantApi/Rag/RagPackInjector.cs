@@ -66,20 +66,24 @@ public sealed class RagPackInjector : IRagPackInjector
 
         var sb = new StringBuilder();
         sb.AppendLine($"## Knowledge base hits ({domain} only, MCP {RagMcp.KbRetriever})");
-        foreach (var hit in hits.Take(_options.TopK))
+        foreach (var hit in hits.Take(RagClientLimits.ClampTopK(_options.TopK)))
         {
             var title = string.IsNullOrWhiteSpace(hit.Title) ? hit.DocumentId : hit.Title.Trim();
             sb.AppendLine(
-                $"- [{Trim(title, 80)}] score={hit.Score:0.###}: {Trim(hit.Snippet, 280)}");
+                $"- [{Trim(title, RagClientLimits.MaxTitleInjectChars)}] score={hit.Score:0.###}: {Trim(hit.Snippet, RagClientLimits.MaxSnippetInjectChars)}");
         }
 
+        var injectCap = Math.Clamp(
+            _options.InjectMaxChars,
+            RagClientLimits.MinInjectMaxChars,
+            RagClientLimits.MaxInjectMaxChars);
         var text = sb.ToString().Trim();
-        if (text.Length <= _options.InjectMaxChars)
+        if (text.Length <= injectCap)
         {
             return text;
         }
 
-        return text[.._options.InjectMaxChars].TrimEnd() + "…";
+        return text[..injectCap].TrimEnd() + "…";
     }
 
     private static string Trim(string? value, int max)

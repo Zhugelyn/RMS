@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using RagService.Domain;
 
 namespace RagService.Contracts;
 
@@ -12,18 +13,18 @@ public sealed class IngestRequest
 {
     [Required]
     [MinLength(1)]
-    [MaxLength(128)]
+    [MaxLength(RagLimits.MaxDocumentIdLength)]
     public string DocumentId { get; set; } = string.Empty;
 
     [Required]
     public RagDomain Domain { get; set; }
 
-    [MaxLength(512)]
+    [MaxLength(RagLimits.MaxTitleLength)]
     public string? Title { get; set; }
 
     [Required]
     [MinLength(1)]
-    [MaxLength(100_000)]
+    [MaxLength(RagLimits.MaxTextLength)]
     public string Text { get; set; } = string.Empty;
 
     /// <summary>Optional opaque metadata (no secrets). Capped by serializer size.</summary>
@@ -46,11 +47,11 @@ public sealed class SearchRequest
 
     [Required]
     [MinLength(1)]
-    [MaxLength(2000)]
+    [MaxLength(RagLimits.MaxQueryLength)]
     public string Query { get; set; } = string.Empty;
 
-    [Range(1, 20)]
-    public int TopK { get; set; } = 5;
+    [Range(1, RagLimits.MaxTopK)]
+    public int TopK { get; set; } = RagLimits.DefaultTopK;
 }
 
 public sealed class SearchHit

@@ -22,7 +22,18 @@ public static class RagIndexNames
             return false;
         }
 
-        return Enum.TryParse(value.Trim(), ignoreCase: true, out domain)
+        var trimmed = value.Trim();
+        // Reject multi-value / index-name / wildcard forms (Enum.TryParse accepts "Salon,Marketing").
+        if (trimmed.Contains(',', StringComparison.Ordinal)
+            || trimmed.Contains('*', StringComparison.Ordinal)
+            || trimmed.Contains('/', StringComparison.Ordinal)
+            || trimmed.Contains('-', StringComparison.Ordinal)
+            || trimmed.Contains(' ', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return Enum.TryParse(trimmed, ignoreCase: true, out domain)
                && (domain == RagDomain.Salon || domain == RagDomain.Marketing);
     }
 }

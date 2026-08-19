@@ -25,9 +25,10 @@ services:
     environment:
       discovery.type: single-node
       cluster.name: telegram-ai-kb
-      # Local compose: security off until hardening; rag-service uses internal network.
-      xpack.security.enabled: "false"
+      # phase7-hardening: basic auth on; HTTP SSL off (compose-internal trust).
+      xpack.security.enabled: "true"
       xpack.security.http.ssl.enabled: "false"
+      ELASTIC_PASSWORD: ${ELASTICSEARCH__PASSWORD:-dev-only-elastic-password}
       ES_JAVA_OPTS: ${ELASTICSEARCH__JAVA_OPTS:--Xms512m -Xmx512m}
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
@@ -38,12 +39,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -fsS http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1",
+          "curl -fsS -u elastic:$${ELASTIC_PASSWORD} http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1",
         ]
       interval: 10s
       timeout: 10s
       retries: 12
-      start_period: 60s
+      start_period: 90s
     restart: unless-stopped
 
   rag-service:
@@ -54,6 +55,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Rag__ServiceKey: ${RAG__SERVICEKEY:-dev-only-rag-service-key}
       Elasticsearch__Uris: http://elasticsearch:9200
+      Elasticsearch__Username: elastic
+      Elasticsearch__Password: ${ELASTICSEARCH__PASSWORD:-dev-only-elastic-password}
       Elasticsearch__RequestTimeoutSeconds: "10"
     # Internal only — assistant-api calls over compose network (phase7-pack-retriever).
     expose:

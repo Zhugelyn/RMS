@@ -402,6 +402,10 @@ static bool LooksLikeSecret(string text)
         text.Contains("VK__SERVICETOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("VK_SERVICE_TOKEN", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("VK_ACCESS_TOKEN", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("RAG__SERVICEKEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("RAG_SERVICE_KEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ELASTICSEARCH__PASSWORD", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("ELASTIC_PASSWORD", StringComparison.OrdinalIgnoreCase) ||
         (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20))
     {
         return true;

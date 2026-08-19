@@ -92,26 +92,25 @@
 - Hardening ✅: `Phase6HardeningTests` caps + non-goals (no scrape/Apify/user-OAuth/RAG/MinIO/Direct); README token rotation VK.
 - Non-goals: user VK ID OAuth, MinIO, RAG/ES, Direct — out of Phase 6.
 
-## Phase 7 controls (docs / ES / rag-api / pack-retriever)
+## Phase 7 controls (closed ✅)
 
 - ADR-014: document RAG ≠ harness memory ≠ research artifacts; domain-split indexes (`kb-salon` / `kb-marketing`).
 - Owner: `rag-service` + Elasticsearch; assistant-api does **not** query ES; HTTP + `X-Service-Key` only.
 - Retriever via pack MCP (`salon`/`marketing` allowlist `kb-retriever` + skill) ✅; `_router`/`tasks` without RAG ✅ (`phase7-pack-retriever`).
-- Secrets (`RAG__SERVICEKEY`, future ES creds): env/secret store only; never chat / Mini App / query / git.
-- Soft-fail: empty/failed retrieval must not fail `/v1/chat` ✅; PII not in ES/query logs (hardening later).
+- Secrets (`RAG__SERVICEKEY`, `ELASTICSEARCH__PASSWORD`): env/secret store only; never chat / Mini App / query / git. SecretScanner + LooksLikeSecret reject RAG/ES key names ✅.
+- Soft-fail: empty/failed retrieval must not fail `/v1/chat` ✅; PII not in ES/query logs ✅ (status/domain/index only; no `{Query}`/`{Text}`/`{Detail}`).
 - Embeddings: stub embedder ✅ (`phase7-rag-api`); no SaaS key.
-- Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG.
-- `phase7-docs`: placeholders in `.env.example`.
-- `phase7-es-compose` ✅: ES container in compose (internal `:9200`, health).
-- `phase7-rag-api` ✅: rag-service ingest/search + service key + domain isolation tests; assistant-api still no ES client. xpack.security off until hardening.
-- `phase7-pack-retriever` ✅: `HttpRagRetriever` + `RagPackInjector`; compose `Rag__BaseUrl`/`Rag__ServiceKey` + depends_on healthy rag-service.
+- Caps ✅ (`RagLimits` / `RagClientLimits`): TopK≤20, text≤100k, query≤2k, snippet≤240, inject≤2400, metadata strip secrets.
+- ES compose: xpack.security **on** + basic auth (`ELASTIC_PASSWORD` / `Elasticsearch__Username`+`Password`); HTTP SSL off (compose-internal); no published `:9200` ✅ (`phase7-hardening`).
+- Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG — guard tests ✅.
+- `phase7-docs` … `phase7-hardening` all ✅; Phase 7 closed.
 
 ## Open Risks
 
 - Реальный Telegram reply требует валидный bot token; placeholder даёт soft-fail 401 на sendMessage.
 - Живой Cursor cloud no-repo path зависит от аккаунтных флагов Cursor; stub fallback закрывает compose без ключа.
 - Internal HTTP to bridge carries decrypted key (compose trust model); harden with mTLS later if needed.
-- Phase 4–6 closed. Phase 7: pack retriever ✅; hardening next — do not treat RAG keys as chat-input; ES local compose has security disabled until hardening.
+- Phase 4–7 closed. Phase 8 MinIO / Phase 9 Direct — только по явному запросу. ES volume created without auth must be wiped when enabling xpack first time.
 - Mini App `TELEGRAM__WEBAPPURL` must be HTTPS publicly reachable for real Telegram clients.
 
 
