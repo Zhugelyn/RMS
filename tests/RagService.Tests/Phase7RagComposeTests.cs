@@ -56,10 +56,10 @@ public sealed class Phase7RagComposeTests
     }
 
     [Fact]
-    public void Compose_non_goals_no_minio_or_direct()
+    public void Compose_non_goals_no_direct_or_apify()
     {
         var yaml = ReadCompose();
-        Assert.DoesNotContain("minio:", yaml, StringComparison.OrdinalIgnoreCase);
+        // MinIO allowed starting phase8-minio-compose; Direct/Apify still gated.
         Assert.DoesNotContain("yandex-direct", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", yaml, StringComparison.OrdinalIgnoreCase);
     }

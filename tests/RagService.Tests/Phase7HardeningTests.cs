@@ -333,7 +333,7 @@ public sealed class Phase7HardeningTests : IClassFixture<WebApplicationFactory<P
         }
 
         var compose = File.ReadAllText(Path.Combine(repoRoot, "docker-compose.yml"));
-        Assert.DoesNotContain("minio:", compose, StringComparison.OrdinalIgnoreCase);
+        // MinIO container OK from phase8-minio-compose; still no Direct/Apify services.
         Assert.DoesNotContain("yandex-direct", compose, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", compose, StringComparison.OrdinalIgnoreCase);
 

@@ -77,7 +77,9 @@ public sealed class Phase7PackRetrieverTests
         Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
 
-        Assert.DoesNotContain("minio:", yaml, StringComparison.OrdinalIgnoreCase);
+        // phase8-minio-compose adds MinIO container; assistant-api must still not wire it.
+        Assert.DoesNotContain("minio", apiBlock, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MINIO__", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("yandex-direct", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", yaml, StringComparison.OrdinalIgnoreCase);
     }
