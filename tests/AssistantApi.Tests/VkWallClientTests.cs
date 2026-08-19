@@ -31,7 +31,7 @@ public sealed class VkWallClientTests
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException($"Fixture not found: {name}");
+        throw new System.IO.FileNotFoundException($"Fixture not found: {name}");
     }
 
     [Fact]

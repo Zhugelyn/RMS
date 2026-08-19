@@ -8,10 +8,7 @@
 
   <!-- Phase 3 pack layout: ship packs with assistant-api; runtime wiring is later slices. -->
   <ItemGroup>
-    <Content Include="..\AgentPacks\**\*"
-             Link="AgentPacks\%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\AgentPacks\**\*" Link="AgentPacks\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +17,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Minio" Version="6.0.5" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 

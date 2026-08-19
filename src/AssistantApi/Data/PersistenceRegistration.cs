@@ -1,4 +1,5 @@
 using AssistantApi.Data;
+using AssistantApi.Files;
 using AssistantApi.Memory;
 using AssistantApi.Research;
 using Microsoft.EntityFrameworkCore;
@@ -37,6 +38,7 @@ public static class PersistenceRegistration
             services.AddSingleton<IResearchSettingsStore, InMemoryResearchSettingsStore>();
             services.AddSingleton<IResearchArtifactStore, InMemoryResearchArtifactStore>();
             services.AddSingleton<IResearchScheduleRunStore, InMemoryResearchScheduleRunStore>();
+            services.AddSingleton<IFileObjectStore, InMemoryFileObjectStore>();
             return services;
         }
 
@@ -47,6 +49,7 @@ public static class PersistenceRegistration
         services.AddSingleton<IResearchSettingsStore, PostgresResearchSettingsStore>();
         services.AddSingleton<IResearchArtifactStore, PostgresResearchArtifactStore>();
         services.AddSingleton<IResearchScheduleRunStore, PostgresResearchScheduleRunStore>();
+        services.AddSingleton<IFileObjectStore, PostgresFileObjectStore>();
         services.AddSingleton<AssistantDbHealthCheck>();
         services.AddHostedService<MigrateAssistantDbHostedService>();
         return services;

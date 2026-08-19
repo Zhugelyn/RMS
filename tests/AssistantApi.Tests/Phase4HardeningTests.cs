@@ -86,7 +86,6 @@ public sealed class Phase4HardeningTests
             "Nest.ElasticClient",
             "IEmbeddingGenerator",
             "OpenAIEmbedding",
-            "MinioClient",
             "Yandex.Direct"
         };
 
@@ -97,7 +96,6 @@ public sealed class Phase4HardeningTests
             "Azure.AI.OpenAI",
             "NEST",
             "Elastic.Clients.Elasticsearch",
-            "Minio",
             "Yandex.Direct"
         };
 

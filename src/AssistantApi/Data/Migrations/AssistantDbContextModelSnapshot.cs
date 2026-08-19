@@ -241,6 +241,69 @@ namespace AssistantApi.Data.Migrations
 
                     b.ToTable("user_profiles", (string)null);
                 });
+
+            modelBuilder.Entity("AssistantApi.Data.FileObjectEntity", b =>
+                {
+                    b.Property<Guid>("FileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Bucket")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Domain")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("OriginalFilename")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset?>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("FileId");
+
+                    b.HasIndex("UserId", "Domain", "CreatedAt")
+                        .HasDatabaseName("ix_file_objects_user_domain_created");
+
+                    b.HasIndex("Bucket", "ObjectKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_file_objects_bucket_object");
+
+                    b.ToTable("file_objects", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }

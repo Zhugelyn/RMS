@@ -1,8 +1,8 @@
 namespace AssistantApi.Tests;
 
 /// <summary>
-/// phase8-minio-compose: MinIO in Docker Compose with healthcheck + private buckets
-/// (minio-init); no app wiring (assistant-api/gateway/bridge do not depend on / connect to MinIO).
+/// phase8-minio-compose baseline + phase8-presign wiring: MinIO health/private buckets;
+/// assistant-api wires MinIO env; gateway/bridge/rag do not.
 /// </summary>
 public sealed class Phase8MinioComposeTests
 {
@@ -65,19 +65,21 @@ public sealed class Phase8MinioComposeTests
     }
 
     [Fact]
-    public void Compose_assistant_gateway_bridge_rag_do_not_wire_minio()
+    public void Compose_assistant_api_wires_minio_gateway_bridge_rag_do_not()
     {
         var yaml = ReadCompose();
+        var api = ExtractServiceBlock(yaml, "assistant-api");
+        Assert.Contains("Minio__Endpoint", api, StringComparison.Ordinal);
+        Assert.Contains("http://minio:9000", api, StringComparison.Ordinal);
+        Assert.Contains("minio:", api, StringComparison.Ordinal);
+        Assert.Contains("minio-init:", api, StringComparison.Ordinal);
 
-        foreach (var service in new[] { "assistant-api", "telegram-gateway", "cursor-sdk-bridge", "rag-service" })
+        foreach (var service in new[] { "telegram-gateway", "cursor-sdk-bridge", "rag-service" })
         {
             var block = ExtractServiceBlock(yaml, service);
-            // Avoid matching Phase 8 comments that may trail prior services; require real wiring.
-            Assert.DoesNotContain("MINIO__", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Minio__", block, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("http://minio", block, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("minio:", block, StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("minio-data", block, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain("\"9000\"", block, StringComparison.Ordinal);
         }
     }
 
@@ -91,47 +93,6 @@ public sealed class Phase8MinioComposeTests
 
         var minioBlock = ExtractServiceBlock(yaml, "minio");
         Assert.DoesNotContain("ports:", minioBlock, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Assistant_api_source_has_no_minio_client_wiring()
-    {
-        var repoRoot = FindRepoRoot();
-        var apiRoot = Path.Combine(repoRoot, "src", "AssistantApi");
-        Assert.True(Directory.Exists(apiRoot), apiRoot);
-
-        var forbidden = new[]
-        {
-            "MinioClient",
-            "using Minio",
-            "Amazon.S3",
-            "IAmazonS3",
-            "MINIO__ENDPOINT",
-            "ConnectionStrings__Minio",
-            "Include=\"Minio"
-        };
-
-        var hits = new List<string>();
-        foreach (var file in Directory.EnumerateFiles(apiRoot, "*.*", SearchOption.AllDirectories))
-        {
-            if (!file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
-                && !file.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-                && !file.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var text = File.ReadAllText(file);
-            foreach (var pattern in forbidden)
-            {
-                if (text.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-                {
-                    hits.Add($"{Path.GetRelativePath(repoRoot, file)}: {pattern}");
-                }
-            }
-        }
-
-        Assert.True(hits.Count == 0, "Unexpected MinIO/app wiring:\n" + string.Join("\n", hits));
     }
 
     /// <summary>Naive YAML service block extractor (indent-based), enough for compose assertions.</summary>

@@ -62,7 +62,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException($"Fixture not found: {name}");
+        throw new System.IO.FileNotFoundException($"Fixture not found: {name}");
     }
 
     private static string FindPacksRoot()

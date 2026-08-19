@@ -71,3 +71,20 @@ public sealed class ResearchPlanEntity
     public DateOnly WindowEnd { get; set; }
     public string PayloadJson { get; set; } = "{}";
 }
+
+/// <summary>MinIO object metadata (ADR-015). Bytes live in MinIO; API never proxies large files.</summary>
+public sealed class FileObjectEntity
+{
+    public Guid FileId { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+    public string Bucket { get; set; } = string.Empty;
+    public string ObjectKey { get; set; } = string.Empty;
+    public string? OriginalFilename { get; set; }
+    public string ContentType { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public string Status { get; set; } = "pending";
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? UploadedAt { get; set; }
+    public DateTimeOffset? ExpiresAt { get; set; }
+}

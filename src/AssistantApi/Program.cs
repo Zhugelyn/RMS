@@ -1,5 +1,6 @@
 using AssistantApi.Contracts;
 using AssistantApi.Data;
+using AssistantApi.Files;
 using AssistantApi.Harness;
 using AssistantApi.Instagram;
 using AssistantApi.Options;
@@ -191,6 +192,32 @@ else
 }
 
 builder.Services.AddSingleton<IRagPackInjector, RagPackInjector>();
+
+// Phase 8 Files/MinIO: metadata + short-TTL presign. Empty Endpoint → UnavailablePresigner; chat unaffected.
+builder.Services
+    .AddOptions<MinioOptions>()
+    .Bind(builder.Configuration.GetSection(MinioOptions.SectionName))
+    .Validate(
+        o => !o.IsConfigured
+             || (o.AccessKey.Length >= 3 && o.SecretKey.Length >= 8),
+        "Minio:AccessKey/SecretKey required when Minio:Endpoint is set.")
+    .ValidateOnStart();
+
+var minioEndpoint = builder.Configuration.GetSection(MinioOptions.SectionName)["Endpoint"];
+var minioAccess = builder.Configuration.GetSection(MinioOptions.SectionName)["AccessKey"];
+var minioSecret = builder.Configuration.GetSection(MinioOptions.SectionName)["SecretKey"];
+if (!string.IsNullOrWhiteSpace(minioEndpoint)
+    && !string.IsNullOrWhiteSpace(minioAccess)
+    && !string.IsNullOrWhiteSpace(minioSecret))
+{
+    builder.Services.AddSingleton<IObjectStoragePresigner, MinioObjectStoragePresigner>();
+}
+else
+{
+    builder.Services.AddSingleton<IObjectStoragePresigner, UnavailableObjectStoragePresigner>();
+}
+
+builder.Services.AddSingleton<IFilePresignService, FilePresignService>();
 
 builder.Services.AddSingleton<IResearchImageWorkspace, ResearchImageWorkspace>();
 builder.Services.AddSingleton<IResearchImageGenerator, ResearchImageGenerator>();
@@ -384,6 +411,117 @@ app.MapGet("/v1/research/latest", async (
 })
 .WithName("ResearchLatest");
 
+// Phase 8 Files (ADR-015): metadata + presigned PUT/GET. No large byte proxy. Auth = X-Service-Key
+// (gateway / pack). Mini App initData HMAC — when UI proxy is added (gateway), not in this slice.
+app.MapPost("/v1/files/upload-intent", async (
+    [FromBody] FileUploadIntentRequest request,
+    IFilePresignService files,
+    CancellationToken cancellationToken) =>
+{
+    if (LooksLikeSecret(request.OriginalFilename ?? string.Empty)
+        || LooksLikeSecret(request.ContentType ?? string.Empty)
+        || LooksLikeSecret(request.Domain ?? string.Empty))
+    {
+        return Results.Problem(
+            detail: "Secrets must not be sent in file metadata.",
+            statusCode: StatusCodes.Status400BadRequest,
+            title: "Secret rejected");
+    }
+
+    try
+    {
+        var result = await files.CreateUploadIntentAsync(request, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (FileValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+    catch (FileStorageUnavailableException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status503ServiceUnavailable, title: "Storage unavailable");
+    }
+})
+.WithName("FilesUploadIntent");
+
+app.MapPost("/v1/files/{fileId:guid}/confirm", async (
+    Guid fileId,
+    [FromBody] FileConfirmRequest request,
+    IFilePresignService files,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var dto = await files.ConfirmUploadAsync(fileId, request, cancellationToken);
+        return Results.Ok(dto);
+    }
+    catch (FileValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+    catch (FileObjectNotFoundException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound, title: "Not found");
+    }
+    catch (FileForbiddenException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden");
+    }
+})
+.WithName("FilesConfirm");
+
+app.MapPost("/v1/files/{fileId:guid}/download-url", async (
+    Guid fileId,
+    [FromBody] FileDownloadUrlRequest request,
+    IFilePresignService files,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await files.CreateDownloadUrlAsync(fileId, request, cancellationToken);
+        return Results.Ok(result);
+    }
+    catch (FileValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+    catch (FileObjectNotFoundException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound, title: "Not found");
+    }
+    catch (FileForbiddenException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status403Forbidden, title: "Forbidden");
+    }
+    catch (FileStorageUnavailableException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status503ServiceUnavailable, title: "Storage unavailable");
+    }
+})
+.WithName("FilesDownloadUrl");
+
+app.MapGet("/v1/files/{fileId:guid}", async (
+    Guid fileId,
+    [FromQuery] string? userId,
+    IFilePresignService files,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var dto = await files.GetMetadataAsync(fileId, userId ?? string.Empty, cancellationToken);
+        return Results.Ok(dto);
+    }
+    catch (FileValidationException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest, title: "Validation failed");
+    }
+    catch (FileObjectNotFoundException ex)
+    {
+        return Results.Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound, title: "Not found");
+    }
+})
+.WithName("FilesMetadataGet");
+
 app.Run();
 
 static bool IsTelegramUserId(string? userId) =>
@@ -406,6 +544,9 @@ static bool LooksLikeSecret(string text)
         text.Contains("RAG_SERVICE_KEY", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("ELASTICSEARCH__PASSWORD", StringComparison.OrdinalIgnoreCase) ||
         text.Contains("ELASTIC_PASSWORD", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("MINIO__SECRETKEY", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("MINIO__ROOTPASSWORD", StringComparison.OrdinalIgnoreCase) ||
+        text.Contains("MINIO_SECRET_KEY", StringComparison.OrdinalIgnoreCase) ||
         (text.Contains("sk-", StringComparison.OrdinalIgnoreCase) && text.Length > 20))
     {
         return true;
