@@ -72,6 +72,51 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # Phase 8 Files/MinIO (ADR-015): object store data plane.
+  # assistant-api must NOT connect here yet (presign/metadata → phase8-presign).
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO__ROOTUSER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO__ROOTPASSWORD:-dev-only-minio-root-password}
+    volumes:
+      - minio-data:/data
+    # Internal only — not published; private buckets via minio-init.
+    expose:
+      - "9000"
+      - "9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    restart: unless-stopped
+
+  # One-shot bucket bootstrap: salon ≠ marketing; anonymous=none (private).
+  # Not app wiring — no assistant-api / gateway / bridge depends_on or MINIO__* env.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO__ROOTUSER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO__ROOTPASSWORD:-dev-only-minio-root-password}
+      MINIO_BUCKET_SALON: ${MINIO__BUCKETSALON:-tg-ai-salon}
+      MINIO_BUCKET_MARKETING: ${MINIO__BUCKETMARKETING:-tg-ai-marketing}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$MINIO_BUCKET_SALON"
+        mc mb --ignore-existing "local/$$MINIO_BUCKET_MARKETING"
+        mc anonymous set none "local/$$MINIO_BUCKET_SALON"
+        mc anonymous set none "local/$$MINIO_BUCKET_MARKETING"
+    restart: "on-failure"
+
   cursor-sdk-bridge:
     build:
       context: ./src
@@ -182,3 +227,4 @@ volumes:
   assistant-pgdata:
   research-images:
   elasticsearch-data:
+  minio-data:

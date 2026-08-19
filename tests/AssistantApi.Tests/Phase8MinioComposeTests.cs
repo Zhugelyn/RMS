@@ -1,10 +1,10 @@
 namespace AssistantApi.Tests;
 
 /// <summary>
-/// phase7-es-compose: Elasticsearch in Docker Compose with healthcheck;
-/// no app wiring (no rag-service, assistant-api does not depend on / connect to ES).
+/// phase8-minio-compose: MinIO in Docker Compose with healthcheck + private buckets
+/// (minio-init); no app wiring (assistant-api/gateway/bridge do not depend on / connect to MinIO).
 /// </summary>
-public sealed class Phase7EsComposeTests
+public sealed class Phase8MinioComposeTests
 {
     private static string FindRepoRoot()
     {
@@ -30,57 +30,71 @@ public sealed class Phase7EsComposeTests
     }
 
     [Fact]
-    public void Compose_defines_elasticsearch_with_healthcheck_and_internal_expose()
+    public void Compose_defines_minio_with_healthcheck_and_internal_expose()
     {
         var yaml = ReadCompose();
 
-        Assert.Contains("elasticsearch:", yaml, StringComparison.Ordinal);
-        Assert.Contains("docker.elastic.co/elasticsearch/elasticsearch:", yaml, StringComparison.Ordinal);
-        Assert.Contains("elasticsearch-data:", yaml, StringComparison.Ordinal);
-        Assert.Contains("/_cluster/health", yaml, StringComparison.Ordinal);
-        Assert.Contains("discovery.type: single-node", yaml, StringComparison.Ordinal);
+        Assert.Contains("minio:", yaml, StringComparison.Ordinal);
+        Assert.Contains("minio/minio:", yaml, StringComparison.Ordinal);
+        Assert.Contains("minio-data:", yaml, StringComparison.Ordinal);
+        Assert.Contains("/minio/health/live", yaml, StringComparison.Ordinal);
 
-        // Internal-only: expose 9200, do not publish host ports for ES.
-        var esBlock = ExtractServiceBlock(yaml, "elasticsearch");
-        Assert.Contains("expose:", esBlock, StringComparison.Ordinal);
-        Assert.Contains("\"9200\"", esBlock, StringComparison.Ordinal);
-        Assert.DoesNotContain("ports:", esBlock, StringComparison.Ordinal);
-        Assert.Contains("healthcheck:", esBlock, StringComparison.Ordinal);
+        var minioBlock = ExtractServiceBlock(yaml, "minio");
+        Assert.Contains("expose:", minioBlock, StringComparison.Ordinal);
+        Assert.Contains("\"9000\"", minioBlock, StringComparison.Ordinal);
+        Assert.DoesNotContain("ports:", minioBlock, StringComparison.Ordinal);
+        Assert.Contains("healthcheck:", minioBlock, StringComparison.Ordinal);
+        Assert.Contains("MINIO_ROOT_USER", minioBlock, StringComparison.Ordinal);
+        Assert.Contains("MINIO_ROOT_PASSWORD", minioBlock, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Compose_assistant_gateway_bridge_do_not_wire_elasticsearch_directly()
+    public void Compose_minio_init_creates_private_salon_and_marketing_buckets()
     {
         var yaml = ReadCompose();
 
-        // phase7-rag-api adds rag-service; assistant-api must still not talk to ES.
-        Assert.Contains("rag-service:", yaml, StringComparison.Ordinal);
-
-        var apiBlock = ExtractServiceBlock(yaml, "assistant-api");
-        Assert.DoesNotContain("elasticsearch", apiBlock, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
-        // phase7-pack-retriever wires Rag__BaseUrl/ServiceKey (HTTP to rag-service), not ES.
-
-        var gatewayBlock = ExtractServiceBlock(yaml, "telegram-gateway");
-        Assert.DoesNotContain("elasticsearch", gatewayBlock, StringComparison.OrdinalIgnoreCase);
-
-        var bridgeBlock = ExtractServiceBlock(yaml, "cursor-sdk-bridge");
-        Assert.DoesNotContain("elasticsearch", bridgeBlock, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("minio-init:", yaml, StringComparison.Ordinal);
+        var initBlock = ExtractServiceBlock(yaml, "minio-init");
+        Assert.Contains("minio/mc:", initBlock, StringComparison.Ordinal);
+        Assert.Contains("tg-ai-salon", initBlock, StringComparison.Ordinal);
+        Assert.Contains("tg-ai-marketing", initBlock, StringComparison.Ordinal);
+        Assert.Contains("anonymous set none", initBlock, StringComparison.Ordinal);
+        Assert.Contains("mc mb", initBlock, StringComparison.Ordinal);
+        Assert.Contains("depends_on:", initBlock, StringComparison.Ordinal);
+        Assert.Contains("condition: service_healthy", initBlock, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Compose_non_goals_no_direct_or_apify_services()
+    public void Compose_assistant_gateway_bridge_rag_do_not_wire_minio()
     {
         var yaml = ReadCompose();
 
-        // MinIO allowed starting phase8-minio-compose; Direct/Apify still gated.
+        foreach (var service in new[] { "assistant-api", "telegram-gateway", "cursor-sdk-bridge", "rag-service" })
+        {
+            var block = ExtractServiceBlock(yaml, service);
+            // Avoid matching Phase 8 comments that may trail prior services; require real wiring.
+            Assert.DoesNotContain("MINIO__", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("http://minio", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("minio:", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("minio-data", block, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("\"9000\"", block, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Compose_non_goals_no_direct_or_apify_or_public_ports_for_minio()
+    {
+        var yaml = ReadCompose();
+
         Assert.DoesNotContain("yandex-direct", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", yaml, StringComparison.OrdinalIgnoreCase);
+
+        var minioBlock = ExtractServiceBlock(yaml, "minio");
+        Assert.DoesNotContain("ports:", minioBlock, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Assistant_api_source_has_no_elasticsearch_client_wiring()
+    public void Assistant_api_source_has_no_minio_client_wiring()
     {
         var repoRoot = FindRepoRoot();
         var apiRoot = Path.Combine(repoRoot, "src", "AssistantApi");
@@ -88,12 +102,13 @@ public sealed class Phase7EsComposeTests
 
         var forbidden = new[]
         {
-            "Elasticsearch.Net",
-            "Elastic.Clients.Elasticsearch",
-            "Nest.ElasticClient",
-            "IElasticClient",
-            "ELASTICSEARCH__URIS",
-            "ConnectionStrings__Elasticsearch"
+            "MinioClient",
+            "using Minio",
+            "Amazon.S3",
+            "IAmazonS3",
+            "MINIO__ENDPOINT",
+            "ConnectionStrings__Minio",
+            "Include=\"Minio"
         };
 
         var hits = new List<string>();
@@ -116,7 +131,7 @@ public sealed class Phase7EsComposeTests
             }
         }
 
-        Assert.True(hits.Count == 0, "Unexpected ES/app wiring:\n" + string.Join("\n", hits));
+        Assert.True(hits.Count == 0, "Unexpected MinIO/app wiring:\n" + string.Join("\n", hits));
     }
 
     /// <summary>Naive YAML service block extractor (indent-based), enough for compose assertions.</summary>
@@ -128,10 +143,8 @@ public sealed class Phase7EsComposeTests
 
         var from = start + marker.Length;
         var next = yaml.IndexOf("\n  ", from, StringComparison.Ordinal);
-        // Skip nested "  " that are deeper than 2 spaces — look for next top-level service under services:
         while (next >= 0)
         {
-            // next points at "\n  "; check if this is a sibling service (exactly two spaces then key then colon)
             var lineStart = next + 1;
             var lineEnd = yaml.IndexOf('\n', lineStart);
             if (lineEnd < 0)
@@ -145,14 +158,12 @@ public sealed class Phase7EsComposeTests
                 && line.TrimEnd().EndsWith(':')
                 && !line.TrimStart().StartsWith('#'))
             {
-                // Could be another service or "volumes:" at root — volumes at root starts at column 0.
                 break;
             }
 
             next = yaml.IndexOf("\n  ", lineEnd, StringComparison.Ordinal);
         }
 
-        // Also stop at root-level keys (volumes:)
         var rootVolumes = yaml.IndexOf("\nvolumes:", from, StringComparison.Ordinal);
         var end = yaml.Length;
         if (next >= 0)

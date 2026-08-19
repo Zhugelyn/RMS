@@ -3,10 +3,10 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `8-files-minio` (Phase 7 RAG **closed**; `phase8-docs` ✅; next=`phase8-minio-compose`)
+- Phase: `8-files-minio` (Phase 7 RAG **closed**; `phase8-docs` ✅; `phase8-minio-compose` ✅; next=`phase8-presign`)
 - Language: русский
-- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + `elasticsearch` + `rag-service` + shared `research-images` volume)
-  - Phase 8 open: MinIO + presign (`phase8-docs` done; container next)
+- Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + `elasticsearch` + `rag-service` + `minio` + `minio-init` + shared `research-images` volume)
+  - Phase 8 open: MinIO container ✅; next = presign (`phase8-presign`, без pack tools)
 
 ## Product North Star
 
@@ -47,7 +47,7 @@
 
 ## Goal Phase 8 (Files / MinIO)
 
-Object storage: MinIO private buckets + presigned URLs; metadata в assistant-api (ADR-015). Docs ✅; next=`phase8-minio-compose` (без app wiring).
+Object storage: MinIO private buckets + presigned URLs; metadata в assistant-api (ADR-015). Docs ✅; compose ✅ (`phase8-minio-compose`); next=`phase8-presign`.
 
 ## Phase 4 closed
 
@@ -59,4 +59,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase8-docs` ✅; **next_slice=`phase8-minio-compose`**.
+- Этот run: `phase8-minio-compose` ✅; **next_slice=`phase8-presign`**.
