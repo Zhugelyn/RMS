@@ -201,16 +201,16 @@
 - Owner: MinIO = objects; **assistant-api** = metadata + authz + presign (Postgres). Not a separate `files-api` yet.
 - Bucket: private only (no public ACL). Domain isolation via buckets (`tg-ai-salon` / `tg-ai-marketing`).
 - Object key strategy: server-generated opaque GUID (`N` format); never user-controlled path; no PII / sequential ids in URL.
-- Metadata (Postgres `file_objects` / in-memory fallback): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, sizeBytes, status (`pending|uploaded|active|rejected|deleted`), createdAt, uploadedAt, expiresAt.
-- Upload: `POST /v1/files/upload-intent` → authz + size/MIME allowlist → short-TTL **presigned PUT** → client PUT direct to MinIO → `POST /v1/files/{fileId}/confirm`. **No large byte proxy through assistant-api.**
+- Metadata (Postgres `file_objects` / in-memory fallback): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, sizeBytes, status (`pending|uploaded|scanning|active|rejected|deleted`), createdAt, uploadedAt, expiresAt.
+- Upload: `POST /v1/files/upload-intent` → authz + size/MIME allowlist → short-TTL **presigned PUT** → client PUT direct to MinIO → `POST /v1/files/{fileId}/confirm` (scan stub → active|rejected). **No large byte proxy through assistant-api.**
 - Download: `POST /v1/files/{fileId}/download-url` → owner authz → short-TTL **presigned GET**. Metadata: `GET /v1/files/{fileId}?userId=`.
-- Access control: `X-Service-Key` on assistant-api (gateway/pack). Mini App initData HMAC when UI proxy added (not this slice). Owner-only; cross-user → 404. Pack MCP `files` only `salon`|`marketing` ✅ (`phase8-pack-files`); `_router`/`tasks` empty.
-- Retention: TTL on pending uploads (`Minio:PendingTtlSeconds`); lifecycle TBD in hardening.
-- Scanning: stub hook in hardening; soft-fail missing MinIO → 503 on file routes; must not break `/v1/chat`.
-- Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git. SecretScanner rejects `MINIO__SECRETKEY` / `MINIO__ROOTPASSWORD`.
+- Access control: `X-Service-Key` on assistant-api (gateway/pack). Mini App initData HMAC when UI proxy added (not this slice). Owner-only; cross-user → 404. Pack MCP `files` only `salon`|`marketing` ✅; `_router`/`tasks` empty.
+- Retention: TTL on pending uploads (`FileLimits.ClampPendingTtlSeconds`); presign TTL clamped 30..3600.
+- Scanning: `IFileContentScanner` + `PassThroughFileContentScanner` stub ✅ (no MinIO GET); reject → status rejected + download forbidden; scanner outage soft-fail → active. Soft-fail missing MinIO → 503 on file routes; must not break `/v1/chat`.
+- Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git. SecretScanner rejects `MINIO__SECRETKEY` / `MINIO__ROOTPASSWORD`. README token rotation ✅.
 - Pack inject: `FilesPackInjector` lists recent active/uploaded metadata for pack domain into Cursor prompt (no bucket/objectKey/URLs). Soft-fail empty/errors.
-- Status: **pack-files ✅** (`phase8-pack-files`). Hardening → `phase8-hardening`.
-- Compose: assistant-api `Minio__*` + depends_on healthy `minio` + completed `minio-init`. Gateway/bridge/rag unwired.
+- Status: **closed** (`phase8-hardening` ✅).
+- Compose: assistant-api `Minio__*` + depends_on healthy `minio` + completed `minio-init`. Gateway/bridge/rag unwired. Private buckets only.
 - `schemaVersion=1` on file DTOs; `/v1/chat` unchanged.
 
 ## File Contract Template

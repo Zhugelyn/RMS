@@ -105,18 +105,19 @@
 - Non-goals this phase: MinIO, Яндекс Директ, Apify, mixing indexes, replacing harness/research with RAG — guard tests ✅.
 - `phase7-docs` … `phase7-hardening` all ✅; Phase 7 closed.
 
-## Phase 8 controls (pack-files ✅; hardening later)
+## Phase 8 controls (closed ✅)
 
 - ADR-015: MinIO **private** buckets + **presigned** PUT/GET; metadata+authz in assistant-api Postgres; no large byte proxy through API.
 - Domain isolation: salon ≠ marketing buckets; pack MCP `files` only in `salon`/`marketing`; `_router`/`tasks` without files MCP.
 - Pack inject: recent file metadata only (fileId/status/type/size/name); never bucket/objectKey/URLs/secrets. Soft-fail store errors → chat continues.
-- Object keys: opaque server-generated GUID; no PII / sequential ids; size + MIME allowlist before presign; short TTL (`Minio:PresignTtlSeconds` default 300).
-- Secrets (`MINIO__ROOTUSER` / `MINIO__ROOTPASSWORD` / `MINIO__ACCESSKEY` / `MINIO__SECRETKEY`): env/secret store; never chat / Mini App / query / git. Compose defaults are **dev-only**. SecretScanner + chat reject MINIO secret markers.
-- Compose: internal-only MinIO; `minio-init` private buckets; assistant-api wired with `Minio__*` + depends_on (`phase8-presign` ✅).
+- Object keys: opaque server-generated GUID; no PII / sequential ids; size + MIME allowlist before presign.
+- TTL clamps ✅ (`FileLimits.ClampPresignTtlSeconds` 30..3600; `ClampPendingTtlSeconds` 60..86400); defaults 300 / 3600.
+- Scanning hook stub ✅: `IFileContentScanner` / `PassThroughFileContentScanner` on confirm (`pending→uploaded→scanning→active|rejected`); no MinIO GET / no byte proxy; scanner outage soft-fails to active; reject path blocks download.
+- Secrets (`MINIO__ROOTUSER` / `MINIO__ROOTPASSWORD` / `MINIO__ACCESSKEY` / `MINIO__SECRETKEY`): env/secret store; never chat / Mini App / query / git. Compose defaults are **dev-only**. SecretScanner + chat reject MINIO secret markers. README token rotation notes ✅.
+- Compose: internal-only MinIO; `minio-init` private buckets (`anonymous set none`); no public ACL/ports; assistant-api wired with `Minio__*` + depends_on.
 - Soft-fail: empty MinIO endpoint → UnavailablePresigner → 503 on file routes; `/v1/chat` unaffected.
-- Scanning hook stub in hardening.
-- Non-goals this phase: Яндекс Директ, Apify, public bucket/CDN without TTL, research-volume full migration in early slices.
-- Next: `phase8-hardening`.
+- Non-goals guard ✅: no Яндекс Директ, Apify, public bucket/CDN without TTL, byte proxy (`Phase8HardeningTests`).
+- `phase8-docs` … `phase8-hardening` all ✅; Phase 8 closed.
 
 ## Open Risks
 
