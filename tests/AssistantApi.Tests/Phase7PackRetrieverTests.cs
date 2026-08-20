@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using AssistantApi.Contracts;
+using AssistantApi.Files;
 using AssistantApi.Harness;
 using AssistantApi.Memory;
 using AssistantApi.Options;
@@ -87,8 +88,8 @@ public sealed class Phase7PackRetrieverTests
     public void Packs_salon_marketing_have_kb_retriever_router_tasks_do_not()
     {
         var catalog = new PackCatalog(FindPacksRoot());
-        Assert.Equal(new[] { RagMcp.KbRetriever }, catalog.GetRequired(PackIds.Salon).Mcp.Allowlist);
-        Assert.Equal(new[] { RagMcp.KbRetriever }, catalog.GetRequired(PackIds.Marketing).Mcp.Allowlist);
+        Assert.Equal(new[] { RagMcp.KbRetriever, FileMcp.Files }, catalog.GetRequired(PackIds.Salon).Mcp.Allowlist);
+        Assert.Equal(new[] { RagMcp.KbRetriever, FileMcp.Files }, catalog.GetRequired(PackIds.Marketing).Mcp.Allowlist);
         Assert.Empty(catalog.GetRequired(PackIds.Tasks).Mcp.Allowlist);
         Assert.Empty(catalog.GetRequired(PackIds.Router).Mcp.Allowlist);
         Assert.Empty(catalog.GetRequired(PackIds.Tasks).Mcp.Servers);
@@ -251,6 +252,7 @@ public sealed class Phase7PackRetrieverTests
             new InMemoryHarnessMemoryStore(),
             new ResearchPackInjector(new InMemoryResearchArtifactStore()),
             ragInject,
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

@@ -19,5 +19,5 @@ AgentPacks/
 
 - `_router`: `answersUser=false`, `resumePolicy=none`.
 - Specialists: `answersUser=true`, `resumePolicy=per-domain-conversation`.
-- MCP: `salon` / `marketing` allowlist `kb-retriever` only (Phase 7 RAG inject via assistant-api → rag-service). `_router` / `tasks` stay empty.
+- MCP: `salon` / `marketing` allowlist `kb-retriever` + `files` (Phase 7 RAG inject + Phase 8 MinIO metadata inject via assistant-api). `_router` / `tasks` stay empty.
 - Do not put API keys in `mcp.json`.

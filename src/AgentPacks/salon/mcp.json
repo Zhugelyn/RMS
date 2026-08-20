@@ -1,11 +1,16 @@
 {
   "schemaVersion": 1,
-  "allowlist": ["kb-retriever"],
+  "allowlist": ["kb-retriever", "files"],
   "servers": [
     {
       "name": "kb-retriever",
       "transport": "assistant-inject",
       "description": "Domain KB search via rag-service (assistant-api injects hits). No secrets here."
+    },
+    {
+      "name": "files",
+      "transport": "assistant-inject",
+      "description": "Domain MinIO files via assistant-api presign/metadata inject. No secrets here. Salon bucket only."
     }
   ]
 }

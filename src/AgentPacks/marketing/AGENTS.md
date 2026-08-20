@@ -16,8 +16,10 @@
 
 - CRM/записи салона, Яндекс Директ API wiring.
 - Cross-domain RAG (`kb-salon`) — только `kb-marketing` via MCP `kb-retriever`.
+- Cross-domain files (`tg-ai-salon`) — только marketing bucket via MCP `files` (presign, no byte proxy).
 - OpenAI Images / DALL·E — картинки только через Cursor GenerateImage (skill `generate-research-images`).
 - Classify — `_router`.
+- Public MinIO bucket / secrets from chat.
 
 ## Failure mode
 

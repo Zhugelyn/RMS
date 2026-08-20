@@ -1,4 +1,5 @@
 using AssistantApi.Harness;
+using AssistantApi.Files;
 using AssistantApi.Memory;
 using AssistantApi.Options;
 using AssistantApi.Packs;
@@ -173,6 +174,7 @@ public sealed class VkResearchArtifactsTests
             memory,
             injector,
             new NoOpRagPackInjector(),
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

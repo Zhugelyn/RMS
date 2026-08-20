@@ -218,6 +218,7 @@ else
 }
 
 builder.Services.AddSingleton<IFilePresignService, FilePresignService>();
+builder.Services.AddSingleton<IFilesPackInjector, FilesPackInjector>();
 
 builder.Services.AddSingleton<IResearchImageWorkspace, ResearchImageWorkspace>();
 builder.Services.AddSingleton<IResearchImageGenerator, ResearchImageGenerator>();

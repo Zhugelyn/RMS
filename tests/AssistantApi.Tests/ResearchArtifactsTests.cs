@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http;
 using AssistantApi.Contracts;
 using AssistantApi.Data;
+using AssistantApi.Files;
 using AssistantApi.Harness;
 using AssistantApi.Instagram;
 using AssistantApi.Memory;
@@ -334,6 +335,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             new InMemoryHarnessMemoryStore(),
             injector,
             new NoOpRagPackInjector(),
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
@@ -380,6 +382,7 @@ public sealed class ResearchArtifactsTests : IAsyncLifetime
             new InMemoryHarnessMemoryStore(),
             new ResearchPackInjector(new ThrowingArtifactStore()),
             new NoOpRagPackInjector(),
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
