@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (`phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; next=`phase8-pack-files`).
+Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (`phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; next=`phase8-hardening`).
 
 ## Service: telegram-gateway
 
@@ -118,13 +118,13 @@
 - Docs ✅ (`phase8-docs`, ADR-015): MinIO private + presign; metadata+authz в assistant-api Postgres; pack MCP salon/marketing; domain prefix isolation; no byte proxy
 - Compose ✅ (`phase8-minio-compose`): `minio` + `minio-init` (private `tg-ai-salon` / `tg-ai-marketing`); internal ports; health; volume `minio-data`
 - Presign ✅ (`phase8-presign`): `file_objects` metadata; `POST /v1/files/upload-intent`, confirm, download-url; MinIO SDK short-TTL PUT/GET; size/MIME; opaque keys; `X-Service-Key`; soft-fail without MinIO
-- Next slice: `phase8-pack-files` (MCP/skill salon/marketing)
-- Owner: MinIO objects; metadata+presign in assistant-api; pack MCP salon/marketing (later)
+- Pack files ✅ (`phase8-pack-files`): MCP `files` + skill `files-store` in salon/marketing; `FilesPackInjector` metadata inject; router/tasks empty; domain isolation
+- Next slice: `phase8-hardening`
+- Owner: MinIO objects; metadata+presign in assistant-api; pack MCP salon/marketing
 - Non-goals: Direct (9), Apify, public bucket, proxy large bytes through API, research-volume migration in early slices
 
 ## Reserved (do not implement until later slices)
 
-- Pack file MCP (→ `phase8-pack-files`)
 - Hardening/scanning stub (→ `phase8-hardening`)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers

@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-20
+
+- Trigger: webhook (empty payload) → first open slice `phase8-pack-files`
+- Slice: phase8-pack-files
+- Status: passed
+- Checks: salon/marketing `mcp.json` allowlist `kb-retriever`+`files` + skill `files-store`; router/tasks empty; `FilesPackInjector` + `ListRecentAsync` domain isolation; Cursor path inject soft-fail; PackCatalog validates both MCP; `Phase8PackFilesTests`; `dotnet test` 239 (174 api + 45 gateway + 20 rag); no Direct/Apify/byte proxy/public bucket; next=`phase8-hardening`
+- Memory updated: phase-plan checkbox, current-project, catalog, contracts, security-baseline, ADR-015 note, README, AgentPacks README/AGENTS, run-log
+- Next slice: phase8-hardening
+- Blocker: none
+
 ## Run 2026-08-19d
 
 - Trigger: webhook (empty payload) → first open slice `phase8-presign`

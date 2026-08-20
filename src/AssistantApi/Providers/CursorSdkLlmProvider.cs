@@ -1,4 +1,5 @@
 using AssistantApi.Contracts;
+using AssistantApi.Files;
 using AssistantApi.Harness;
 using AssistantApi.Memory;
 using AssistantApi.Options;
@@ -21,6 +22,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
     private readonly IHarnessMemoryStore _memory;
     private readonly IResearchPackInjector _researchInject;
     private readonly IRagPackInjector _ragInject;
+    private readonly IFilesPackInjector _filesInject;
     private readonly CursorOptions _options;
     private readonly ILogger<CursorSdkLlmProvider> _logger;
 
@@ -34,6 +36,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         IHarnessMemoryStore memory,
         IResearchPackInjector researchInject,
         IRagPackInjector ragInject,
+        IFilesPackInjector filesInject,
         IOptions<CursorOptions> options,
         ILogger<CursorSdkLlmProvider> logger)
     {
@@ -46,6 +49,7 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
         _memory = memory;
         _researchInject = researchInject;
         _ragInject = ragInject;
+        _filesInject = filesInject;
         _options = options.Value;
         _logger = logger;
     }
@@ -117,6 +121,29 @@ public sealed class CursorSdkLlmProvider : ILlmProvider
                 memoryBlock = string.IsNullOrWhiteSpace(memoryBlock)
                     ? ragBlock
                     : memoryBlock + "\n\n" + ragBlock;
+            }
+
+            // salon|marketing only: recent file metadata (ADR-015). Soft-fail empty → chat continues.
+            string? filesBlock = null;
+            try
+            {
+                filesBlock = await _filesInject.BuildInjectBlockAsync(
+                    request.UserId, packId, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Files inject failed conversationId={ConversationId} pack={PackId}",
+                    request.ConversationId,
+                    packId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filesBlock))
+            {
+                memoryBlock = string.IsNullOrWhiteSpace(memoryBlock)
+                    ? filesBlock
+                    : memoryBlock + "\n\n" + filesBlock;
             }
 
             var prompt = _prompts.BuildSpecialistPrompt(pack, request, memoryBlock);

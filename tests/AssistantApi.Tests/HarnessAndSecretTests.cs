@@ -1,4 +1,5 @@
 using AssistantApi.Contracts;
+using AssistantApi.Files;
 using AssistantApi.Harness;
 using AssistantApi.Memory;
 using AssistantApi.Options;
@@ -248,6 +249,7 @@ public sealed class HarnessAndSecretTests
             new InMemoryHarnessMemoryStore(),
             new ResearchPackInjector(new InMemoryResearchArtifactStore()),
             new NoOpRagPackInjector(),
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions()),
             NullLogger<CursorSdkLlmProvider>.Instance);
 
@@ -287,6 +289,7 @@ public sealed class HarnessAndSecretTests
             memory,
             researchInject ?? new ResearchPackInjector(new InMemoryResearchArtifactStore()),
             new NoOpRagPackInjector(),
+            new NoOpFilesPackInjector(),
             MsOptions.Create(new CursorOptions { Model = "composer-2.5" }),
             NullLogger<CursorSdkLlmProvider>.Instance);
 

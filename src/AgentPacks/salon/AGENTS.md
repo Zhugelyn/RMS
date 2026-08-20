@@ -24,9 +24,11 @@
 
 ## Non-goals
 
-- Яндекс Директ API, MinIO, генерация картинок.
+- Яндекс Директ API, генерация картинок (не через этот pack).
 - Cross-domain RAG (`kb-marketing`) — только `kb-salon` via MCP `kb-retriever`.
+- Cross-domain files (`tg-ai-marketing`) — только salon bucket via MCP `files` (presign, no byte proxy).
 - Classify пользователя (`_router`).
+- Public MinIO bucket / secrets from chat.
 
 ## Failure mode
 

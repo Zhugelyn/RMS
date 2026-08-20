@@ -204,11 +204,12 @@
 - Metadata (Postgres `file_objects` / in-memory fallback): fileId, userId, domain, bucket, objectKey, originalFilename, contentType, sizeBytes, status (`pending|uploaded|active|rejected|deleted`), createdAt, uploadedAt, expiresAt.
 - Upload: `POST /v1/files/upload-intent` → authz + size/MIME allowlist → short-TTL **presigned PUT** → client PUT direct to MinIO → `POST /v1/files/{fileId}/confirm`. **No large byte proxy through assistant-api.**
 - Download: `POST /v1/files/{fileId}/download-url` → owner authz → short-TTL **presigned GET**. Metadata: `GET /v1/files/{fileId}?userId=`.
-- Access control: `X-Service-Key` on assistant-api (gateway/pack). Mini App initData HMAC when UI proxy added (not this slice). Owner-only; cross-user → 404. Pack MCP only `salon`|`marketing` → `phase8-pack-files`.
+- Access control: `X-Service-Key` on assistant-api (gateway/pack). Mini App initData HMAC when UI proxy added (not this slice). Owner-only; cross-user → 404. Pack MCP `files` only `salon`|`marketing` ✅ (`phase8-pack-files`); `_router`/`tasks` empty.
 - Retention: TTL on pending uploads (`Minio:PendingTtlSeconds`); lifecycle TBD in hardening.
 - Scanning: stub hook in hardening; soft-fail missing MinIO → 503 on file routes; must not break `/v1/chat`.
 - Secrets: `MINIO__*` / access keys env/secret store only — never chat / Mini App / git. SecretScanner rejects `MINIO__SECRETKEY` / `MINIO__ROOTPASSWORD`.
-- Status: **presign ✅** (`phase8-presign`). Pack tools → `phase8-pack-files`.
+- Pack inject: `FilesPackInjector` lists recent active/uploaded metadata for pack domain into Cursor prompt (no bucket/objectKey/URLs). Soft-fail empty/errors.
+- Status: **pack-files ✅** (`phase8-pack-files`). Hardening → `phase8-hardening`.
 - Compose: assistant-api `Minio__*` + depends_on healthy `minio` + completed `minio-init`. Gateway/bridge/rag unwired.
 - `schemaVersion=1` on file DTOs; `/v1/chat` unchanged.
 

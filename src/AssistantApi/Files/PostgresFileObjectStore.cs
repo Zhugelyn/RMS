@@ -45,6 +45,25 @@ public sealed class PostgresFileObjectStore : IFileObjectStore
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<FileObject>> ListRecentAsync(
+        string userId,
+        string domain,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var take = Math.Clamp(limit, 1, FileLimits.MaxPackListLimit);
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var rows = await db.FileObjects.AsNoTracking()
+            .Where(x =>
+                x.UserId == userId
+                && x.Domain == domain
+                && (x.Status == FileStatuses.Active || x.Status == FileStatuses.Uploaded))
+            .OrderByDescending(x => x.UploadedAt ?? x.CreatedAt)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+        return rows.Select(ToModel).ToList();
+    }
+
     private static FileObjectEntity ToEntity(FileObject f) => new()
     {
         FileId = f.FileId,

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using AssistantApi.Files;
 using AssistantApi.Rag;
 using Microsoft.Extensions.Options;
 
@@ -282,41 +283,54 @@ public sealed class PackCatalog : IPackCatalog
         var allowlist = mcp.Allowlist ?? Array.Empty<string>();
         var servers = mcp.Servers ?? Array.Empty<McpServerStub>();
 
-        // Phase 7 pack-retriever: only salon|marketing may declare kb-retriever.
-        // _router / tasks stay empty (no RAG). No Direct/MinIO/Apify MCP names.
-        var isRagPack = string.Equals(folderName, PackIds.Salon, StringComparison.Ordinal)
-                        || string.Equals(folderName, PackIds.Marketing, StringComparison.Ordinal);
+        // Phase 7+8: only salon|marketing may declare kb-retriever + files.
+        // _router / tasks stay empty (no RAG/files). No Direct/Apify MCP names.
+        var isToolPack = string.Equals(folderName, PackIds.Salon, StringComparison.Ordinal)
+                         || string.Equals(folderName, PackIds.Marketing, StringComparison.Ordinal);
 
-        if (!isRagPack)
+        if (!isToolPack)
         {
             if (allowlist.Count > 0 || servers.Count > 0)
             {
                 throw new InvalidOperationException(
-                    $"Pack '{folderName}' mcp allowlist/servers must be empty (no RAG for router/tasks).");
+                    $"Pack '{folderName}' mcp allowlist/servers must be empty (no RAG/files for router/tasks).");
             }
 
             return;
         }
 
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            RagMcp.KbRetriever,
+            FileMcp.Files
+        };
+
         if (allowlist.Count == 0)
         {
             throw new InvalidOperationException(
-                $"Pack '{folderName}' must allowlist '{RagMcp.KbRetriever}' (phase7-pack-retriever).");
+                $"Pack '{folderName}' must allowlist '{RagMcp.KbRetriever}' and '{FileMcp.Files}'.");
         }
 
         foreach (var entry in allowlist)
         {
-            if (!string.Equals(entry, RagMcp.KbRetriever, StringComparison.Ordinal))
+            if (!allowed.Contains(entry))
             {
                 throw new InvalidOperationException(
-                    $"Pack '{folderName}' mcp allowlist entry '{entry}' is not allowed; only '{RagMcp.KbRetriever}'.");
+                    $"Pack '{folderName}' mcp allowlist entry '{entry}' is not allowed; only '{RagMcp.KbRetriever}' and '{FileMcp.Files}'.");
             }
         }
 
-        if (allowlist.Count != 1)
+        if (!allowlist.Contains(RagMcp.KbRetriever, StringComparer.Ordinal)
+            || !allowlist.Contains(FileMcp.Files, StringComparer.Ordinal))
         {
             throw new InvalidOperationException(
-                $"Pack '{folderName}' mcp allowlist must contain exactly one entry: '{RagMcp.KbRetriever}'.");
+                $"Pack '{folderName}' mcp allowlist must contain '{RagMcp.KbRetriever}' and '{FileMcp.Files}'.");
+        }
+
+        if (allowlist.Count != 2 || allowlist.Distinct(StringComparer.Ordinal).Count() != 2)
+        {
+            throw new InvalidOperationException(
+                $"Pack '{folderName}' mcp allowlist must contain exactly '{RagMcp.KbRetriever}' and '{FileMcp.Files}'.");
         }
 
         foreach (var server in servers)
@@ -326,7 +340,7 @@ public sealed class PackCatalog : IPackCatalog
                 throw new InvalidOperationException($"Pack '{folderName}' mcp server name is required.");
             }
 
-            if (!string.Equals(server.Name, RagMcp.KbRetriever, StringComparison.Ordinal))
+            if (!allowed.Contains(server.Name))
             {
                 throw new InvalidOperationException(
                     $"Pack '{folderName}' mcp server '{server.Name}' is not allowlisted.");
@@ -345,6 +359,13 @@ public sealed class PackCatalog : IPackCatalog
                         $"Pack '{folderName}' mcp.json must not contain secret field '{key}'.");
                 }
             }
+        }
+
+        var serverNames = servers.Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
+        if (!serverNames.Contains(RagMcp.KbRetriever) || !serverNames.Contains(FileMcp.Files))
+        {
+            throw new InvalidOperationException(
+                $"Pack '{folderName}' mcp servers must declare '{RagMcp.KbRetriever}' and '{FileMcp.Files}'.");
         }
     }
 

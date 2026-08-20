@@ -3,10 +3,10 @@
 - Code name: `telegram-ai`
 - Repo: `Zhugelyn/RMS`
 - Branch: `main`
-- Phase: `8-files-minio` (Phase 7 RAG **closed**; `phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; next=`phase8-pack-files`)
+- Phase: `8-files-minio` (Phase 7 RAG **closed**; `phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; next=`phase8-hardening`)
 - Language: русский
 - Runtime: Docker Compose (`telegram-gateway` + `assistant-api` + internal `cursor-sdk-bridge` + AgentPacks + `postgres` + `elasticsearch` + `rag-service` + `minio` + `minio-init` + shared `research-images` volume)
-  - Phase 8 open: MinIO + presign/metadata ✅; next = pack file tools (`phase8-pack-files`)
+  - Phase 8 open: MinIO + presign/metadata ✅; pack file tools ✅; next = hardening (`phase8-hardening`)
 
 ## Product North Star
 
@@ -47,7 +47,7 @@
 
 ## Goal Phase 8 (Files / MinIO)
 
-Object storage: MinIO private buckets + presigned URLs; metadata в assistant-api (ADR-015). Docs ✅; compose ✅; presign ✅ (`phase8-presign`); next=`phase8-pack-files`.
+Object storage: MinIO private buckets + presigned URLs; metadata в assistant-api (ADR-015). Docs ✅; compose ✅; presign ✅; pack files ✅ (`phase8-pack-files`); next=`phase8-hardening`.
 
 ## Phase 4 closed
 
@@ -59,4 +59,4 @@ Marketing Instagram Research — all slices done including hardening.
 - Читать только релевантные `memory/*`, не все playbooks.
 - Automation Memories = короткие указатели.
 - Не генерировать будущие сервисы «на всякий случай».
-- Этот run: `phase8-presign` ✅; **next_slice=`phase8-pack-files`**.
+- Этот run: `phase8-pack-files` ✅; **next_slice=`phase8-hardening`**.

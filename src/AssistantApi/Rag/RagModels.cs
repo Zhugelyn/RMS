@@ -23,6 +23,6 @@ public static class RagDomains
 
 public static class RagMcp
 {
-    /// <summary>Only MCP server name allowed on salon/marketing packs in this slice.</summary>
+    /// <summary>RAG MCP server name on salon/marketing packs (with FileMcp.Files).</summary>
     public const string KbRetriever = "kb-retriever";
 }
