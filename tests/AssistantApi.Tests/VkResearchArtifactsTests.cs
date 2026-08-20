@@ -33,7 +33,7 @@ public sealed class VkResearchArtifactsTests
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException($"VK fixture not found: {name}");
+        throw new System.IO.FileNotFoundException($"VK fixture not found: {name}");
     }
 
     private static string FindPacksRoot()

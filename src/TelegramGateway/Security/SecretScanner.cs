@@ -25,6 +25,9 @@ public static partial class SecretScanner
             text.Contains("RAG_SERVICE_KEY", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("ELASTICSEARCH__PASSWORD", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("ELASTIC_PASSWORD", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("MINIO__SECRETKEY", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("MINIO__ROOTPASSWORD", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("MINIO_SECRET_KEY", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("api_key=", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("apikey=", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("access_token=", StringComparison.OrdinalIgnoreCase) ||

@@ -15,6 +15,7 @@ public sealed class AssistantDbContext : DbContext
     public DbSet<ResearchSnapshotEntity> ResearchSnapshots => Set<ResearchSnapshotEntity>();
     public DbSet<ResearchPlanEntity> ResearchPlans => Set<ResearchPlanEntity>();
     public DbSet<ResearchScheduleRunEntity> ResearchScheduleRuns => Set<ResearchScheduleRunEntity>();
+    public DbSet<FileObjectEntity> FileObjects => Set<FileObjectEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,27 @@ public sealed class AssistantDbContext : DbContext
             e.Property(x => x.PayloadJson).IsRequired();
             e.HasIndex(x => new { x.UserId, x.CreatedAt })
                 .HasDatabaseName("ix_research_plans_user_created");
+        });
+
+        modelBuilder.Entity<FileObjectEntity>(e =>
+        {
+            e.ToTable("file_objects");
+            e.HasKey(x => x.FileId);
+            e.Property(x => x.FileId).ValueGeneratedNever();
+            e.Property(x => x.UserId).HasMaxLength(128).IsRequired();
+            e.Property(x => x.Domain).HasMaxLength(32).IsRequired();
+            e.Property(x => x.Bucket).HasMaxLength(128).IsRequired();
+            e.Property(x => x.ObjectKey).HasMaxLength(128).IsRequired();
+            e.Property(x => x.OriginalFilename).HasMaxLength(200);
+            e.Property(x => x.ContentType).HasMaxLength(128).IsRequired();
+            e.Property(x => x.SizeBytes).IsRequired();
+            e.Property(x => x.Status).HasMaxLength(32).IsRequired();
+            e.Property(x => x.CreatedAt).IsRequired();
+            e.HasIndex(x => new { x.UserId, x.Domain, x.CreatedAt })
+                .HasDatabaseName("ix_file_objects_user_domain_created");
+            e.HasIndex(x => new { x.Bucket, x.ObjectKey })
+                .IsUnique()
+                .HasDatabaseName("ux_file_objects_bucket_object");
         });
     }
 }

@@ -95,7 +95,7 @@ services:
     restart: unless-stopped
 
   # One-shot bucket bootstrap: salon ≠ marketing; anonymous=none (private).
-  # Not app wiring — no assistant-api / gateway / bridge depends_on or MINIO__* env.
+  # Not app wiring for gateway/bridge/rag — assistant-api gets MinIO env in phase8-presign.
   minio-init:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
     depends_on:
@@ -171,6 +171,17 @@ services:
       Rag__ServiceKey: ${RAG__SERVICEKEY:-dev-only-rag-service-key}
       Rag__RequestTimeoutSeconds: "10"
       Rag__TopK: "5"
+      # Phase 8 Files/MinIO (ADR-015). Empty Endpoint → UnavailablePresigner; chat stays green.
+      Minio__Endpoint: ${MINIO__ENDPOINT:-http://minio:9000}
+      # Dev default = root creds (same as minio service). Prefer dedicated access key in shared envs.
+      Minio__AccessKey: ${MINIO__ACCESSKEY:-minioadmin}
+      Minio__SecretKey: ${MINIO__SECRETKEY:-dev-only-minio-root-password}
+      Minio__Region: ${MINIO__REGION:-us-east-1}
+      Minio__BucketSalon: ${MINIO__BUCKETSALON:-tg-ai-salon}
+      Minio__BucketMarketing: ${MINIO__BUCKETMARKETING:-tg-ai-marketing}
+      Minio__PresignTtlSeconds: "300"
+      Minio__PendingTtlSeconds: "3600"
+      Minio__MaxUploadBytes: "20971520"
       # Research notify → gateway /internal/notify (bot token stays in gateway).
       Gateway__BaseUrl: http://telegram-gateway:8080
       Gateway__ServiceKey: ${ASSISTANT__SERVICEKEY}
@@ -185,6 +196,10 @@ services:
         condition: service_healthy
       rag-service:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health/ready"]
       interval: 10s

@@ -15,6 +15,8 @@ public sealed class SecretScannerTests
     [InlineData("RAG_SERVICE_KEY=xyz", true)]
     [InlineData("ELASTICSEARCH__PASSWORD=secret", true)]
     [InlineData("ELASTIC_PASSWORD=secret", true)]
+    [InlineData("MINIO__SECRETKEY=secret", true)]
+    [InlineData("MINIO__ROOTPASSWORD=secret", true)]
     [InlineData("access_token=IGQVJxxxx", true)]
     [InlineData("service_token=vk-secret", true)]
     [InlineData("token EAAabcdefghijklmnopqrstuvwxyz012345", true)]

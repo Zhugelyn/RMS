@@ -12,7 +12,7 @@ alwaysApply: true
 - Phase 5 closed: Research Studio + `phase5-ui-hardening` ✅ (a11y/limits/VK gallery).
 - Phase 6 closed: VK Public Research (official `wall.get`, service token, media+hardening ✅).
 - Phase 7 closed: Knowledge/RAG. All slices ✅ including `phase7-hardening`.
-- Phase 8 open: Files/MinIO. `phase8-docs` ✅; `phase8-minio-compose` ✅; next = `phase8-presign`. Direct = 9.
+- Phase 8 open: Files/MinIO. `phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; next = `phase8-pack-files`. Direct = 9.
 - Phase 4 leftovers: лента только Instagram Graph API своего аккаунта (Apify нет); GenerateImage = Cursor local marketing-pack + volume (не OpenAI Images); research memory = snapshot+plan+episodes в Postgres ≠ RAG.
 - VK: только официальный API; не HTML/`m.vk.com`/Apify. Service token не из чата.
 - Не реализуй Яндекс Директ, пока phase-plan не открыл фазу. MinIO — только slices Phase 8. RAG Phase 7 closed; не смешивать с harness/research memory.

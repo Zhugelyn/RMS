@@ -77,9 +77,8 @@ public sealed class Phase7PackRetrieverTests
         Assert.DoesNotContain("ELASTICSEARCH", apiBlock, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("9200", apiBlock, StringComparison.Ordinal);
 
-        // phase8-minio-compose adds MinIO container; assistant-api must still not wire it.
-        Assert.DoesNotContain("minio", apiBlock, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("MINIO__", apiBlock, StringComparison.OrdinalIgnoreCase);
+        // phase8-presign wires MinIO into assistant-api; Direct/Apify still gated.
+        Assert.Contains("Minio__Endpoint", apiBlock, StringComparison.Ordinal);
         Assert.DoesNotContain("yandex-direct", yaml, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("apify", yaml, StringComparison.OrdinalIgnoreCase);
     }
@@ -217,11 +216,11 @@ public sealed class Phase7PackRetrieverTests
     }
 
     [Fact]
-    public void Assistant_api_has_no_minio_direct_apify_or_es_client_packages()
+    public void Assistant_api_has_no_direct_apify_or_es_client_packages()
     {
         var repoRoot = FindRepoRoot();
         var csproj = File.ReadAllText(Path.Combine(repoRoot, "src", "AssistantApi", "AssistantApi.csproj"));
-        Assert.DoesNotContain("Minio", csproj, StringComparison.OrdinalIgnoreCase);
+        // MinIO allowed from phase8-presign; ES/Direct/Apify still forbidden on assistant-api.
         Assert.DoesNotContain("Elasticsearch", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("NEST", csproj, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Apify", csproj, StringComparison.OrdinalIgnoreCase);

@@ -212,5 +212,6 @@ ADR-журнал для решений, которые должны пережи
 - Alternatives considered: S3 SaaS сразу; proxy bytes through assistant-api; separate `files-api`; public bucket + CDN; migrate research volume in first slice.
 - Security impact: private buckets; short TTL presign; opaque keys; MIME/size caps; domain prefix isolation; no secrets from chat; scanning hook stub.
 - Docs 2026-08-19 (`phase8-docs`): ADR + README/catalog/contracts/security/.env.example placeholders. **No service code / no MinIO container in this slice.**
-- Compose 2026-08-19 (`phase8-minio-compose`): MinIO `RELEASE.2025-04-22` in `docker-compose.yml`, internal `:9000`/`:9001`, health `/minio/health/live`, volume `minio-data`; `minio-init` creates private buckets `tg-ai-salon` / `tg-ai-marketing` (`anonymous set none`). **No assistant-api / gateway / bridge / rag-service wiring.**
+- Compose 2026-08-19 (`phase8-minio-compose`): MinIO `RELEASE.2025-04-22` in `docker-compose.yml`, internal `:9000`/`:9001`, health `/minio/health/live`, volume `minio-data`; `minio-init` creates private buckets `tg-ai-salon` / `tg-ai-marketing` (`anonymous set none`).
+- Presign 2026-08-19 (`phase8-presign`): `file_objects` metadata (EF + in-memory); `IObjectStoragePresigner` / MinIO SDK; `POST /v1/files/upload-intent`, confirm, download-url; size/MIME allowlist; opaque GUID keys; assistant-api `Minio__*` + depends_on; soft-fail without endpoint. Pack MCP → `phase8-pack-files`.
 - Links: `memory/phase-plan.md` Phase 8, ADR-011 (research volume), ADR-014 (RAG ≠ files), `memory/security-baseline.md`

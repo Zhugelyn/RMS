@@ -31,7 +31,7 @@ public sealed class VkMediaTests
             dir = dir.Parent;
         }
 
-        throw new FileNotFoundException($"VK fixture not found: {name}");
+        throw new System.IO.FileNotFoundException($"VK fixture not found: {name}");
     }
 
     [Fact]

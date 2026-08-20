@@ -244,10 +244,7 @@ public sealed class Phase7HardeningTests : IClassFixture<WebApplicationFactory<P
             "new Apify",
             "OpenAI.Images",
             "api.openai.com",
-            "MinioClient",
-            "Yandex.Direct",
-            "Amazon.S3",
-            "IAmazonS3"
+            "Yandex.Direct"
         };
 
         // assistant-api must not own ES clients; rag-service may use raw HTTP to ES.
@@ -259,12 +256,11 @@ public sealed class Phase7HardeningTests : IClassFixture<WebApplicationFactory<P
             "IElasticClient"
         };
 
+        // Phase 8 opens MinIO on assistant-api only; rag/gateway/bridge still no object store.
         var packagePatterns = new[]
         {
             "Apify",
-            "Minio",
-            "Yandex.Direct",
-            "AWSSDK.S3"
+            "Yandex.Direct"
         };
 
         var hits = new List<string>();
@@ -295,6 +291,14 @@ public sealed class Phase7HardeningTests : IClassFixture<WebApplicationFactory<P
                             hits.Add($"{Path.GetRelativePath(repoRoot, csproj)}: package {pkg}");
                         }
                     }
+                }
+
+                // MinIO only on assistant-api (phase8-presign); rag/gateway/bridge stay clean.
+                if (!root.EndsWith("AssistantApi", StringComparison.Ordinal)
+                    && (text.Contains("Include=\"Minio\"", StringComparison.OrdinalIgnoreCase)
+                        || text.Contains("Include=\"AWSSDK.S3\"", StringComparison.OrdinalIgnoreCase)))
+                {
+                    hits.Add($"{Path.GetRelativePath(repoRoot, csproj)}: unexpected MinIO/S3 package");
                 }
             }
 
