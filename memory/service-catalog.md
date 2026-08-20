@@ -1,6 +1,6 @@
 # Service Catalog
 
-Проект `telegram-ai`. Phase 4/5/6/7 closed. Phase 8 Files/MinIO open (`phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; next=`phase8-hardening`).
+Проект `telegram-ai`. Phase 4/5/6/7/8 closed. Next = Phase 9 External tools (Яндекс Директ) — только по явному запросу.
 
 ## Service: telegram-gateway
 
@@ -119,13 +119,13 @@
 - Compose ✅ (`phase8-minio-compose`): `minio` + `minio-init` (private `tg-ai-salon` / `tg-ai-marketing`); internal ports; health; volume `minio-data`
 - Presign ✅ (`phase8-presign`): `file_objects` metadata; `POST /v1/files/upload-intent`, confirm, download-url; MinIO SDK short-TTL PUT/GET; size/MIME; opaque keys; `X-Service-Key`; soft-fail without MinIO
 - Pack files ✅ (`phase8-pack-files`): MCP `files` + skill `files-store` in salon/marketing; `FilesPackInjector` metadata inject; router/tasks empty; domain isolation
-- Next slice: `phase8-hardening`
+- Hardening ✅ (`phase8-hardening`): TTL clamps; scan stub; token rotation; non-goals guard
+- Status: **Phase 8 closed**
 - Owner: MinIO objects; metadata+presign in assistant-api; pack MCP salon/marketing
-- Non-goals: Direct (9), Apify, public bucket, proxy large bytes through API, research-volume migration in early slices
+- Non-goals: Direct (9), Apify, public bucket, proxy large bytes through API, research-volume migration
 
 ## Reserved (do not implement until later slices)
 
-- Hardening/scanning stub (→ `phase8-hardening`)
 - yandex-direct-adapter (Phase 9)
 - apify-adapter / HTML / `m.vk.com` scrapers
 - vk-id-user-oauth (unless service token insufficient — follow-up, not this phase)

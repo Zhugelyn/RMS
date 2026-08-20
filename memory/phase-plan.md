@@ -281,7 +281,7 @@ Non-goals Phase 7:
 
 ## Phase 8 — Files / Video / Images storage
 
-Status: **open** — `phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; next=`phase8-hardening`.
+Status: **closed** (2026-08-20). `phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; `phase8-hardening` ✅.
 
 Суть: object storage для фото/видео/документов. **MinIO** + metadata + **presigned URLs**. Большие байты не идут через assistant-api. File tools — MCP/skill pack (`salon` / `marketing`), не shared agent.
 
@@ -301,7 +301,7 @@ Acceptance (фаза целиком; закрывать по slices):
 - [x] MinIO в compose; health; без app wiring в docs/compose-first slices. (`phase8-minio-compose`)
 - [x] Presign + metadata; size/MIME; no byte proxy. (`phase8-presign`)
 - [x] Pack file tools salon/marketing; router/tasks без files MCP.
-- [ ] `dotnet test` + compose зелёные; no Direct/Apify/public bucket.
+- [x] `dotnet test` + compose зелёные; no Direct/Apify/public bucket.
 
 Slices (один run = один):
 
@@ -309,7 +309,7 @@ Slices (один run = один):
 2. [x] `phase8-minio-compose` — MinIO в Docker Compose; health; private buckets; без app wiring.
 3. [x] `phase8-presign` — metadata schema + presigned PUT/GET; size/MIME; object-key strategy; `X-Service-Key` / initData где UI.
 4. [x] `phase8-pack-files` — MCP/skill в `salon` и `marketing`; domain prefix isolation; router/tasks empty.
-5. [ ] `phase8-hardening` — TTL, scanning hook stub, tests, token rotation notes, non-goals guard (no Direct/Apify/public bucket).
+5. [x] `phase8-hardening` — TTL, scanning hook stub, tests, token rotation notes, non-goals guard (no Direct/Apify/public bucket).
 
 Non-goals Phase 8:
 

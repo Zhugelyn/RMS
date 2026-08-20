@@ -4,6 +4,8 @@ public static class FileStatuses
 {
     public const string Pending = "pending";
     public const string Uploaded = "uploaded";
+    /// <summary>Transient: confirm received, scanner running (stub is sync → rarely observed).</summary>
+    public const string Scanning = "scanning";
     public const string Active = "active";
     public const string Rejected = "rejected";
     public const string Deleted = "deleted";

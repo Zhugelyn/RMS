@@ -18,6 +18,16 @@
 
 ## Runs
 
+## Run 2026-08-20b
+
+- Trigger: webhook (empty payload) → first open slice `phase8-hardening`
+- Slice: phase8-hardening
+- Status: passed
+- Checks: `FileLimits` TTL clamps (presign 30..3600, pending 60..86400); `IFileContentScanner` + `PassThroughFileContentScanner` on confirm (pending→uploaded→scanning→active|rejected; soft-fail scanner outage→active; no MinIO GET); README MinIO token rotation; compose private buckets (`anonymous set none`, no public ACL/ports); SecretScanner MINIO markers; `Phase8HardeningTests` non-goals (no Direct/Apify/byte proxy/public bucket); `dotnet test` 250 (184 api + 46 gateway + 20 rag); Phase 8 closed
+- Memory updated: phase-plan checkbox + Phase 8 closed, current-project, catalog, contracts, security-baseline, ADR-015 note, README, run-log
+- Next slice: none (Phase 9 Яндекс Директ — только по явному запросу)
+- Blocker: none
+
 ## Run 2026-08-20
 
 - Trigger: webhook (empty payload) → first open slice `phase8-pack-files`

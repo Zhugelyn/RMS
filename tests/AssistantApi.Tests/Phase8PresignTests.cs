@@ -11,10 +11,12 @@ public sealed class Phase8PresignTests
     private static FilePresignService CreateService(
         IFileObjectStore? store = null,
         IObjectStoragePresigner? presigner = null,
-        MinioOptions? options = null) =>
+        MinioOptions? options = null,
+        IFileContentScanner? scanner = null) =>
         new(
             store ?? new InMemoryFileObjectStore(),
             presigner ?? new FakePresigner(),
+            scanner ?? new PassThroughFileContentScanner(NullLogger<PassThroughFileContentScanner>.Instance),
             MsOptions.Create(options ?? new MinioOptions
             {
                 Endpoint = "http://minio:9000",

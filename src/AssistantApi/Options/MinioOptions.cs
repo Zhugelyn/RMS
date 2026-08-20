@@ -20,11 +20,11 @@ public sealed class MinioOptions
 
     public string BucketMarketing { get; set; } = "tg-ai-marketing";
 
-    /// <summary>Presigned URL TTL in seconds (short).</summary>
+    /// <summary>Presigned URL TTL in seconds (short; clamped 30..3600 at issue time).</summary>
     [Range(30, 3600)]
     public int PresignTtlSeconds { get; set; } = 300;
 
-    /// <summary>Pending upload metadata TTL before considered expired.</summary>
+    /// <summary>Pending upload metadata TTL before considered expired (clamped 60..86400).</summary>
     [Range(60, 86400)]
     public int PendingTtlSeconds { get; set; } = 3600;
 
