@@ -217,6 +217,7 @@ else
     builder.Services.AddSingleton<IObjectStoragePresigner, UnavailableObjectStoragePresigner>();
 }
 
+builder.Services.AddSingleton<IFileContentScanner, PassThroughFileContentScanner>();
 builder.Services.AddSingleton<IFilePresignService, FilePresignService>();
 builder.Services.AddSingleton<IFilesPackInjector, FilesPackInjector>();
 

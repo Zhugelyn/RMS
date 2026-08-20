@@ -29,6 +29,7 @@ public sealed class FilePresignService : IFilePresignService
 {
     private readonly IFileObjectStore _store;
     private readonly IObjectStoragePresigner _presigner;
+    private readonly IFileContentScanner _scanner;
     private readonly MinioOptions _options;
     private readonly ILogger<FilePresignService> _logger;
     private readonly TimeProvider _clock;
@@ -36,12 +37,14 @@ public sealed class FilePresignService : IFilePresignService
     public FilePresignService(
         IFileObjectStore store,
         IObjectStoragePresigner presigner,
+        IFileContentScanner scanner,
         IOptions<MinioOptions> options,
         ILogger<FilePresignService> logger,
         TimeProvider? clock = null)
     {
         _store = store;
         _presigner = presigner;
+        _scanner = scanner;
         _options = options.Value;
         _logger = logger;
         _clock = clock ?? TimeProvider.System;
@@ -83,8 +86,8 @@ public sealed class FilePresignService : IFilePresignService
         var objectKey = fileId.ToString("N");
         var bucket = ResolveBucket(domain);
         var now = _clock.GetUtcNow();
-        var pendingTtl = Math.Clamp(_options.PendingTtlSeconds, 60, 86_400);
-        var putTtl = Math.Clamp(_options.PresignTtlSeconds, 30, FileLimits.MaxPresignTtlSeconds);
+        var pendingTtl = FileLimits.ClampPendingTtlSeconds(_options.PendingTtlSeconds);
+        var putTtl = FileLimits.ClampPresignTtlSeconds(_options.PresignTtlSeconds);
 
         var file = new FileObject
         {
@@ -152,6 +155,12 @@ public sealed class FilePresignService : IFilePresignService
 
         EnsureOwner(existing, request.UserId);
 
+        // Idempotent: already active → return metadata (no re-scan).
+        if (existing.Status == FileStatuses.Active)
+        {
+            return ToDto(existing);
+        }
+
         if (existing.Status is FileStatuses.Deleted or FileStatuses.Rejected)
         {
             throw new FileForbiddenException("File is not confirmable.");
@@ -165,25 +174,44 @@ public sealed class FilePresignService : IFilePresignService
             throw new FileValidationException("Pending upload expired.");
         }
 
-        // Scanning hook stub → hardening. Mark uploaded/active without byte proxy.
-        var updated = new FileObject
+        // pending|uploaded|scanning → run scan hook (no byte proxy through API).
+        var uploaded = existing.Status == FileStatuses.Pending
+            ? CloneWithStatus(existing, FileStatuses.Uploaded, now, expiresAt: null)
+            : existing;
+        if (!ReferenceEquals(uploaded, existing))
         {
-            FileId = existing.FileId,
-            UserId = existing.UserId,
-            Domain = existing.Domain,
-            Bucket = existing.Bucket,
-            ObjectKey = existing.ObjectKey,
-            OriginalFilename = existing.OriginalFilename,
-            ContentType = existing.ContentType,
-            SizeBytes = existing.SizeBytes,
-            Status = FileStatuses.Active,
-            CreatedAt = existing.CreatedAt,
-            UploadedAt = now,
-            ExpiresAt = null
-        };
+            await _store.UpdateAsync(uploaded, cancellationToken);
+        }
 
-        await _store.UpdateAsync(updated, cancellationToken);
-        return ToDto(updated);
+        var scanning = CloneWithStatus(uploaded, FileStatuses.Scanning, now, expiresAt: null);
+        await _store.UpdateAsync(scanning, cancellationToken);
+
+        FileScanResult scan;
+        try
+        {
+            scan = await _scanner.ScanAsync(scanning, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Soft-fail: scanner outage must not leave file stuck; do not download bytes.
+            _logger.LogWarning(ex, "Scan stub failed fileId={FileId}; treating as clean", scanning.FileId);
+            scan = FileScanResult.Clean();
+        }
+
+        if (scan.Verdict == FileScanVerdict.Rejected)
+        {
+            var rejected = CloneWithStatus(scanning, FileStatuses.Rejected, now, expiresAt: null);
+            await _store.UpdateAsync(rejected, cancellationToken);
+            _logger.LogWarning(
+                "Scan rejected fileId={FileId} reason={Reason}",
+                rejected.FileId,
+                scan.Reason ?? "rejected");
+            throw new FileForbiddenException("File failed content scan.");
+        }
+
+        var active = CloneWithStatus(scanning, FileStatuses.Active, now, expiresAt: null);
+        await _store.UpdateAsync(active, cancellationToken);
+        return ToDto(active);
     }
 
     public async Task<FileDownloadUrlResponse> CreateDownloadUrlAsync(
@@ -214,7 +242,7 @@ public sealed class FilePresignService : IFilePresignService
         }
 
         // Cross-domain: owner already scoped; domain buckets isolate salon ≠ marketing.
-        var getTtl = Math.Clamp(_options.PresignTtlSeconds, 30, FileLimits.MaxPresignTtlSeconds);
+        var getTtl = FileLimits.ClampPresignTtlSeconds(_options.PresignTtlSeconds);
         PresignResult get;
         try
         {
@@ -288,6 +316,27 @@ public sealed class FilePresignService : IFilePresignService
             throw new FileObjectNotFoundException("File not found.");
         }
     }
+
+    private static FileObject CloneWithStatus(
+        FileObject source,
+        string status,
+        DateTimeOffset uploadedAt,
+        DateTimeOffset? expiresAt) =>
+        new()
+        {
+            FileId = source.FileId,
+            UserId = source.UserId,
+            Domain = source.Domain,
+            Bucket = source.Bucket,
+            ObjectKey = source.ObjectKey,
+            OriginalFilename = source.OriginalFilename,
+            ContentType = source.ContentType,
+            SizeBytes = source.SizeBytes,
+            Status = status,
+            CreatedAt = source.CreatedAt,
+            UploadedAt = uploadedAt,
+            ExpiresAt = expiresAt
+        };
 
     private static FileMetadataDto ToDto(FileObject f) => new()
     {

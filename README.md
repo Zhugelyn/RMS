@@ -1,4 +1,4 @@
-# Telegram AI — Phase 8 Files/MinIO open (compose ✅) + Phase 7 RAG closed
+# Telegram AI — Phase 8 Files/MinIO closed + Phase 7 RAG closed
 
 Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-service + MinIO:
 
@@ -26,7 +26,7 @@ Compose stack + domain packs на диске + Postgres + Elasticsearch + rag-se
 | **5 Research Client UI** | **closed** (hardening ✅ 2026-08-18) | Mini App studio + bot web_app (ADR-012); не RAG |
 | **6 VK Public Research** | **closed** (hardening ✅ 2026-08-18) | Официальный VK API открытых пабликов (`wall.get`, service token); не scrape |
 | **7 Knowledge** | **closed** (hardening ✅ 2026-08-18) | Document RAG: `rag-service` + ES; ≠ harness ≠ research (ADR-014) |
-| **8 Files / media** | **open** (`phase8-docs` ✅; `phase8-minio-compose` ✅; `phase8-presign` ✅; `phase8-pack-files` ✅; next=`phase8-hardening`) | MinIO private + presign; metadata в assistant-api (ADR-015) |
+| **8 Files / media** | **closed** (`phase8-hardening` ✅) | MinIO private + presign; metadata в assistant-api (ADR-015) |
 | 9 External tools | later | Яндекс Директ и др. |
 
 ## Phase 4 — Marketing Instagram Research (план)
@@ -119,9 +119,10 @@ Object storage для фото/видео/документов (ADR-015). **Не
 | Metadata + authz + presign | **assistant-api** (Postgres). Большие байты **не** через API — только short-TTL presigned PUT/GET |
 | Domain isolation | buckets/prefixes `salon` ≠ `marketing`; opaque server-generated object keys |
 | Pack tools | MCP/skill files в `salon` и `marketing`; `_router` / `tasks` без files MCP |
-| Soft-fail | Missing MinIO / expired URL не валят `/v1/chat` |
+| Soft-fail | Missing MinIO / expired URL / scanner outage не валят `/v1/chat` |
 | Auth / secrets | `MINIO__*` env/secret store only; не из чата / Mini App |
-| Scanning | Stub hook в hardening (antivirus later) |
+| Scanning | `IFileContentScanner` + `PassThroughFileContentScanner` stub (no MinIO GET / no byte proxy); real AV later |
+| TTL | Presign 30..3600s (`FileLimits.ClampPresignTtlSeconds`); pending metadata 60..86400s |
 
 ### Non-goals Phase 8
 
@@ -130,10 +131,8 @@ Object storage для фото/видео/документов (ADR-015). **Не
 - Проксировать большие файлы через assistant-api
 - Миграция research-images volume целиком (optional follow-up)
 - Apify, OpenAI Images
-- Pack tools ✅ (`phase8-pack-files`): MCP `files` + skill in salon/marketing; router/tasks empty
-- Hardening / scanning stub → `phase8-hardening`
 
-Slices: `phase8-docs` ✅ → `phase8-minio-compose` ✅ → `phase8-presign` ✅ → `phase8-pack-files` ✅ → `phase8-hardening`.
+Slices: `phase8-docs` ✅ → `phase8-minio-compose` ✅ → `phase8-presign` ✅ → `phase8-pack-files` ✅ → `phase8-hardening` ✅. **Phase 8 closed.**
 
 ## Требования
 
@@ -206,7 +205,7 @@ Mini App UI     ──► gateway /api/miniapp/chat ─────────�
 - Instagram Graph token (Phase 4) — только в assistant-api / secret store, не в Telegram.
 - VK service token (Phase 6) — только в assistant-api / secret store (`VK__SERVICETOKEN`), не в Telegram.
 - Phase 7 closed: `RAG__SERVICEKEY` / `RAG__BASEURL` / `ELASTICSEARCH__PASSWORD` — env/secret store only; не из Telegram/Mini App. Hardening ✅ (caps, PII-safe logs, ES basic auth).
-- Phase 8 pack-files ✅: salon/marketing MCP `files` + metadata inject; `MINIO__*` + `/v1/files/*` presign. Hardening → `phase8-hardening`. Не из Telegram/Mini App.
+- Phase 8 closed: salon/marketing MCP `files` + metadata inject; `MINIO__*` + `/v1/files/*` presign; TTL clamps + `PassThroughFileContentScanner` stub (`phase8-hardening` ✅). Не из Telegram/Mini App.
 - Mini App не содержит секретов; ключ на сервере gateway.
 
 ## Ручные проверки API
@@ -405,7 +404,7 @@ memory/                    # phase-plan, contracts, ADR
 | `VK__APIBASEURL` (optional) | assistant-api | Только `https://api.vk.com/method/` (startup validate + runtime `VkApiHostGuard`). Не `m.vk.com` / oauth. |
 | `RAG__SERVICEKEY` (Phase 7) | rag-service + assistant-api (`X-Service-Key`) | ≥16 chars in `.env` → restart `rag-service` + `assistant-api`. `RAG__BASEURL=http://rag-service:8080` for assistant ✅. Не из чата. |
 | `ELASTICSEARCH__PASSWORD` (Phase 7) | elasticsearch + rag-service basic auth | Новый пароль → `.env` → **wipe ES volume** if upgrading from security-off → restart `elasticsearch` + `rag-service`. Не из чата. HTTP SSL off (compose-internal). |
-| `MINIO__*` (Phase 8, pack-files ✅) | MinIO + assistant-api | Root/access via `MINIO__ROOTPASSWORD` / `MINIO__SECRETKEY` (dev defaults local-only). Buckets private. `/v1/files/*` + pack MCP `files`. Hardening → `phase8-hardening`. Не из чата/Mini App. |
+| `MINIO__*` (Phase 8, hardening ✅) | MinIO + assistant-api | Rotate root: set new `MINIO__ROOTUSER`/`MINIO__ROOTPASSWORD` → recreate MinIO volume if needed → restart `minio` + `minio-init`. Rotate app access: new `MINIO__ACCESSKEY`/`MINIO__SECRETKEY` (same as root in compose-dev, or dedicated IAM user later) → update `.env` → restart `assistant-api`. Buckets stay private (`anonymous set none`). Short TTL presign (`Minio__PresignTtlSeconds` 30..3600). Scan stub = `PassThroughFileContentScanner` (no byte proxy). **Не** из чата/Mini App. |
 
 Правило: secrets не в git, не в OpenAPI examples, не в metrics labels, не в screenshot/логах ошибок Graph/VK/Telegram.
 
